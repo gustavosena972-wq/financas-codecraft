@@ -1,36 +1,67 @@
-import { requireWorkspace } from "@/lib/auth";
-import { monthKey, formatMonthLabel, shiftMonth } from "@/lib/money";
-import Link from "next/link";
+"use client";
 
-export default async function ExportPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ month?: string }>;
-}) {
-  const { workspace } = await requireWorkspace();
-  const month = (await searchParams).month ?? monthKey();
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { requireSession } from "@/lib/store";
+import { formatMonthLabel, monthKey, shiftMonth } from "@/lib/money";
+import { monthSummary } from "@/lib/queries";
+import { buildExportBuffer } from "@/lib/excel";
+import { go } from "@/lib/types";
+
+export default function ExportPage() {
+  const [month, setMonth] = useState(monthKey());
+  const [name, setName] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setMonth(params.get("month") ?? monthKey());
+    const session = requireSession();
+    if (!session) {
+      go("/login");
+      return;
+    }
+    setName(session.workspace.name);
+  }, []);
+
+  async function download() {
+    const session = requireSession();
+    if (!session) return;
+    const { txs } = monthSummary(session.workspace.id, month);
+    const buffer = await buildExportBuffer(
+      txs.map((tx) => ({
+        date: new Date(tx.date),
+        description: tx.description,
+        amount: tx.amount,
+        type: tx.type,
+        category: tx.category?.name,
+        account: tx.account.name,
+        notes: tx.notes,
+      })),
+    );
+    const blob = new Blob([buffer as ArrayBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `financas-codecraft-${month}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Exportar para Excel</h1>
-        <p className="text-sm text-muted">
-          Relatório do período em {workspace.name}. Use o modelo também para reimportar depois.
-        </p>
+        <p className="text-sm text-muted">Relatório do período em {name}.</p>
       </div>
       <div className="card p-6 max-w-lg space-y-4">
         <p className="capitalize font-semibold">{formatMonthLabel(month)}</p>
         <div className="flex gap-2">
-          <Link className="btn btn-ghost" href={`/app/exportar?month=${shiftMonth(month, -1)}`}>
-            Mês anterior
-          </Link>
-          <Link className="btn btn-ghost" href={`/app/exportar?month=${shiftMonth(month, 1)}`}>
-            Próximo
-          </Link>
+          <Link className="btn btn-ghost" href={`/app/exportar?month=${shiftMonth(month, -1)}`}>Mês anterior</Link>
+          <Link className="btn btn-ghost" href={`/app/exportar?month=${shiftMonth(month, 1)}`}>Próximo</Link>
         </div>
-        <a className="btn btn-primary" href={`/app/exportar/arquivo?month=${month}`}>
-          Baixar Excel
-        </a>
+        <button className="btn btn-primary" onClick={download}>Baixar Excel</button>
       </div>
     </div>
   );

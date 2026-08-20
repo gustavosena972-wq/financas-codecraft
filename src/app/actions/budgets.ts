@@ -1,45 +1,26 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { audit, requireWorkspace } from "@/lib/auth";
+import { loadDb, pushAudit, requireSession, saveDb, upsertBudget } from "@/lib/store";
 import { parseMoneyToCents } from "@/lib/money";
+import { newId } from "@/lib/types";
 
 export type BudgetState = { error?: string; ok?: string } | null;
 
-export async function saveBudgetAction(
-  _prev: BudgetState,
-  formData: FormData,
-): Promise<BudgetState> {
-  const { user, workspace } = await requireWorkspace();
+export async function saveBudgetAction(_prev: BudgetState, formData: FormData): Promise<BudgetState> {
+  const session = requireSession();
+  if (!session) return { error: "Sessão expirada." };
   const month = String(formData.get("month") ?? "");
   const categoryId = String(formData.get("categoryId") ?? "");
   const amount = parseMoneyToCents(String(formData.get("amount") ?? ""));
   if (!month || !categoryId) return { error: "Categoria e mês são obrigatórios." };
   if (amount == null || amount < 0) return { error: "Valor inválido." };
-
-  await prisma.budget.upsert({
-    where: {
-      workspaceId_categoryId_month: {
-        workspaceId: workspace.id,
-        categoryId,
-        month,
-      },
-    },
-    update: { amount: Math.abs(amount) },
-    create: {
-      workspaceId: workspace.id,
-      categoryId,
-      month,
-      amount: Math.abs(amount),
-    },
+  upsertBudget({
+    id: newId(),
+    workspaceId: session.workspace.id,
+    categoryId,
+    month,
+    amount: Math.abs(amount),
   });
-  await audit(user.id, "upsert", "budget", {
-    workspaceId: workspace.id,
-    entityId: categoryId,
-    detail: month,
-  });
-  revalidatePath("/app/orcamento");
-  revalidatePath("/app");
+  const db = loadDb();
+  pushAudit(db, session.user.id, "upsert", "budget", { workspaceId: session.workspace.id, detail: month });
+  saveDb(db);
   return { ok: "Orçamento atualizado." };
 }

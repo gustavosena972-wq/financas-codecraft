@@ -1,31 +1,27 @@
-import { prisma } from "./prisma";
+import type { Account, Category, Workspace, WorkspaceType } from "./types";
 import { defaultsFor } from "./defaults";
-import type { WorkspaceType } from "@prisma/client";
+import { addWorkspace } from "./store";
+import { newId, nowIso } from "./types";
 
-export async function provisionWorkspace(
-  ownerId: string,
-  name: string,
-  type: WorkspaceType,
-) {
+export function provisionWorkspace(ownerId: string, name: string, type: WorkspaceType): Workspace {
   const defaults = defaultsFor(type);
-  return prisma.workspace.create({
-    data: {
-      name,
-      type,
-      ownerId,
-      accounts: {
-        create: defaults.accounts.map((account) => ({
-          name: account.name,
-          type: account.type,
-        })),
-      },
-      categories: {
-        create: defaults.categories.map((category) => ({
-          name: category.name,
-          kind: category.kind,
-          color: category.color,
-        })),
-      },
-    },
-  });
+  const ws: Workspace = { id: newId(), name, type, ownerId, createdAt: nowIso() };
+  const accounts: Account[] = defaults.accounts.map((account) => ({
+    id: newId(),
+    workspaceId: ws.id,
+    name: account.name,
+    type: account.type,
+    initialBalance: 0,
+    archived: false,
+    createdAt: nowIso(),
+  }));
+  const categories: Category[] = defaults.categories.map((category) => ({
+    id: newId(),
+    workspaceId: ws.id,
+    name: category.name,
+    kind: category.kind,
+    color: category.color,
+  }));
+  addWorkspace(ws, accounts, categories);
+  return ws;
 }

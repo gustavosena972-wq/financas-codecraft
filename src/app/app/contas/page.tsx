@@ -1,38 +1,53 @@
-import { requireWorkspace } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+"use client";
+
+import { useEffect, useState } from "react";
+import { requireSession } from "@/lib/store";
 import { brl } from "@/lib/money";
 import { accountBalances } from "@/lib/queries";
-import { createAccountAction, archiveAccountAction } from "@/app/actions/accounts";
+import { archiveAccountAction, createAccountAction } from "@/app/actions/accounts";
 import { ActionForm } from "@/components/action-form";
 import { ACCOUNT_LABEL } from "@/lib/defaults";
+import { go } from "@/lib/types";
+import { listAccounts } from "@/lib/store";
 
-export default async function AccountsPage() {
-  const { workspace } = await requireWorkspace();
-  const accounts = await accountBalances(workspace.id);
-  const archived = await prisma.account.count({
-    where: { workspaceId: workspace.id, archived: true },
-  });
+export default function AccountsPage() {
+  const [data, setData] = useState<ReturnType<typeof accountBalances>>([]);
+  const [archived, setArchived] = useState(0);
+
+  useEffect(() => {
+    const session = requireSession();
+    if (!session) {
+      go("/login");
+      return;
+    }
+    setData(accountBalances(session.workspace.id));
+    setArchived(listAccounts(session.workspace.id, true).filter((a) => a.archived).length);
+  }, []);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Contas e carteiras</h1>
-        <p className="text-sm text-muted">Saldo inicial + lançamentos. Cartão reduz o limite quando entra despesa.</p>
+        <p className="text-sm text-muted">Saldo inicial + lançamentos.</p>
       </div>
-
       <div className="grid lg:grid-cols-3 gap-4">
-        {accounts.map((account) => (
+        {data.map((account) => (
           <article key={account.id} className="card p-5">
             <div className="text-xs text-muted uppercase tracking-wide">{ACCOUNT_LABEL[account.type]}</div>
             <h2 className="font-semibold mt-1">{account.name}</h2>
             <div className="text-2xl mt-3 font-semibold">{brl(account.balance)}</div>
-            <form action={archiveAccountAction.bind(null, account.id)} className="mt-4">
-              <button className="text-xs text-muted">Arquivar</button>
-            </form>
+            <button
+              className="text-xs text-muted mt-4"
+              onClick={async () => {
+                await archiveAccountAction(account.id);
+                window.location.reload();
+              }}
+            >
+              Arquivar
+            </button>
           </article>
         ))}
       </div>
-
       <div className="card p-6 max-w-lg">
         <h2 className="font-semibold mb-4">Nova conta</h2>
         <ActionForm action={createAccountAction} className="space-y-4" submitLabel="Criar conta">

@@ -1,5 +1,4 @@
 import ExcelJS from "exceljs";
-import { createHash } from "crypto";
 import { parseMoneyToCents } from "./money";
 
 export type MappedRow = {
@@ -101,10 +100,10 @@ function inferType(raw: string, amount: number): "INCOME" | "EXPENSE" {
 }
 
 function hashRow(date: string, description: string, amount: number, type: string) {
-  return createHash("sha256")
-    .update(`${date}|${description.toLowerCase()}|${Math.abs(amount)}|${type}`)
-    .digest("hex")
-    .slice(0, 24);
+  const s = `${date}|${description.toLowerCase()}|${Math.abs(amount)}|${type}`;
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  return `h${Math.abs(h).toString(16)}${s.length.toString(16)}`;
 }
 
 export async function parseWorkbook(buffer: ArrayBuffer, filename: string) {

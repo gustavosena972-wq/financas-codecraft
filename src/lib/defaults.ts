@@ -1,4 +1,5 @@
-import type { AccountType, WorkspaceType } from "@prisma/client";
+export type AccountType = "CHECKING" | "SAVINGS" | "WALLET" | "CASH" | "CREDIT";
+export type WorkspaceType = "PERSONAL" | "BUSINESS";
 
 export const PERSONAL_CATEGORIES = [
   { name: "Salário", kind: "INCOME", color: "#2A9D6E" },

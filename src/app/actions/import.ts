@@ -1,10 +1,6 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { audit, requireWorkspace } from "@/lib/auth";
-import { parseISODate } from "@/lib/money";
+import { addTransaction, listAccounts, listCategories, listTransactions, loadDb, pushAudit, requireSession, saveDb } from "@/lib/store";
 import { parseWorkbook, type MappedRow } from "@/lib/excel";
+import { newId, nowIso } from "@/lib/types";
 
 export type ImportPreview = {
   error?: string;
@@ -14,25 +10,21 @@ export type ImportPreview = {
 };
 
 export async function previewImportAction(formData: FormData): Promise<ImportPreview> {
-  const { workspace } = await requireWorkspace();
+  const session = requireSession();
+  if (!session) return { error: "Sessão expirada." };
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return { error: "Selecione um arquivo Excel ou CSV." };
   }
-  const buffer = await file.arrayBuffer();
-  const parsed = await parseWorkbook(buffer, file.name);
+  const parsed = await parseWorkbook(await file.arrayBuffer(), file.name);
   if (parsed.error) return { error: parsed.error, headers: parsed.headers };
-
-  const hashes = parsed.rows.map((r) => r.hash);
-  const existing = await prisma.transaction.findMany({
-    where: { workspaceId: workspace.id, importHash: { in: hashes } },
-    select: { importHash: true },
-  });
-  const existingSet = new Set(existing.map((e) => e.importHash));
+  const existing = new Set(
+    listTransactions(session.workspace.id)
+      .map((t) => t.importHash)
+      .filter(Boolean),
+  );
   const rows = parsed.rows.map((row) =>
-    existingSet.has(row.hash)
-      ? { ...row, issues: [...row.issues, "Possível duplicata"] }
-      : row,
+    existing.has(row.hash) ? { ...row, issues: [...row.issues, "Possível duplicata"] } : row,
   );
   return {
     headers: parsed.headers,
@@ -42,63 +34,47 @@ export async function previewImportAction(formData: FormData): Promise<ImportPre
 }
 
 export async function confirmImportAction(rowsJson: string) {
-  const { user, workspace } = await requireWorkspace();
+  const session = requireSession();
+  if (!session) return { error: "Sessão expirada." };
   const rows = JSON.parse(rowsJson) as MappedRow[];
   const valid = rows.filter((row) => row.issues.length === 0 && row.amount > 0 && row.date);
   if (!valid.length) return { error: "Nenhuma linha válida para importar." };
-
-  const accounts = await prisma.account.findMany({
-    where: { workspaceId: workspace.id, archived: false },
-  });
-  const categories = await prisma.category.findMany({
-    where: { workspaceId: workspace.id },
-  });
+  const accounts = listAccounts(session.workspace.id);
+  const categories = listCategories(session.workspace.id);
   const defaultAccount = accounts[0];
   if (!defaultAccount) return { error: "Crie ao menos uma conta antes de importar." };
-
-  const findAccount = (name?: string) => {
-    if (!name) return defaultAccount;
-    const n = name.toLowerCase();
-    return accounts.find((a) => a.name.toLowerCase() === n) ?? defaultAccount;
-  };
-  const findCategory = (name?: string, type?: string) => {
-    if (!name) return null;
-    const n = name.toLowerCase();
-    return (
-      categories.find(
-        (c) => c.name.toLowerCase() === n && (!type || c.kind === type),
-      ) ?? null
-    );
-  };
-
+  const findAccount = (name?: string) =>
+    (name && accounts.find((a) => a.name.toLowerCase() === name.toLowerCase())) || defaultAccount;
+  const findCategory = (name?: string, type?: string) =>
+    name
+      ? categories.find((c) => c.name.toLowerCase() === name.toLowerCase() && (!type || c.kind === type)) ?? null
+      : null;
   let created = 0;
+  const existing = new Set(listTransactions(session.workspace.id).map((t) => t.importHash).filter(Boolean));
   for (const row of valid) {
-    const exists = await prisma.transaction.findFirst({
-      where: { workspaceId: workspace.id, importHash: row.hash },
+    if (existing.has(row.hash)) continue;
+    addTransaction({
+      id: newId(),
+      workspaceId: session.workspace.id,
+      accountId: findAccount(row.account).id,
+      categoryId: findCategory(row.category, row.type)?.id ?? null,
+      type: row.type,
+      amount: row.amount,
+      date: `${row.date}T12:00:00`,
+      description: row.description,
+      notes: row.notes,
+      transferToAccountId: null,
+      importHash: row.hash,
+      createdAt: nowIso(),
     });
-    if (exists) continue;
-    await prisma.transaction.create({
-      data: {
-        workspaceId: workspace.id,
-        accountId: findAccount(row.account).id,
-        categoryId: findCategory(row.category, row.type)?.id ?? null,
-        type: row.type,
-        amount: row.amount,
-        date: parseISODate(row.date),
-        description: row.description,
-        notes: row.notes,
-        importHash: row.hash,
-      },
-    });
+    existing.add(row.hash);
     created += 1;
   }
-
-  await audit(user.id, "import", "transaction", {
-    workspaceId: workspace.id,
+  const db = loadDb();
+  pushAudit(db, session.user.id, "import", "transaction", {
+    workspaceId: session.workspace.id,
     detail: `${created} lançamentos`,
   });
-  revalidatePath("/app");
-  revalidatePath("/app/lancamentos");
-  revalidatePath("/app/fluxo");
+  saveDb(db);
   return { ok: `${created} lançamentos importados.`, created };
 }

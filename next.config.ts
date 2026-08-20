@@ -1,10 +1,15 @@
 import type { NextConfig } from "next";
 
+const basePath = process.env.GITHUB_PAGES === "true" ? "/financas-codecraft" : "";
+
 const nextConfig: NextConfig = {
-  experimental: {
-    serverActions: {
-      bodySizeLimit: "8mb",
-    },
+  output: "export",
+  images: { unoptimized: true },
+  trailingSlash: true,
+  basePath,
+  assetPrefix: basePath || undefined,
+  env: {
+    NEXT_PUBLIC_BASE_PATH: basePath,
   },
 };
 

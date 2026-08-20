@@ -39,7 +39,7 @@ export function AppShell({
   activeId: string;
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
+  const pathname = (usePathname() || "").replace(/\/$/, "") || "/";
   const active = workspaces.find((w) => w.id === activeId);
 
   return (

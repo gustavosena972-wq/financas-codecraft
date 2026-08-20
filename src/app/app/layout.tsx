@@ -1,19 +1,33 @@
-import { prisma } from "@/lib/prisma";
-import { requireUser, getActiveWorkspaceId } from "@/lib/auth";
-import { AppShell } from "@/components/shell";
-import { redirect } from "next/navigation";
+"use client";
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await requireUser();
-  const workspaces = await prisma.workspace.findMany({
-    where: { ownerId: user.id },
-    orderBy: { createdAt: "asc" },
-  });
-  if (!workspaces.length) redirect("/cadastro");
-  const activeId = (await getActiveWorkspaceId(user.id)) ?? workspaces[0].id;
+import { useEffect, useState } from "react";
+import { AppShell } from "@/components/shell";
+import { currentUser, listWorkspaces, requireSession } from "@/lib/store";
+import { go } from "@/lib/types";
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const [ready, setReady] = useState(false);
+  const [name, setName] = useState("");
+  const [workspaces, setWorkspaces] = useState<{ id: string; name: string; type: "PERSONAL" | "BUSINESS" }[]>([]);
+  const [activeId, setActiveId] = useState("");
+
+  useEffect(() => {
+    const session = requireSession();
+    const user = currentUser();
+    if (!user || !session) {
+      go("/login");
+      return;
+    }
+    setName(user.name);
+    setWorkspaces(listWorkspaces(user.id));
+    setActiveId(session.workspace.id);
+    setReady(true);
+  }, []);
+
+  if (!ready) return <div className="p-10 text-muted">Carregando…</div>;
 
   return (
-    <AppShell userName={user.name} workspaces={workspaces} activeId={activeId}>
+    <AppShell userName={name} workspaces={workspaces} activeId={activeId}>
       {children}
     </AppShell>
   );
