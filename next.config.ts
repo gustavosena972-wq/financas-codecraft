@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const basePath = process.env.GITHUB_PAGES === "true" ? "/financas-codecraft" : "";
+const basePath = process.env.GITHUB_PAGES === "true" ? "/financas-codecraft/docs" : "";
 
 const nextConfig: NextConfig = {
   output: "export",
