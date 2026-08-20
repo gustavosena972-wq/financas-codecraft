@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum WorkspaceType {
+  PERSONAL
+  BUSINESS
+}
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+  WALLET
+  CASH
+  CREDIT
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+model User {
+  id              String      @id @default(cuid())
+  name            String
+  email           String      @unique
+  passwordHash    String
+  lastWorkspaceId String?
+  createdAt       DateTime    @default(now())
+  workspaces      Workspace[]
+  auditLogs       AuditLog[]
+}
+
+model Workspace {
+  id           String        @id @default(cuid())
+  name         String
+  type         WorkspaceType
+  ownerId      String
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt    DateTime      @default(now())
+  accounts     Account[]
+  categories   Category[]
+  transactions Transaction[]
+  budgets      Budget[]
+  auditLogs    AuditLog[]
+}
+
+model Account {
+  id              String        @id @default(cuid())
+  workspaceId     String
+  workspace       Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name            String
+  type            AccountType
+  initialBalance  Int           @default(0)
+  archived        Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  transactions    Transaction[] @relation("AccountTx")
+  transferInbound Transaction[] @relation("TransferTo")
+}
+
+model Category {
+  id          String       @id @default(cuid())
+  workspaceId String
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  kind        String
+  color       String
+  parentId    String?
+  parent      Category?    @relation("Subcats", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[]   @relation("Subcats")
+  transactions Transaction[]
+  budgets     Budget[]
+}
+
+model Transaction {
+  id                  String          @id @default(cuid())
+  workspaceId         String
+  workspace           Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  accountId           String
+  account             Account         @relation("AccountTx", fields: [accountId], references: [id])
+  categoryId          String?
+  category            Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  type                TransactionType
+  amount              Int
+  date                DateTime
+  description         String
+  notes               String?
+  transferToAccountId String?
+  transferToAccount   Account?        @relation("TransferTo", fields: [transferToAccountId], references: [id])
+  importHash          String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@index([workspaceId, date])
+  @@index([workspaceId, importHash])
+}
+
+model Budget {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  month       String
+  amount      Int
+
+  @@unique([workspaceId, categoryId, month])
+}
+
+model AuditLog {
+  id          String     @id @default(cuid())
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action      String
+  entity      String
+  entityId    String?
+  detail      String?
+  createdAt   DateTime   @default(now())
+
+  @@index([workspaceId, createdAt])
+}
