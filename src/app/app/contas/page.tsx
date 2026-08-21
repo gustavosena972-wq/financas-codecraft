@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { requireSession } from "@/lib/store";
+import { useLive } from "@/lib/live";
 import { brl } from "@/lib/money";
 import { accountBalances } from "@/lib/queries";
 import { archiveAccountAction, createAccountAction } from "@/app/actions/accounts";
@@ -11,6 +12,7 @@ import { go } from "@/lib/types";
 import { listAccounts } from "@/lib/store";
 
 export default function AccountsPage() {
+  const live = useLive();
   const [data, setData] = useState<ReturnType<typeof accountBalances>>([]);
   const [archived, setArchived] = useState(0);
 
@@ -24,7 +26,7 @@ export default function AccountsPage() {
       setData(accountBalances(session.workspace.id));
       setArchived(listAccounts(session.workspace.id, true).filter((a) => a.archived).length);
     })();
-  }, []);
+  }, [live]);
 
   return (
     <div className="space-y-6">
@@ -42,7 +44,6 @@ export default function AccountsPage() {
               className="text-xs text-muted mt-4"
               onClick={async () => {
                 await archiveAccountAction(account.id);
-                window.location.reload();
               }}
             >
               Arquivar

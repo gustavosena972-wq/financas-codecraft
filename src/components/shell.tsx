@@ -130,7 +130,12 @@ export function AppShell({
 
       <div className="min-w-0">
         <header className="h-14 border-b border-line bg-paper/90 backdrop-blur px-6 flex items-center justify-between gap-4">
-          <div className="text-sm text-muted">Olá, {userName.split(" ")[0]}</div>
+          <div className="text-sm text-muted flex items-center gap-3">
+            <span>Olá, {userName.split(" ")[0]}</span>
+            <span className="live-dot" title="Os números atualizam sozinhos">
+              <span className="d" /> ao vivo
+            </span>
+          </div>
           <div className="flex items-center gap-2">
             <Link href="/app/comecar" className="btn btn-ghost hidden sm:inline-flex">
               Como usar

@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listLogs, listWorkspaces, requireSession, setLastWorkspace } from "@/lib/store";
+import { useLive } from "@/lib/live";
 import { provisionWorkspace } from "@/lib/workspace";
 import { go } from "@/lib/types";
 import { planById } from "@/lib/plans";
 
 export default function SettingsPage() {
+  const live = useLive();
   const [user, setUser] = useState<{ id: string; name: string; email: string; plan: "FREE" | "PRO" | "BUSINESS" | "ENTERPRISE" } | null>(null);
   const [workspaces, setWorkspaces] = useState<{ id: string; name: string; type: "PERSONAL" | "BUSINESS" }[]>([]);
   const [logs, setLogs] = useState<ReturnType<typeof listLogs>>([]);
@@ -23,7 +25,7 @@ export default function SettingsPage() {
       setWorkspaces(listWorkspaces(session.user.id));
       setLogs(listLogs(session.user.id));
     })();
-  }, []);
+  }, [live]);
 
   if (!user) return null;
   const hasPersonal = workspaces.some((w) => w.type === "PERSONAL");

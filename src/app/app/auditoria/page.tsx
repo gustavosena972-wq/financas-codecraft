@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { listLogs, requireSession } from "@/lib/store";
+import { useLive } from "@/lib/live";
 import { planHasGovernance } from "@/lib/plans";
 import { PageHeader, PlanGate } from "@/components/page-header";
 import { go } from "@/lib/types";
 
 export default function AuditoriaPage() {
+  const live = useLive();
   const [ok, setOk] = useState(false);
   const [logs, setLogs] = useState<ReturnType<typeof listLogs>>([]);
 
@@ -20,7 +22,7 @@ export default function AuditoriaPage() {
       setOk(planHasGovernance(session.user.plan));
       setLogs(listLogs(session.user.id));
     })();
-  }, []);
+  }, [live]);
 
   return (
     <div className="space-y-6">

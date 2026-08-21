@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useRef } from "react";
 
 type State = { error?: string; ok?: string } | null;
 
@@ -16,13 +16,15 @@ export function ActionForm({
   submitLabel?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, null);
+  const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
-    if (state?.ok) window.location.reload();
+    if (state?.ok) formRef.current?.reset();
   }, [state]);
   return (
-    <form action={formAction} className={className}>
+    <form ref={formRef} action={formAction} className={className}>
       {children}
       {state?.error ? <p className="text-sm text-negative">{state.error}</p> : null}
+      {state?.ok ? <p className="text-sm text-positive">{state.ok}</p> : null}
       <button className="btn btn-primary" disabled={pending}>
         {pending ? "Salvando…" : submitLabel}
       </button>

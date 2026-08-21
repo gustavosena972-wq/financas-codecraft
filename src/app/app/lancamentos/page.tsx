@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { listAccounts, listCategories, requireSession } from "@/lib/store";
+import { useLive } from "@/lib/live";
 import { brl, formatMonthLabel, monthKey, shiftMonth } from "@/lib/money";
 import { TransactionForm } from "@/components/transaction-form";
 import { deleteTransactionAction, duplicateTransactionAction } from "@/app/actions/transactions";
@@ -10,6 +11,7 @@ import { monthSummary } from "@/lib/queries";
 import { planHasAi } from "@/lib/plans";
 
 export default function TransactionsPage() {
+  const live = useLive();
   const [ready, setReady] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
   const [accounts, setAccounts] = useState<{ id: string; name: string }[]>([]);
@@ -33,12 +35,12 @@ export default function TransactionsPage() {
       setAiEnabled(planHasAi(session.user.plan));
       setReady(true);
     })();
-  }, []);
+  }, [live]);
 
   useEffect(() => {
     if (!workspaceId) return;
     setTxs(monthSummary(workspaceId, month).txs);
-  }, [workspaceId, month]);
+  }, [workspaceId, month, live]);
 
   const filtered = useMemo(() => {
     return txs.filter((tx) => {

@@ -5,10 +5,12 @@ import { PlansGrid } from "@/components/plans-grid";
 import { PixPay } from "@/components/pix-pay";
 import { planById, type PlanId } from "@/lib/plans";
 import { requireSession, setUserPlan } from "@/lib/store";
+import { useLive } from "@/lib/live";
 import { go, newId } from "@/lib/types";
 import { whatsappLink } from "@/lib/pix";
 
 export default function PlanosPage() {
+  const live = useLive();
   const [plan, setPlan] = useState<PlanId>("FREE");
   const [checkout, setCheckout] = useState<PlanId | null>(null);
   const [busy, setBusy] = useState(false);
@@ -25,7 +27,7 @@ export default function PlanosPage() {
       }
       setPlan(session.user.plan);
     })();
-  }, []);
+  }, [live]);
 
   async function onSelect(next: PlanId) {
     if (next === "FREE") {

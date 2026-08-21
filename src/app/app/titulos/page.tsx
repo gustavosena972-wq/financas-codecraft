@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { listAccounts, listBills, listCostCenters, listParties, requireSession } from "@/lib/store";
+import { useLive } from "@/lib/live";
 import { brl } from "@/lib/money";
 import { planHasOps } from "@/lib/plans";
 import { createBillAction, deleteBillAction, settleBillAction } from "@/app/actions/enterprise";
@@ -10,6 +11,7 @@ import { PageHeader, PlanGate } from "@/components/page-header";
 import { go } from "@/lib/types";
 
 export default function TitulosPage() {
+  const live = useLive();
   const [ops, setOps] = useState(false);
   const [bills, setBills] = useState<ReturnType<typeof listBills>>([]);
   const [accounts, setAccounts] = useState<{ id: string; name: string }[]>([]);
@@ -35,9 +37,9 @@ export default function TitulosPage() {
       setOps(planHasOps(session.user.plan));
       load(session.workspace.id);
       const first = listAccounts(session.workspace.id)[0];
-      if (first) setAccountId(first.id);
+      if (first) setAccountId((current) => current || first.id);
     })();
-  }, []);
+  }, [live]);
 
   const overview = useMemo(() => billsOverviewFrom(bills), [bills]);
   const rows = bills.filter((b) => (kind === "ALL" ? true : b.kind === kind));
@@ -151,7 +153,6 @@ export default function TitulosPage() {
                             className="text-xs font-semibold"
                             onClick={async () => {
                               await settleBillAction(bill.id, accountId);
-                              window.location.reload();
                             }}
                           >
                             Baixar
@@ -161,7 +162,6 @@ export default function TitulosPage() {
                           className="text-xs text-muted"
                           onClick={async () => {
                             await deleteBillAction(bill.id);
-                            window.location.reload();
                           }}
                         >
                           Excluir

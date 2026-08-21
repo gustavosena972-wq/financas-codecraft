@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell";
 import { listWorkspaces, requireSession } from "@/lib/store";
+import { useLive } from "@/lib/live";
 import { go } from "@/lib/types";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const live = useLive();
   const [ready, setReady] = useState(false);
   const [name, setName] = useState("");
   const [workspaces, setWorkspaces] = useState<{ id: string; name: string; type: "PERSONAL" | "BUSINESS" }[]>([]);
@@ -24,7 +26,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       setActiveId(session.workspace.id);
       setReady(true);
     })();
-  }, []);
+  }, [live]);
 
   if (!ready) return <div className="p-10 text-muted">Carregando…</div>;
 

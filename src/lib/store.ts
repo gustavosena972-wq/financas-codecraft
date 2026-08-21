@@ -17,6 +17,91 @@ type Snapshot = {
 
 let snapshot: Snapshot | null = null;
 let loading: Promise<Snapshot | null> | null = null;
+let storeVersion = 0;
+let liveStarted = false;
+let liveTimer: ReturnType<typeof setInterval> | null = null;
+let liveChannel: ReturnType<ReturnType<typeof getSupabase>["channel"]> | null = null;
+const storeListeners = new Set<() => void>();
+
+export function getStoreVersion() {
+  return storeVersion;
+}
+
+export function subscribeStore(listener: () => void) {
+  storeListeners.add(listener);
+  return () => {
+    storeListeners.delete(listener);
+  };
+}
+
+function bumpStore() {
+  storeVersion += 1;
+  storeListeners.forEach((fn) => fn());
+}
+
+function storeFingerprint(data: Snapshot | null) {
+  if (!data) return "";
+  return JSON.stringify({
+    plan: data.user.plan,
+    ws: data.workspaces.map((w) => w.id),
+    acc: data.accounts.map((a) => [a.id, a.archived, a.initialBalance]),
+    tx: data.transactions.map((t) => t.id),
+    bud: data.budgets.map((b) => [b.id, b.amount]),
+    extras: data.extras,
+    log: data.auditLogs[0]?.id ?? "",
+  });
+}
+
+async function pullLive() {
+  const before = storeFingerprint(snapshot);
+  await refreshSession();
+  if (storeFingerprint(snapshot) !== before) bumpStore();
+}
+
+export function startLiveSync() {
+  if (liveStarted || typeof window === "undefined") return;
+  liveStarted = true;
+  try {
+    const supabase = getSupabase();
+    const tables = [
+      "fc_profiles",
+      "fc_workspaces",
+      "fc_accounts",
+      "fc_categories",
+      "fc_transactions",
+      "fc_budgets",
+      "fc_audit_logs",
+    ] as const;
+    let channel = supabase.channel("fc-live");
+    for (const table of tables) {
+      channel = channel.on("postgres_changes", { event: "*", schema: "public", table }, () => {
+        void pullLive();
+      });
+    }
+    liveChannel = channel.subscribe();
+  } catch {
+    /* o intervalo abaixo cobre o caso do realtime desligado */
+  }
+  liveTimer = setInterval(() => {
+    void pullLive();
+  }, 4000);
+}
+
+export function stopLiveSync() {
+  if (liveTimer) {
+    clearInterval(liveTimer);
+    liveTimer = null;
+  }
+  if (liveChannel) {
+    try {
+      void getSupabase().removeChannel(liveChannel);
+    } catch {
+      /* ignore */
+    }
+    liveChannel = null;
+  }
+  liveStarted = false;
+}
 
 export function getSessionWorkspaceId() {
   if (typeof window === "undefined") return null;
@@ -302,6 +387,7 @@ async function persistExtras() {
     data: { plan: snapshot.user.plan, extras: snapshot.extras },
   });
   if (error) throw error;
+  bumpStore();
 }
 
 export async function saveRecurring(workspaceId: string, items: Recurring[]) {
@@ -410,6 +496,7 @@ export async function addWorkspace(ws: Workspace, accounts: Account[], categorie
     snapshot.workspaces.push(ws);
     snapshot.accounts.push(...accounts);
     snapshot.categories.push(...categories);
+    bumpStore();
   }
 }
 
@@ -426,6 +513,7 @@ export async function addAccount(account: Account) {
   });
   if (error) throw error;
   snapshot?.accounts.push(account);
+  bumpStore();
 }
 
 export async function archiveAccount(id: string, workspaceId: string) {
@@ -434,6 +522,7 @@ export async function archiveAccount(id: string, workspaceId: string) {
   if (error) throw error;
   const acc = snapshot?.accounts.find((a) => a.id === id && a.workspaceId === workspaceId);
   if (acc) acc.archived = true;
+  bumpStore();
 }
 
 export async function addTransaction(tx: Transaction) {
@@ -454,6 +543,7 @@ export async function addTransaction(tx: Transaction) {
   });
   if (error) throw error;
   snapshot?.transactions.push(tx);
+  bumpStore();
 }
 
 export async function deleteTransaction(id: string, workspaceId: string) {
@@ -463,6 +553,7 @@ export async function deleteTransaction(id: string, workspaceId: string) {
   if (snapshot) {
     snapshot.transactions = snapshot.transactions.filter((t) => !(t.id === id && t.workspaceId === workspaceId));
   }
+  bumpStore();
 }
 
 export async function upsertBudget(row: Budget) {
@@ -474,6 +565,7 @@ export async function upsertBudget(row: Budget) {
     const { error } = await supabase.from("fc_budgets").update({ amount: row.amount }).eq("id", existing.id);
     if (error) throw error;
     existing.amount = row.amount;
+    bumpStore();
     return;
   }
   const { error } = await supabase.from("fc_budgets").insert({
@@ -485,6 +577,7 @@ export async function upsertBudget(row: Budget) {
   });
   if (error) throw error;
   snapshot?.budgets.push(row);
+  bumpStore();
 }
 
 export async function pushAudit(userId: string, action: string, entity: string, extra?: Partial<AuditLog>) {
@@ -509,6 +602,7 @@ export async function pushAudit(userId: string, action: string, entity: string, 
   });
   if (error) throw error;
   snapshot?.auditLogs.unshift(row);
+  bumpStore();
 }
 
 export async function setUserPlan(plan: User["plan"]) {
@@ -516,6 +610,7 @@ export async function setUserPlan(plan: User["plan"]) {
   const { error } = await supabase.auth.updateUser({ data: { plan, extras: snapshot?.extras ?? {} } });
   if (error) throw error;
   if (snapshot) snapshot.user.plan = plan;
+  bumpStore();
 }
 
 export async function setLastWorkspace(userId: string, workspaceId: string) {
@@ -524,10 +619,13 @@ export async function setLastWorkspace(userId: string, workspaceId: string) {
   if (error) throw error;
   if (snapshot?.user.id === userId) snapshot.user.lastWorkspaceId = workspaceId;
   setSessionWorkspaceId(workspaceId);
+  bumpStore();
 }
 
 export async function logoutSession() {
+  stopLiveSync();
   await getSupabase().auth.signOut();
   snapshot = null;
   setSessionWorkspaceId(null);
+  bumpStore();
 }

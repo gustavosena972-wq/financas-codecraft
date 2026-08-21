@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { requireSession } from "@/lib/store";
+import { useLive } from "@/lib/live";
 import { formatMonthLabel, monthKey, shiftMonth } from "@/lib/money";
 import { monthSummary } from "@/lib/queries";
 import { buildExportBuffer } from "@/lib/excel";
 import { go } from "@/lib/types";
 
 export default function ExportPage() {
+  const live = useLive();
   const [month, setMonth] = useState(monthKey());
   const [name, setName] = useState("");
 
@@ -23,7 +25,7 @@ export default function ExportPage() {
       }
       setName(session.workspace.name);
     })();
-  }, []);
+  }, [live]);
 
   async function download() {
     const session = await requireSession();

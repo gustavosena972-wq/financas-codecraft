@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { requireSession } from "@/lib/store";
+import { useLive } from "@/lib/live";
 import { brl, formatMonthLabel, monthKey, shiftMonth } from "@/lib/money";
 import { buildDre } from "@/lib/ops";
 import { planHasClose, planHasOps } from "@/lib/plans";
@@ -11,6 +12,7 @@ import { go } from "@/lib/types";
 import { PageHeader, PlanGate } from "@/components/page-header";
 
 export default function DrePage() {
+  const live = useLive();
   const [month, setMonth] = useState(monthKey());
   const [ops, setOps] = useState(false);
   const [canClose, setCanClose] = useState(false);
@@ -31,7 +33,7 @@ export default function DrePage() {
       setDre(buildDre(session.workspace.id, month));
       setWs(session.workspace.name);
     })();
-  }, [month]);
+  }, [live, month]);
 
   if (!dre) return null;
 
@@ -51,7 +53,6 @@ export default function DrePage() {
                 className="btn btn-ghost"
                 onClick={async () => {
                   await toggleMonthLockAction(month);
-                  window.location.reload();
                 }}
               >
                 {locked ? "Reabrir mês" : "Fechar mês"}

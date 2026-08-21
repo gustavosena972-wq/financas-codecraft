@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listAccounts, listCategories, listRecurring, requireSession } from "@/lib/store";
+import { useLive } from "@/lib/live";
 import { brl, formatMonthLabel, monthKey } from "@/lib/money";
 import { monthAgenda } from "@/lib/queries";
 import { ActionForm } from "@/components/action-form";
@@ -11,6 +12,7 @@ import { go } from "@/lib/types";
 import { recurringLimit } from "@/lib/plans";
 
 export default function AgendaPage() {
+  const live = useLive();
   const [ready, setReady] = useState(false);
   const [limit, setLimit] = useState(3);
   const [accounts, setAccounts] = useState<{ id: string; name: string }[]>([]);
@@ -33,7 +35,7 @@ export default function AgendaPage() {
       setLimit(recurringLimit(session.user.plan));
       setReady(true);
     })();
-  }, [month]);
+  }, [live, month]);
 
   if (!ready) return null;
 
@@ -77,7 +79,6 @@ export default function AgendaPage() {
                       className="text-xs text-muted"
                       onClick={async () => {
                         await postRecurringAction(item.recurringId!);
-                        window.location.reload();
                       }}
                     >
                       Lançar agora
@@ -114,7 +115,6 @@ export default function AgendaPage() {
                 className="text-xs text-muted"
                 onClick={async () => {
                   await deleteRecurringAction(item.id);
-                  window.location.reload();
                 }}
               >
                 Excluir

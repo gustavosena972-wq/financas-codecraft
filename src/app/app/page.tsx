@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listGoals, requireSession } from "@/lib/store";
+import { useLive } from "@/lib/live";
 import { brl, formatMonthLabel, monthKey } from "@/lib/money";
 import { accountBalances, cashflowSeries, categorySpend, monthAgenda, monthSummary, projectedCashflow } from "@/lib/queries";
 import { CashflowChart, CategoryChart } from "@/components/charts";
@@ -14,6 +15,7 @@ import { START_STEPS } from "@/lib/guide";
 import { go } from "@/lib/types";
 
 export default function DashboardPage() {
+  const live = useLive();
   const [view, setView] = useState<ReturnType<typeof build> | null>(null);
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export default function DashboardPage() {
         ),
       );
     })();
-  }, []);
+  }, [live]);
 
   if (!view) return null;
   return (

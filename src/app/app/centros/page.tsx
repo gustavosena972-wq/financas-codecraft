@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { listCostCenters, listParties, requireSession } from "@/lib/store";
+import { useLive } from "@/lib/live";
 import { spendByCostCenter } from "@/lib/ops";
 import { planHasOps } from "@/lib/plans";
 import { brl } from "@/lib/money";
@@ -16,6 +17,7 @@ import { PageHeader, PlanGate } from "@/components/page-header";
 import { go } from "@/lib/types";
 
 export default function CentrosPage() {
+  const live = useLive();
   const [ops, setOps] = useState(false);
   const [centers, setCenters] = useState<ReturnType<typeof listCostCenters>>([]);
   const [parties, setParties] = useState<ReturnType<typeof listParties>>([]);
@@ -33,7 +35,7 @@ export default function CentrosPage() {
       setParties(listParties(session.workspace.id));
       setSpend(spendByCostCenter(session.workspace.id));
     })();
-  }, []);
+  }, [live]);
 
   return (
     <div className="space-y-6">
@@ -57,7 +59,7 @@ export default function CentrosPage() {
               {centers.map((c) => (
                 <li key={c.id} className="flex justify-between border-b border-line py-2">
                   <span>{c.name}</span>
-                  <button className="text-xs text-muted" onClick={async () => { await deleteCostCenterAction(c.id); window.location.reload(); }}>
+                  <button className="text-xs text-muted" onClick={async () => { await deleteCostCenterAction(c.id); }}>
                     Excluir
                   </button>
                 </li>
@@ -100,7 +102,7 @@ export default function CentrosPage() {
                     {p.name}
                     <span className="text-muted"> · {p.kind === "CUSTOMER" ? "cliente" : "fornecedor"}</span>
                   </span>
-                  <button className="text-xs text-muted" onClick={async () => { await deletePartyAction(p.id); window.location.reload(); }}>
+                  <button className="text-xs text-muted" onClick={async () => { await deletePartyAction(p.id); }}>
                     Excluir
                   </button>
                 </li>

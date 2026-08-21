@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { listReconciledIds, requireSession } from "@/lib/store";
+import { useLive } from "@/lib/live";
 import { accountBalances, monthSummary } from "@/lib/queries";
 import { brl, formatMonthLabel, monthKey, parseMoneyToCents, shiftMonth } from "@/lib/money";
 import { planHasOps } from "@/lib/plans";
@@ -10,6 +11,7 @@ import { PageHeader, PlanGate } from "@/components/page-header";
 import { go } from "@/lib/types";
 
 export default function ConciliacaoPage() {
+  const live = useLive();
   const [ops, setOps] = useState(false);
   const [month, setMonth] = useState(monthKey());
   const [accountId, setAccountId] = useState("");
@@ -33,7 +35,7 @@ export default function ConciliacaoPage() {
       setTxs(monthSummary(session.workspace.id, month).txs.filter((t) => t.accountId === current || t.transferToAccountId === current));
       setDone(listReconciledIds(session.workspace.id));
     })();
-  }, [month, accountId]);
+  }, [live, month, accountId]);
 
   const book = accounts.find((a) => a.id === accountId)?.balance ?? 0;
   const pending = txs.filter((t) => !done.includes(t.id));

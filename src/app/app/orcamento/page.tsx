@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listBudgets, listCategories, requireSession } from "@/lib/store";
+import { useLive } from "@/lib/live";
 import { brl, formatMonthLabel, monthKey, shiftMonth } from "@/lib/money";
 import { monthSummary } from "@/lib/queries";
 import { saveBudgetAction } from "@/app/actions/budgets";
@@ -11,6 +12,7 @@ import { BudgetBars } from "@/components/charts";
 import { go } from "@/lib/types";
 
 export default function BudgetPage() {
+  const live = useLive();
   const [month, setMonth] = useState(monthKey());
   const [rows, setRows] = useState<{ id: string; name: string; planned: number; actual: number }[]>([]);
 
@@ -40,7 +42,7 @@ export default function BudgetPage() {
         })),
       );
     })();
-  }, []);
+  }, [live]);
 
   const chartRows = rows.filter((r) => r.planned > 0 || r.actual > 0);
 

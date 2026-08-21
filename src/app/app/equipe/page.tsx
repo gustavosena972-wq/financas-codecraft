@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { listTeam, requireSession } from "@/lib/store";
+import { useLive } from "@/lib/live";
 import { planHasGovernance, teamLimit } from "@/lib/plans";
 import { createSeatAction, deleteSeatAction } from "@/app/actions/enterprise";
 import { ActionForm } from "@/components/action-form";
@@ -11,6 +12,7 @@ import { go } from "@/lib/types";
 const ROLE = { ADMIN: "Admin", FINANCE: "Financeiro", VIEW: "Leitura" };
 
 export default function EquipePage() {
+  const live = useLive();
   const [ok, setOk] = useState(false);
   const [limit, setLimit] = useState(0);
   const [team, setTeam] = useState<ReturnType<typeof listTeam>>([]);
@@ -26,7 +28,7 @@ export default function EquipePage() {
       setLimit(teamLimit(session.user.plan));
       setTeam(listTeam(session.workspace.id));
     })();
-  }, []);
+  }, [live]);
 
   return (
     <div className="space-y-6">
@@ -88,7 +90,6 @@ export default function EquipePage() {
                         className="text-xs text-muted"
                         onClick={async () => {
                           await deleteSeatAction(seat.id);
-                          window.location.reload();
                         }}
                       >
                         Remover

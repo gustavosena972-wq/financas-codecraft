@@ -133,3 +133,22 @@ create policy "fc_budgets_own" on public.fc_budgets
 drop policy if exists "fc_audit_own" on public.fc_audit_logs;
 create policy "fc_audit_own" on public.fc_audit_logs
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+alter table public.fc_profiles replica identity full;
+alter table public.fc_workspaces replica identity full;
+alter table public.fc_accounts replica identity full;
+alter table public.fc_categories replica identity full;
+alter table public.fc_transactions replica identity full;
+alter table public.fc_budgets replica identity full;
+alter table public.fc_audit_logs replica identity full;
+
+do $$
+begin
+  begin execute 'alter publication supabase_realtime add table public.fc_profiles'; exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table public.fc_workspaces'; exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table public.fc_accounts'; exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table public.fc_categories'; exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table public.fc_transactions'; exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table public.fc_budgets'; exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table public.fc_audit_logs'; exception when duplicate_object then null; end;
+end $$;

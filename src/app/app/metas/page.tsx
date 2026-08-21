@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listGoals, requireSession } from "@/lib/store";
+import { useLive } from "@/lib/live";
 import { accountBalances } from "@/lib/queries";
 import { brl } from "@/lib/money";
 import { ActionForm } from "@/components/action-form";
@@ -11,6 +12,7 @@ import { go } from "@/lib/types";
 import { goalLimit } from "@/lib/plans";
 
 export default function GoalsPage() {
+  const live = useLive();
   const [ready, setReady] = useState(false);
   const [limit, setLimit] = useState(1);
   const [balance, setBalance] = useState(0);
@@ -28,7 +30,7 @@ export default function GoalsPage() {
       setLimit(goalLimit(session.user.plan));
       setReady(true);
     })();
-  }, []);
+  }, [live]);
 
   if (!ready) return null;
 
@@ -57,7 +59,6 @@ export default function GoalsPage() {
                   className="text-xs text-muted"
                   onClick={async () => {
                     await deleteGoalAction(goal.id);
-                    window.location.reload();
                   }}
                 >
                   Excluir

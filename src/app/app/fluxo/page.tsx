@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { requireSession } from "@/lib/store";
+import { useLive } from "@/lib/live";
 import { brl, monthKey } from "@/lib/money";
 import { cashflowSeries, projectedCashflow } from "@/lib/queries";
 import { CashflowChart } from "@/components/charts";
 import { go } from "@/lib/types";
 
 export default function CashflowPage() {
+  const live = useLive();
   const [month] = useState(monthKey());
   const [series, setSeries] = useState<ReturnType<typeof cashflowSeries>>([]);
   const [projection, setProjection] = useState<ReturnType<typeof projectedCashflow> | null>(null);
@@ -22,7 +24,7 @@ export default function CashflowPage() {
       setSeries(cashflowSeries(session.workspace.id, 6));
       setProjection(projectedCashflow(session.workspace.id, month));
     })();
-  }, [month]);
+  }, [live, month]);
 
   if (!projection) return null;
 
