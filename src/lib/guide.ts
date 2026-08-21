@@ -30,7 +30,7 @@ export const START_STEPS = [
 ];
 
 export const GUIDE: GuideItem[] = [
-  { href: "/app", title: "Chat", does: "Tela grande: manda a planilha, preenche o orçamento mês a mês ou pergunta. O chat analisa, planeja o futuro e alerta se está crítica, média ou boa.", tip: "Clipe para a planilha. Sem arquivo, abre Orçamento e vai colocando cada mês." },
+  { href: "/app", title: "Chat", does: "Pessoa: planilha e orçamento. Empresa: análise de autônomo, MEI, pequena ou grande.", tip: "No espaço Empresa escolhe o porte. Sem arquivo, abre Orçamento." },
   { href: "/app/lancamentos", title: "Lançar na mão", does: "Uma linha por movimento: salário, aluguel, mercado.", tip: "Descreva simples: “Aluguel”, “iFood”." },
   { href: "/app/contas", title: "Contas", does: "Onde o dinheiro mora: banco, carteira, cartão.", tip: "Uma conta por lugar real." },
   { href: "/app/agenda", title: "Contas do mês", does: "O que se repete, tipo aluguel ou internet.", tip: "No mês, lance o recorrente. Não sai sozinho do banco." },
@@ -63,23 +63,23 @@ export function guideForMode(type: "PERSONAL" | "BUSINESS") {
 export const VIDEO_SCENES = [
   {
     image: "/guide/scene-1.png",
-    title: "O app em um minuto",
-    voice: "Finanças CodeCraft. Três passos. Sem pressa.",
+    title: "O app inteiro",
+    voice: "Finanças CodeCraft. Pessoa de um lado, empresa do outro. Autônomo, MEI, pequena ou grande. Vamos testar o projeto e os seis planos.",
   },
   {
     image: "/guide/scene-2.png",
-    title: "1. Gastos",
-    voice: "Primeiro, coloca seus gastos. Planilha, chat ou na mão.",
+    title: "Pessoa",
+    voice: "No espaço pessoa você manda a planilha, preenche o orçamento mês a mês ou lança na mão. O chat analisa e só muda se você gostar.",
   },
   {
     image: "/guide/scene-3.png",
-    title: "2. Gastos",
-    voice: "O app organiza. Vira caixa, previsão do mês e o que dá para cortar.",
+    title: "Empresa",
+    voice: "No espaço empresa escolhe o porte: autônomo, MEI, pequena ou grande. A aba Análise mostra receita, DAS, folha, giro e o dinheiro livre do mês que vem.",
   },
   {
     image: "/guide/scene-4.png",
-    title: "3. Planilha",
-    voice: "No chat você manda a planilha, lança na mão ou pergunta. Ele olha o passado, o próximo trimestre e se a situação está crítica, média ou boa.",
+    title: "Planos",
+    voice: "Seis pacotes. Pessoa grátis, R$ 100 e R$ 200. Empresa grátis, R$ 100 e R$ 200. O chat é o mesmo. O que muda são as ferramentas. Pagamento só no PIX da CodeCraft.",
   },
 ];
 

@@ -3,6 +3,7 @@ import { categorySpend, monthSummary, accountBalances } from "./queries";
 import { split503020, bucketSpend, reserveMonths, reserveHint, housingCap, cutSave, sellPrice } from "./tools";
 import { billsOverview, buildDre } from "./ops";
 import { workspaceToolsPaid, type PlanId } from "./plans";
+import { analyzeCompany } from "./company-biz";
 
 export type ChatTool = {
   id: string;
@@ -11,17 +12,20 @@ export type ChatTool = {
 };
 
 export function toolsForChat(plan: PlanId | string | null | undefined, company: boolean): ChatTool[] {
-  if (!workspaceToolsPaid(plan, company)) return [];
   if (company) {
-    const tools: ChatTool[] = [
-      { id: "giro", label: "Giro", company: true },
-      { id: "preco", label: "Preço", company: true },
-      { id: "dre", label: "DRE", company: true },
-      { id: "titulos", label: "Títulos", company: true },
-    ];
-    if (plan === "ENTERPRISE") tools.push({ id: "fechar", label: "Fechar mês", company: true });
+    const tools: ChatTool[] = [{ id: "analise", label: "Análise", company: true }];
+    if (workspaceToolsPaid(plan, company)) {
+      tools.push(
+        { id: "giro", label: "Giro", company: true },
+        { id: "preco", label: "Preço", company: true },
+        { id: "dre", label: "DRE", company: true },
+        { id: "titulos", label: "Títulos", company: true },
+      );
+      if (plan === "ENTERPRISE") tools.push({ id: "fechar", label: "Fechar mês", company: true });
+    }
     return tools;
   }
+  if (!workspaceToolsPaid(plan, company)) return [];
   const tools: ChatTool[] = [
     { id: "503020", label: "50-30-20" },
     { id: "corte", label: "Corte" },
@@ -65,6 +69,9 @@ export function runChatTool(id: string, workspaceId: string, company: boolean) {
   }
   if (id === "divida") {
     return "Para simular a dívida, fala assim: dívida 5000 parcela 400 juro 3. Eu conto em quantos meses acaba. Sem isso eu não invento número.";
+  }
+  if (id === "analise") {
+    return analyzeCompany(workspaceId);
   }
   if (id === "giro" || (company && id === "titulos")) {
     const bills = billsOverview(workspaceId);

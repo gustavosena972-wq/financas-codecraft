@@ -15,6 +15,7 @@ import { billsOverview, spendByCostCenter } from "./ops";
 import { bucketSpend, reserveMonths, split503020 } from "./tools";
 import type { PlanId } from "./plans";
 import { buildOrcamentoTab, loadMonthPlan, planYearMonths } from "./month-plan";
+import { diagnoseCompany, inferCompanySize, sizeLabel } from "./company-biz";
 
 export type SheetRow = {
   month: string;
@@ -261,14 +262,15 @@ export function buildMoneySheet(
     ],
   );
   const orcamento = buildOrcamentoTab(yearMonths, now, monthValues);
+  const analiseEmp = company
+    ? tab("analise", "Análise", ["Indicador", "Valor", "Leitura"], diagnoseCompany(workspaceId).lines)
+    : null;
   const tabs = paid
     ? company
-      ? [graficos, orcamento, ...companyTabs(workspaceId, rows, now, today, current, currentBalance, incomeAvg, expenseAvg, full)]
+      ? [graficos, analiseEmp!, orcamento, ...companyTabs(workspaceId, rows, now, today, current, currentBalance, incomeAvg, expenseAvg, full)]
       : [graficos, orcamento, ...personTabs(workspaceId, rows, now, current, currentBalance, full)]
-    : [
-        graficos,
-        orcamento,
-        tab(
+    : company
+      ? [graficos, analiseEmp!, orcamento, tab(
           "caixa",
           "Caixa",
           ["Mês", "Entra", "Sai", "Sobra", "Saldo"],
@@ -280,8 +282,24 @@ export function buildMoneySheet(
             row.kind === "past" ? "" : money(row.balance),
           ]),
           rows.findIndex((row) => row.kind === "now"),
-        ),
-      ];
+        )]
+      : [
+          graficos,
+          orcamento,
+          tab(
+            "caixa",
+            "Caixa",
+            ["Mês", "Entra", "Sai", "Sobra", "Saldo"],
+            rows.map((row) => [
+              row.label,
+              money(row.income),
+              money(row.expense),
+              money(row.net),
+              row.kind === "past" ? "" : money(row.balance),
+            ]),
+            rows.findIndex((row) => row.kind === "now"),
+          ),
+        ];
 
   return {
     rows,
@@ -293,9 +311,15 @@ export function buildMoneySheet(
     empty,
     paid,
     company,
-    fileName: company ? (paid ? "Tesouraria.xlsx" : "Caixa.xlsx") : paid ? "Financas-Pessoal.xlsx" : "Caixa.xlsx",
+    fileName: company
+      ? paid
+        ? `Tesouraria-${sizeLabel(inferCompanySize(workspaceId)).replace(/\s+/g, "")}.xlsx`
+        : "Caixa-Empresa.xlsx"
+      : paid
+        ? "Financas-Pessoal.xlsx"
+        : "Caixa.xlsx",
     tabs,
-    openTab: empty ? "orcamento" : "graficos",
+    openTab: empty ? (company ? "analise" : "orcamento") : company ? "analise" : "graficos",
     charts,
   };
 }
@@ -563,7 +587,7 @@ function companyTabs(
       4,
       0,
       tab(
-        "orcamento",
+        "orcado-real",
         "Orçado x real",
         ["Categoria", "Real", "% receita", "Fórmula"],
         spend.map((item) => [

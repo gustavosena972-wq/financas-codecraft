@@ -109,6 +109,12 @@ export const FINANCE_KNOWLEDGE: KnowledgeItem[] = [
     body: "Some o gasto médio dos últimos meses, tire 10% do que dá para cortar, e veja se a receita segura. Marque um alvo de sobra (10% do que entra). Empresa: reserve imposto e pró-labore no plano, senão o lucro some na guia.",
   },
   {
+    id: "autonomo",
+    title: "Autônomo e PJ de um",
+    tags: ["autonomo", "freelancer", "pj", "nota", "servico"],
+    body: "Autônomo: o PIX do cliente não é salário da casa. Tira um pró-labore fixo, guarda imposto, o resto fica no CNPJ. Preço = custo do trabalho + tributo + margem. Se cobrar só o que o cliente quer, você trabalha de graça.",
+  },
+  {
     id: "mei",
     title: "MEI e guia",
     tags: ["mei", "das", "simples", "imposto", "inss"],

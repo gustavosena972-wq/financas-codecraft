@@ -23,11 +23,11 @@ export default function HomePage() {
 
       <section className="hero-stage px-8 py-24 max-w-6xl mx-auto grid lg:grid-cols-[1.1fr_.9fr] gap-14 items-center">
         <div className="rise">
-          <p className="text-gold text-xs tracking-[0.2em] uppercase mb-4">Dois espaços. Um chat em cada.</p>
+          <p className="text-gold text-xs tracking-[0.2em] uppercase mb-4">Dois espaços. Pessoa e empresa de verdade.</p>
           <h1 className="text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.12] text-white max-w-3xl hero-title">
             Pessoa de um lado.
             <br />
-            Empresa do outro.
+            Empresa do outro — até autônomo.
           </h1>
           <p className="mt-5 text-[#b7c4cf] text-lg max-w-2xl">
             Sem menu lateral. Você troca Pessoa e Empresa no topo. O chat abre a planilha, sugere, e só muda se você gostar.
@@ -70,16 +70,16 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 items-start">
           <div>
             <p className="page-kicker">Para empresa</p>
-            <h2 className="text-3xl font-semibold mt-2">Tesouraria de verdade.</h2>
+            <h2 className="text-3xl font-semibold mt-2">Do autônomo à empresa grande.</h2>
             <p className="text-muted mt-3">
-              Títulos, DRE, giro e preço. Só no espaço Empresa. Pacotes Grátis, R$ 100 e R$ 200.
+              Um espaço só do CNPJ: análise de receita, DAS, folha, giro e o que sobra no mês que vem. MEI, PJ de um, pequena ou tesouraria cheia.
             </p>
           </div>
           <div className="grid gap-4">
             {[
-              ["Chat e caixa", "Planilha, DRE, título e o próximo trimestre. Jarvis fica no site da CodeCraft."],
-              ["Tesouraria", "Pagar, receber, conciliar com o banco."],
-              ["Giro e preço", "Não gaste o que ainda não caiu. Precifique com imposto e margem."],
+              ["Autônomo e MEI", "Separa o bolso da casa. Reserva imposto, define pró-labore, cobra preço com margem."],
+              ["Empresa pequena", "Folha, Simples, cliente a receber. Não gaste o que ainda não caiu."],
+              ["Empresa grande", "DRE, centros, equipe, conciliação e fechamento de mês. Análise no chat e na planilha."],
             ].map(([title, body]) => (
               <article key={title} className="card p-5">
                 <h3 className="font-semibold">{title}</h3>

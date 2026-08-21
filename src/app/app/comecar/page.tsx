@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { START_STEPS, guideForMode } from "@/lib/guide";
+import { START_STEPS, guideAsset, guideForMode } from "@/lib/guide";
 import { PageHeader } from "@/components/page-header";
 import { GuideVideo } from "@/components/guide-video";
 import { requireSession } from "@/lib/store";
@@ -34,11 +34,20 @@ export default function ComecarPage() {
         title="Como usar"
         subtitle={
           company
-            ? "Este espaço é da empresa. DRE, títulos e conciliação. O pessoal fica no seletor do topo."
+            ? "Este espaço é da empresa — autônomo, MEI, pequena ou grande. Análise, DRE e títulos. O pessoal fica no seletor do topo."
             : "Este espaço é seu. Gastos, caixa e o que cortar. DRE e títulos não aparecem aqui."
         }
       />
-      {!company ? <GuideVideo /> : null}
+      <GuideVideo />
+      <section className="card overflow-hidden">
+        <div className="px-5 pt-4 pb-3">
+          <p className="page-kicker">Teste gravado</p>
+          <h2 className="font-semibold mt-1">Vídeo do projeto e dos planos</h2>
+          <p className="text-sm text-muted mt-1">Pessoa, empresa, os seis pacotes e o PIX. Sem áudio de microfone — a voz fica no resumo acima.</p>
+        </div>
+        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+        <video className="w-full bg-ink" controls playsInline preload="metadata" src={guideAsset("/guide/teste-completo.mp4")} />
+      </section>
 
       {!company ? (
         <section className="grid md:grid-cols-3 gap-3">

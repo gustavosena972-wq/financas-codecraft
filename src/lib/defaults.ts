@@ -19,14 +19,17 @@ export const PERSONAL_CATEGORIES = [
 ] as const;
 
 export const BUSINESS_CATEGORIES = [
-  { name: "Vendas", kind: "INCOME", color: "#2A9D6E" },
-  { name: "Serviços", kind: "INCOME", color: "#3D8B7A" },
+  { name: "Serviços", kind: "INCOME", color: "#2A9D6E" },
+  { name: "Vendas", kind: "INCOME", color: "#3D8B7A" },
   { name: "Outras receitas", kind: "INCOME", color: "#6B8F71" },
   { name: "Fornecedores", kind: "EXPENSE", color: "#C45C4A" },
-  { name: "Folha", kind: "EXPENSE", color: "#8A6B4A" },
-  { name: "Impostos", kind: "EXPENSE", color: "#6A4C8A" },
+  { name: "Pró-labore", kind: "EXPENSE", color: "#8A6B4A" },
+  { name: "Folha", kind: "EXPENSE", color: "#7A5A3A" },
+  { name: "DAS / Impostos", kind: "EXPENSE", color: "#6A4C8A" },
+  { name: "Ferramentas", kind: "EXPENSE", color: "#3D6B8A" },
   { name: "Marketing", kind: "EXPENSE", color: "#C4A35A" },
-  { name: "Operacional", kind: "EXPENSE", color: "#3D6B8A" },
+  { name: "Aluguel", kind: "EXPENSE", color: "#5C6B75" },
+  { name: "Operacional", kind: "EXPENSE", color: "#4A6B8A" },
   { name: "Outras despesas", kind: "EXPENSE", color: "#8C97A3" },
 ] as const;
 

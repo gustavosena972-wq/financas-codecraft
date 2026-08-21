@@ -78,7 +78,7 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "DRE, títulos e conciliação são da empresa, no Empresa 100 ou 200. No espaço Pessoa isso nem aparece.",
+      body: "Empresa: autônomo, MEI, pequena ou grande. Análise no chat grátis. DRE, títulos e conciliação no Empresa 100 ou 200. Pessoa fica no outro espaço.",
     };
   }
   if (/(ia|inteligencia)/.test(text)) {

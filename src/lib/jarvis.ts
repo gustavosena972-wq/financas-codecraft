@@ -3,6 +3,7 @@ import { searchKnowledge } from "./finance-knowledge";
 import { brl, monthKey } from "./money";
 import { buildDre, billsOverview } from "./ops";
 import { accountBalances, monthSummary } from "./queries";
+import { analyzeCompany, parseCompanySize, wantsCompanyAnalysis } from "./company-biz";
 
 export type JarvisReply = { body: string };
 
@@ -29,6 +30,11 @@ export function jarvisCompanyReply(message: string, workspaceId: string, market?
 
   if (/(senha|token|cvv|cartao)/.test(t)) {
     return { body: "Eu não peço senha, código do banco nem cartão. Jarvis é no site da CodeCraft, não aqui." };
+  }
+
+  const size = parseCompanySize(message);
+  if (size || wantsCompanyAnalysis(message)) {
+    return { body: analyzeCompany(workspaceId, size ?? undefined) };
   }
 
   if (/(dre|resultado|margem|lucro)/.test(t)) {
@@ -78,8 +84,8 @@ export function jarvisCompanyReply(message: string, workspaceId: string, market?
   const pulse = financePulse(workspaceId);
   return {
     body:
-      `Contador da empresa. Situação ${pulse.label.toLowerCase()}. Saldo ${brl(balance)}. Este mês entrou ${brl(summary.income)} e saiu ${brl(summary.expense)}. ` +
+      `Contador da empresa — do autônomo à tesouraria grande. Situação ${pulse.label.toLowerCase()}. Saldo ${brl(balance)}. Este mês entrou ${brl(summary.income)} e saiu ${brl(summary.expense)}. ` +
       `A pagar ${brl(bills.payables)}, a receber ${brl(bills.receivables)}. ` +
-      `Pede DRE, títulos ou lança gasto. Jarvis (projeto, cliente, Instagram) fica no site da CodeCraft. Pessoa fica no outro espaço.`,
+      `Pede análise, diz o porte (autônomo, MEI, pequena, grande) ou manda a planilha. Pessoa fica no outro espaço.`,
   };
 }

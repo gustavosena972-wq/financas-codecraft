@@ -10,6 +10,7 @@ import { saveChatBudgetAction } from "@/app/actions/budgets";
 import { applyOrganizeAction } from "@/app/actions/import";
 import { organizeWorkbook, type OrganizeResult } from "@/lib/organize";
 import { analyzeImported, importedSheetView } from "@/lib/import-sheet";
+import { analyzeCompany, analyzeCompanyFile, COMPANY_SIZES, inferCompanySize, parseCompanySize, saveCompanySize } from "@/lib/company-biz";
 import { buildChatWorkbook } from "@/lib/workbooks";
 import { listAccounts, listCategories, requireSession } from "@/lib/store";
 import { planForecastMonths, planHasAi, type PlanId, workspaceToolsPaid } from "@/lib/plans";
@@ -23,7 +24,7 @@ type Msg = { from: "user" | "bot"; body: string };
 
 function welcomeBot(isCompany: boolean) {
   return isCompany
-    ? "Este chat é só da empresa. Manda a planilha, ou se ainda não tiver arquivo abre a aba Orçamento e vai colocando entra e teto de cada mês. Eu sugiro; só mudo se você gostar."
+    ? "Este chat é o caixa da empresa — do autônomo e do MEI até empresa grande. Diz o porte, manda a planilha ou preenche o orçamento. Eu analiso receita, imposto, folha e o que sobra. Só mudo se você gostar."
     : "Este chat é só da pessoa. Manda a planilha, ou se ainda não tiver arquivo abre a aba Orçamento e preenche mês a mês. Eu sugiro; só aplico se você gostar.";
 }
 
@@ -83,6 +84,17 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       setAccounts(listAccounts(id));
       setCategories(listCategories(id));
       setAiEnabled(planHasAi(session.user.plan));
+      if (isCompany) {
+        try {
+          const pendingSize = localStorage.getItem("fc-pending-company-size");
+          if (pendingSize === "autonomo" || pendingSize === "mei" || pendingSize === "pequena" || pendingSize === "grande") {
+            saveCompanySize(id, pendingSize);
+            localStorage.removeItem("fc-pending-company-size");
+          }
+        } catch {
+          /* ignore */
+        }
+      }
       refreshSheet(id, session.user.plan, isCompany);
     })();
   }, [live]);
@@ -185,17 +197,38 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     }
 
     if (pending && /(pagar|desapert|apert|orcamento|orçamento|analis|estrateg|estratég|quanto (vou|vai)|este mes|este mês|situacao|situação|livre|grafico|gráfico|proximo|próximo)/.test(n)) {
-      return analyzeImported(pending);
+      return company ? analyzeCompanyFile(pending, inferCompanySize(workspaceId)) : analyzeImported(pending);
+    }
+
+    const porte = parseCompanySize(raw);
+    if (company && porte) {
+      saveCompanySize(workspaceId, porte);
+      setShowSheet(true);
+      setWantTab("analise");
+      refreshSheet(workspaceId, plan, company);
+      return analyzeCompany(workspaceId, porte);
+    }
+
+    if (company && /(analis|diagnost|como esta a empresa|como está a empresa|saude da empresa|saúde da empresa)/.test(n)) {
+      setShowSheet(true);
+      setWantTab("analise");
+      refreshSheet(workspaceId, plan, company);
+      return analyzeCompany(workspaceId);
     }
 
     if (wantsSheetCreate(n)) return makeSheet();
 
     const tool = toolsForChat(plan, company).find((item) => n.includes(item.id) || n.includes(item.label.toLowerCase()));
     if (tool) {
-      if (!workspaceToolsPaid(plan, company)) {
+      if (tool.id !== "analise" && !workspaceToolsPaid(plan, company)) {
         return company
-          ? "Giro, DRE e preço entram no Empresa 100 ou 200. No grátis eu só leio a planilha e o mês de agora."
+          ? "Giro, DRE e preço entram no Empresa 100 ou 200. Análise do porte, planilha e o mês de agora já vêm no grátis."
           : "Corte, 50-30-20 e reserva entram no Pessoa 100 ou 200. No grátis eu só leio a planilha e o mês de agora.";
+      }
+      if (tool.id === "analise") {
+        setShowSheet(true);
+        setWantTab("analise");
+        refreshSheet(workspaceId, plan, company);
       }
       return runChatTool(tool.id, workspaceId, company);
     }
@@ -274,8 +307,11 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       setPending(organized);
       setImported(importedSheetView(organized));
       setShowSheet(true);
-      setWantTab("graficos");
-      setMessages((current) => [...current, { from: "bot", body: analyzeImported(organized) }]);
+      setWantTab(company ? "analise" : "graficos");
+      setMessages((current) => [
+        ...current,
+        { from: "bot", body: company ? analyzeCompanyFile(organized, inferCompanySize(workspaceId)) : analyzeImported(organized) },
+      ]);
     } catch {
       setMessages((current) => [...current, { from: "bot", body: "Não consegui abrir esse arquivo. Manda Excel ou CSV." }]);
     }
@@ -283,16 +319,29 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     if (fileRef.current) fileRef.current.value = "";
   }
 
-  const chips = [
-    "Montar orçamento mês a mês",
-    "Quanto vou pagar este mês?",
-    "Quanto de dinheiro livre no próximo mês?",
-    "Como desapertar o orçamento?",
-    "Como está minha situação?",
-    "Faz uma planilha",
-    company ? "Como está o caixa?" : "O que cortar?",
-    ...toolsForChat(plan, company).map((item) => item.label),
-  ];
+  const chips = company
+    ? [
+        "Faz a análise da empresa",
+        "Sou autônomo",
+        "Sou MEI",
+        "Empresa pequena",
+        "Empresa grande",
+        "Montar orçamento mês a mês",
+        "Como está o caixa?",
+        ...toolsForChat(plan, company)
+          .filter((item) => item.id !== "analise")
+          .map((item) => item.label),
+      ]
+    : [
+        "Montar orçamento mês a mês",
+        "Quanto vou pagar este mês?",
+        "Quanto de dinheiro livre no próximo mês?",
+        "Como desapertar o orçamento?",
+        "Como está minha situação?",
+        "Faz uma planilha",
+        "O que cortar?",
+        ...toolsForChat(plan, company).map((item) => item.label),
+      ];
   const empty = messages.length <= 1;
 
   return (
@@ -315,7 +364,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       {studio ? (
         <header className="claude-top">
           <div className="chat-abas">
-            <div className="chat-aba on">{company ? "Chat do caixa" : "Chat da pessoa"}</div>
+            <div className="chat-aba on">{company ? "Chat da empresa" : "Chat da pessoa"}</div>
             <button type="button" className="chat-aba-btn" onClick={startNewChat}>
               Nova conversa
             </button>
@@ -344,12 +393,21 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
         <div className="acct-log" ref={logRef}>
           {studio && empty ? (
             <div className="claude-empty">
-              <h2>{company ? "Como está o caixa hoje?" : "Como posso olhar suas finanças hoje?"}</h2>
+              <h2>{company ? "De autônomo a empresa grande." : "Como posso olhar suas finanças hoje?"}</h2>
               <p>
                 {company
-                  ? "Solta a planilha da empresa, ou se ainda não tiver arquivo preenche o orçamento mês a mês aqui."
+                  ? "Escolhe o porte. Eu analiso receita, DAS, folha, giro e o dinheiro livre do mês que vem. Sem arquivo, preenche o orçamento aqui."
                   : "Solta o Excel da pessoa, ou se ainda não tiver arquivo preenche o orçamento de cada mês aqui."}
               </p>
+              {company ? (
+                <div className="flex flex-wrap gap-2 justify-center mt-4">
+                  {COMPANY_SIZES.map((item) => (
+                    <button key={item.id} type="button" className="btn btn-ghost" onClick={() => void send(item.id === "mei" ? "Sou MEI" : item.id === "autonomo" ? "Sou autônomo" : item.name)}>
+                      {item.name}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 <button type="button" className="btn btn-primary" onClick={() => fileRef.current?.click()}>
                   Abrir planilha
@@ -475,7 +533,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
           value={input}
           placeholder={
             company
-              ? "Pergunta de caixa, manda a planilha, ou pede para eu fazer uma"
+              ? "Sou autônomo, MEI, pequena ou grande. Manda a planilha ou pede a análise"
               : "Pergunta, solta o Excel, ou pede para eu montar a planilha"
           }
           onChange={(e) => setInput(e.target.value)}
