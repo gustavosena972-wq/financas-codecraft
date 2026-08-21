@@ -3,6 +3,7 @@ import {
   cellToString,
   hashRow,
   inferType,
+  mapColumnHeader,
   normalizeHeader,
   parseDateCell,
   splitCsv,
@@ -55,43 +56,43 @@ const MONTH_INDEX: Record<string, number> = {
   dezembro: 12,
 };
 
-const HEADER_MAP: Record<string, string> = {
-  data: "date",
-  date: "date",
-  vencimento: "date",
-  mes: "date",
-  descricao: "description",
-  historico: "description",
-  item: "description",
-  lancamento: "description",
-  nome: "description",
-  gasto: "description",
-  valor: "amount",
-  previsto: "amount",
-  orcado: "amount",
-  planejado: "amount",
-  realizado: "amount",
-  preco: "amount",
-  rs: "amount",
-  tipo: "type",
-  categoria: "category",
-  conta: "account",
-  carteira: "account",
-  observacoes: "notes",
-  saida: "amount",
-  entrada: "amount",
-};
-
 function yearFromName(filename: string) {
   const found = filename.match(/20\d{2}/);
   return found ? Number(found[0]) : new Date().getFullYear();
 }
 
 function monthKeyFromHeader(raw: string, year: number) {
-  const n = normalizeHeader(raw);
-  if (/^\d{4}-\d{2}$/.test(n)) return n;
-  const named = MONTH_INDEX[n];
-  if (named) return `${year}-${String(named).padStart(2, "0")}`;
+  const text = String(raw ?? "").trim();
+  if (!text) return null;
+  const n = normalizeHeader(text);
+  const yFirst = n.match(/^(20\d{2})[\s\/\-.]?(0?[1-9]|1[0-2])$/);
+  if (yFirst) return `${yFirst[1]}-${String(Number(yFirst[2])).padStart(2, "0")}`;
+  const my = n.match(/^(0?[1-9]|1[0-2])[\s\/\-.](20\d{2}|\d{2})$/);
+  if (my) {
+    const y = my[2].length === 2 ? 2000 + Number(my[2]) : Number(my[2]);
+    return `${y}-${String(Number(my[1])).padStart(2, "0")}`;
+  }
+  const isoMonth = n.match(/^(20\d{2}) (\d{2})(?: \d{2})?$/);
+  if (isoMonth) return `${isoMonth[1]}-${isoMonth[2]}`;
+  const namedPart = n.replace(/[\s\/.\-]+(20\d{2}|\d{2})$/, "").trim();
+  const named = MONTH_INDEX[n] ?? MONTH_INDEX[namedPart] ?? MONTH_INDEX[namedPart.split(" ")[0] ?? ""];
+  if (named) {
+    const yearMatch = n.match(/(20\d{2}|\d{2})$/);
+    const hasYear = Boolean(yearMatch && namedPart !== n);
+    const y = hasYear ? (yearMatch![1].length === 2 ? 2000 + Number(yearMatch![1]) : Number(yearMatch![1])) : year;
+    return `${y}-${String(named).padStart(2, "0")}`;
+  }
+  const asDate = parseDateCell(text);
+  if (asDate) {
+    const serial = Number(text);
+    if (
+      /^\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}$/.test(text) ||
+      /^\d{4}-\d{2}-\d{2}/.test(text) ||
+      (Number.isFinite(serial) && serial > 20000 && serial < 80000)
+    ) {
+      return asDate.slice(0, 7);
+    }
+  }
   const num = n.match(/^(0?[1-9]|1[0-2])$/);
   if (num) return `${year}-${String(Number(num[1])).padStart(2, "0")}`;
   return null;
@@ -99,89 +100,181 @@ function monthKeyFromHeader(raw: string, year: number) {
 
 function incomeName(name: string) {
   const n = normalizeHeader(name);
-  return ["salario", "freelance", "rendimentos", "vendas", "servicos", "outras receitas", "receita"].some((k) =>
-    n.includes(k),
-  );
+  return [
+    "salario",
+    "freelance",
+    "rendimentos",
+    "vendas",
+    "servicos",
+    "outras receitas",
+    "receita",
+    "ferias",
+    "restituicao",
+    "pro labore",
+    "prolabore",
+    "honorario",
+    "decimo",
+  ].some((k) => n.includes(k));
+}
+
+function skipSummary(text: string) {
+  const n = normalizeHeader(text);
+  return /^(total|subtotal|soma|saldo|resultado|geral|acumulado)\b/.test(n);
+}
+
+function todayISO() {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+}
+
+function guessType(typeRaw: string, description: string, signed: number): "INCOME" | "EXPENSE" {
+  if (typeRaw.trim()) return inferType(typeRaw, signed);
+  if (signed < 0) return "EXPENSE";
+  if (incomeName(description)) return "INCOME";
+  return "EXPENSE";
+}
+
+function detectDelimiter(firstLine: string) {
+  let inQuotes = false;
+  const counts = { ";": 0, ",": 0, "\t": 0, "|": 0 };
+  for (const ch of firstLine) {
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+      continue;
+    }
+    if (!inQuotes && ch in counts) counts[ch as keyof typeof counts] += 1;
+  }
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  return entries[0][1] > 0 ? entries[0][0] : ",";
+}
+
+function sheetToMatrix(sheet: ExcelJS.Worksheet) {
+  const rows: string[][] = [];
+  sheet.eachRow((row) => {
+    const values: string[] = [];
+    row.eachCell({ includeEmpty: false }, (cell, colNumber) => {
+      const shown = typeof cell.text === "string" ? cell.text.trim() : "";
+      values[colNumber - 1] = shown || cellToString(cell.value);
+    });
+    for (let i = 0; i < values.length; i++) values[i] = values[i] ?? "";
+    if (values.some((v) => v.trim())) rows.push(values);
+  });
+  return rows;
 }
 
 async function loadTables(buffer: ArrayBuffer, filename: string) {
   const lower = filename.toLowerCase();
   const tables: string[][][] = [];
-  if (lower.endsWith(".csv") || lower.endsWith(".txt")) {
+  const asText = () => {
     let text = new TextDecoder("utf-8").decode(buffer);
-    if (text.includes("\uFFFD")) text = new TextDecoder("iso-8859-1").decode(buffer);
+    if (text.includes("\uFFFD") || (text.match(/Ã./g) ?? []).length > 8) {
+      text = new TextDecoder("iso-8859-1").decode(buffer);
+    }
+    text = text.replace(/^\uFEFF/, "");
     const lines = text.split(/\r?\n/).filter((line) => line.trim().length);
-    const delimiter = lines[0]?.includes(";") && !lines[0].includes(",") ? ";" : ",";
+    if (!lines.length) return;
+    const delimiter = detectDelimiter(lines[0]);
     tables.push(lines.map((line) => splitCsv(line, delimiter)));
+  };
+  if (lower.endsWith(".csv") || lower.endsWith(".txt")) {
+    asText();
     return tables;
   }
   if (lower.endsWith(".xls") && !lower.endsWith(".xlsx")) {
     return tables;
   }
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer);
-  for (const sheet of workbook.worksheets) {
-    const rows: string[][] = [];
-    sheet.eachRow((row) => {
-      const values = (row.values as unknown[]).slice(1).map(cellToString);
-      if (values.some((v) => v)) rows.push(values);
-    });
-    if (rows.length) tables.push(rows);
+  try {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
+    for (const sheet of workbook.worksheets) {
+      const rows = sheetToMatrix(sheet);
+      if (rows.length) tables.push(rows);
+    }
+  } catch {
+    asText();
   }
   return tables;
+}
+
+function toLaunch(
+  date: string,
+  description: string,
+  signed: number,
+  typeRaw: string,
+  category?: string,
+  account?: string,
+  notes?: string,
+): MappedRow | null {
+  const clean = description.trim();
+  if (!clean || skipSummary(clean)) return null;
+  const amount = Math.abs(signed);
+  if (!amount) return null;
+  const type = guessType(typeRaw, clean, signed);
+  const isoDate = date || todayISO();
+  return {
+    date: isoDate,
+    description: clean,
+    amount,
+    type,
+    category: category?.trim() || undefined,
+    account: account?.trim() || undefined,
+    notes: notes?.trim() || undefined,
+    hash: hashRow(isoDate, clean, amount, type),
+    issues: [],
+  };
 }
 
 function parseLaunchTable(rows: string[][]): MappedRow[] {
   let headerAt = 0;
   let best = -1;
-  for (let i = 0; i < Math.min(rows.length, 12); i++) {
-    const score = rows[i].filter((cell) => HEADER_MAP[normalizeHeader(cell)]).length;
+  for (let i = 0; i < Math.min(rows.length, 40); i++) {
+    const score = rows[i].filter((cell) => mapColumnHeader(cell)).length;
     if (score > best) {
       best = score;
       headerAt = i;
     }
   }
-  if (best < 2) return [];
-  const headers = rows[headerAt].map((h) => HEADER_MAP[normalizeHeader(h)] ?? null);
+  if (best < 1) return [];
+  const headers = rows[headerAt].map((h) => mapColumnHeader(h));
   const idx = (key: string) => headers.findIndex((h) => h === key);
   const dateIdx = idx("date");
-  const descIdx = idx("description");
+  let descIdx = idx("description");
   const amountIdx = idx("amount");
-  if (descIdx < 0 || amountIdx < 0) return [];
+  const debitIdx = idx("debit");
+  const creditIdx = idx("credit");
+  const categoryIdx = idx("category");
+  if (descIdx < 0 && categoryIdx >= 0) descIdx = categoryIdx;
+  if (descIdx < 0 || (amountIdx < 0 && debitIdx < 0 && creditIdx < 0)) return [];
   const out: MappedRow[] = [];
   for (const raw of rows.slice(headerAt + 1)) {
-    const issues: string[] = [];
     const description = (raw[descIdx] ?? "").trim();
-    if (!description || HEADER_MAP[normalizeHeader(description)]) continue;
-    const amountRaw = parseMoneyToCents(raw[amountIdx] ?? "");
-    if (amountRaw == null) issues.push("Valor inválido");
+    const debit = debitIdx >= 0 ? parseMoneyToCents(raw[debitIdx] ?? "") : null;
+    const credit = creditIdx >= 0 ? parseMoneyToCents(raw[creditIdx] ?? "") : null;
+    let signed = amountIdx >= 0 ? parseMoneyToCents(raw[amountIdx] ?? "") : null;
+    if (signed == null && (debit != null || credit != null)) signed = (credit ?? 0) - Math.abs(debit ?? 0);
+    if (signed == null) continue;
     const date = dateIdx >= 0 ? parseDateCell(raw[dateIdx]) : null;
-    const signed = amountRaw ?? 0;
-    const type = inferType(idx("type") >= 0 ? raw[idx("type")] : "", signed);
-    const amount = Math.abs(signed);
-    const today = new Date();
-    const fallback = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const isoDate = date ?? fallback;
-    out.push({
-      date: isoDate,
+    const monthOnly = dateIdx >= 0 && !date ? monthKeyFromHeader(raw[dateIdx] ?? "", new Date().getFullYear()) : null;
+    const iso = date ?? (monthOnly ? `${monthOnly}-01` : todayISO());
+    const row = toLaunch(
+      iso,
       description,
-      amount,
-      type,
-      category: idx("category") >= 0 ? raw[idx("category")] || undefined : undefined,
-      account: idx("account") >= 0 ? raw[idx("account")] || undefined : undefined,
-      notes: idx("notes") >= 0 ? raw[idx("notes")] || undefined : undefined,
-      hash: hashRow(isoDate, description, amount, type),
-      issues,
-    });
+      signed,
+      idx("type") >= 0 ? raw[idx("type")] ?? "" : "",
+      categoryIdx >= 0 && categoryIdx !== descIdx ? raw[categoryIdx] : description,
+      idx("account") >= 0 ? raw[idx("account")] : undefined,
+      idx("notes") >= 0 ? raw[idx("notes")] : undefined,
+    );
+    if (row) out.push(row);
   }
   return out;
 }
 
 function parseBudgetGrid(rows: string[][], year: number): BudgetCell[] {
   let headerAt = -1;
-  for (let i = 0; i < Math.min(rows.length, 12); i++) {
-    const months = rows[i].slice(1).filter((cell) => monthKeyFromHeader(cell, year));
-    if (months.length >= 3) {
+  for (let i = 0; i < Math.min(rows.length, 40); i++) {
+    const months = rows[i].filter((cell) => monthKeyFromHeader(cell, year));
+    if (months.length >= 2) {
       headerAt = i;
       break;
     }
@@ -189,16 +282,111 @@ function parseBudgetGrid(rows: string[][], year: number): BudgetCell[] {
   if (headerAt < 0) return [];
   const header = rows[headerAt];
   const monthCols = header.map((cell, i) => ({ i, month: monthKeyFromHeader(cell, year) })).filter((c) => c.month);
+  let catCol = header.findIndex((cell, i) => !monthKeyFromHeader(cell, year) && mapColumnHeader(cell) !== "amount");
+  if (catCol < 0) catCol = 0;
+  if (monthCols.some((c) => c.i === catCol)) {
+    catCol = header.findIndex((_, i) => !monthCols.some((c) => c.i === i));
+    if (catCol < 0) return [];
+  }
   const out: BudgetCell[] = [];
   for (const raw of rows.slice(headerAt + 1)) {
-    const category = (raw[0] ?? "").trim();
-    if (!category) continue;
+    const category = (raw[catCol] ?? "").trim();
+    if (!category || skipSummary(category) || monthKeyFromHeader(category, year)) continue;
     const type = incomeName(category) ? "INCOME" : "EXPENSE";
     for (const col of monthCols) {
       const cents = parseMoneyToCents(raw[col.i] ?? "");
       if (cents == null || cents === 0) continue;
       out.push({ month: col.month!, category, amount: Math.abs(cents), type });
     }
+  }
+  return out;
+}
+
+function parseBudgetTransposed(rows: string[][], year: number): BudgetCell[] {
+  let firstMonthAt = -1;
+  for (let i = 0; i < Math.min(rows.length, 40); i++) {
+    const cell = rows[i][0] ?? "";
+    if (monthKeyFromHeader(cell, year) && !/^\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}$/.test(cell.trim())) {
+      firstMonthAt = i;
+      break;
+    }
+  }
+  if (firstMonthAt < 0) return [];
+  const headerAt = firstMonthAt > 0 ? firstMonthAt - 1 : firstMonthAt;
+  const start = monthKeyFromHeader(rows[headerAt][0] ?? "", year) ? headerAt : headerAt + 1;
+  if (start >= rows.length) return [];
+  const labels = (start > 0 ? rows[start - 1] : rows[0]).map((cell, i) => ({ i, name: (cell ?? "").trim() }));
+  const categories = labels.filter(
+    (c) => c.i > 0 && c.name && !monthKeyFromHeader(c.name, year) && !looksLikeMoney(c.name) && mapColumnHeader(c.name) !== "date",
+  );
+  if (categories.length < 1) return [];
+  const out: BudgetCell[] = [];
+  for (const raw of rows.slice(start)) {
+    const month = monthKeyFromHeader(raw[0] ?? "", year);
+    if (!month) continue;
+    for (const cat of categories) {
+      const cents = parseMoneyToCents(raw[cat.i] ?? "");
+      if (cents == null || cents === 0) continue;
+      out.push({
+        month,
+        category: cat.name,
+        amount: Math.abs(cents),
+        type: incomeName(cat.name) ? "INCOME" : "EXPENSE",
+      });
+    }
+  }
+  return out;
+}
+
+function looksLikeMoney(value: string) {
+  if (!value.trim()) return false;
+  if (parseDateCell(value) && /[\/\-.]/.test(value) && value.replace(/\d/g, "").length >= 2) return false;
+  const cents = parseMoneyToCents(value);
+  return cents != null;
+}
+
+function parseByShape(rows: string[][]): MappedRow[] {
+  const filled = rows.filter((row) => row.filter((c) => String(c ?? "").trim()).length >= 2);
+  if (filled.length < 1) return [];
+  let start = 0;
+  while (start < filled.length && filled[start].filter((c) => String(c ?? "").trim()).length <= 1) start += 1;
+  const body = filled.slice(start);
+  if (!body.length) return [];
+  const headerHit = body[0].filter((cell) => mapColumnHeader(cell ?? "")).length;
+  const sampleStart = headerHit >= 1 ? 1 : 0;
+  const sample = body.slice(sampleStart, sampleStart + 40);
+  if (!sample.length) return [];
+  const width = Math.max(...body.map((r) => r.length));
+  const scores = Array.from({ length: width }, (_, col) => {
+    let dates = 0;
+    let moneys = 0;
+    let texts = 0;
+    for (const row of sample) {
+      const v = String(row[col] ?? "").trim();
+      if (!v) continue;
+      if (parseDateCell(v) || monthKeyFromHeader(v, new Date().getFullYear())) dates += 1;
+      else if (looksLikeMoney(v)) moneys += 1;
+      else texts += 1;
+    }
+    return { col, dates, moneys, texts };
+  });
+  const amountCol = [...scores].sort((a, b) => b.moneys - a.moneys)[0];
+  if (!amountCol || amountCol.moneys < 1) return [];
+  const dateCol = [...scores].filter((s) => s.col !== amountCol.col).sort((a, b) => b.dates - a.dates)[0];
+  const descCol = [...scores]
+    .filter((s) => s.col !== amountCol.col && (!dateCol || dateCol.dates < 1 || s.col !== dateCol.col))
+    .sort((a, b) => b.texts - a.texts)[0];
+  if (!descCol || descCol.texts < 1) return [];
+  const useDate = dateCol && dateCol.dates >= 1 ? dateCol.col : -1;
+  const out: MappedRow[] = [];
+  for (const raw of body.slice(sampleStart)) {
+    const description = String(raw[descCol.col] ?? "").trim();
+    const signed = parseMoneyToCents(raw[amountCol.col] ?? "");
+    if (signed == null) continue;
+    const monthHint = useDate >= 0 ? monthKeyFromHeader(raw[useDate] ?? "", new Date().getFullYear()) : null;
+    const date = useDate >= 0 ? parseDateCell(raw[useDate]) ?? (monthHint ? `${monthHint}-01` : null) : null;
+    const row = toLaunch(date ?? todayISO(), description, signed, "", description);
+    if (row) out.push(row);
   }
   return out;
 }
@@ -277,15 +465,19 @@ export async function organizeWorkbook(buffer: ArrayBuffer, filename: string): P
   for (const table of tables) {
     const launches = parseLaunchTable(table);
     const grid = parseBudgetGrid(table, year);
-    if (grid.length >= 3 && launches.length < 3) budgets.push(...grid);
-    else if (launches.length) rows.push(...launches);
-    else if (grid.length) budgets.push(...grid);
+    const transposed = grid.length ? [] : parseBudgetTransposed(table, year);
+    const budget = grid.length >= transposed.length ? grid : transposed;
+    const found = launches.length ? launches : parseByShape(table);
+    if (budget.length >= 3 && found.length < 3) budgets.push(...budget);
+    else if (found.length) rows.push(...found);
+    else if (budget.length) budgets.push(...budget);
   }
   const result = summarize(rows, budgets);
   result.filename = filename;
   result.notes = explainOrganized(result);
   if (!result.rows.length && !result.budgets.length) {
-    result.error = "Não foi possível organizar. A planilha precisa de lançamentos (data, descrição, valor) ou de um orçamento do ano com meses.";
+    result.error =
+      "Li o arquivo, mas não achei colunas de valor. Pode ser categoria + valor, data + descrição + valor, ou meses do ano na primeira linha. CSV também vale.";
   }
   return result;
 }

@@ -13,45 +13,110 @@ export type MappedRow = {
   issues: string[];
 };
 
-const HEADER_ALIASES: Record<string, string> = {
-  data: "date",
-  date: "date",
-  vencimento: "date",
-  descricao: "description",
-  descrição: "description",
-  historico: "description",
-  histórico: "description",
-  description: "description",
-  memo: "description",
-  previsto: "amount",
-  orcado: "amount",
-  orçado: "amount",
-  planejado: "amount",
-  realizado: "amount",
-  valor: "amount",
-  value: "amount",
-  amount: "amount",
-  tipo: "type",
-  type: "type",
-  categoria: "category",
-  category: "category",
-  item: "description",
-  lancamento: "description",
-  lançamento: "description",
-  conta: "account",
-  account: "account",
-  carteira: "account",
-  observacoes: "notes",
-  observações: "notes",
-  notes: "notes",
-};
-
 export function normalizeHeader(value: string) {
-  return value
+  return String(value ?? "")
+    .replace(/^\uFEFF/, "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
+    .replace(/\(.*?\)/g, " ")
+    .replace(/[^a-z0-9$]+/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
+}
+
+export function mapColumnHeader(raw: string): string | null {
+  const n = normalizeHeader(raw);
+  if (!n) return null;
+  const compact = n.replace(/ /g, "").replace(/\$/g, "");
+  const exact: Record<string, string> = {
+    data: "date",
+    date: "date",
+    vencimento: "date",
+    dia: "date",
+    dt: "date",
+    mes: "date",
+    competencia: "date",
+    descricao: "description",
+    historico: "description",
+    description: "description",
+    memo: "description",
+    item: "description",
+    lancamento: "description",
+    nome: "description",
+    title: "description",
+    titulo: "description",
+    detalhe: "description",
+    detalhes: "description",
+    transacao: "description",
+    movimento: "description",
+    estabelecimento: "description",
+    favorecido: "description",
+    beneficiario: "description",
+    gasto: "description",
+    gastos: "description",
+    despesa: "description",
+    despesas: "description",
+    valor: "amount",
+    value: "amount",
+    amount: "amount",
+    previsto: "amount",
+    orcado: "amount",
+    planejado: "amount",
+    realizado: "amount",
+    preco: "amount",
+    total: "amount",
+    vlr: "amount",
+    rs: "amount",
+    r: "amount",
+    quanto: "amount",
+    tipo: "type",
+    type: "type",
+    categoria: "category",
+    category: "category",
+    grupo: "category",
+    classe: "category",
+    conta: "account",
+    account: "account",
+    carteira: "account",
+    banco: "account",
+    observacoes: "notes",
+    notes: "notes",
+    saida: "debit",
+    saidas: "debit",
+    debito: "debit",
+    debitos: "debit",
+    entrada: "credit",
+    entradas: "credit",
+    credito: "credit",
+    creditos: "credit",
+  };
+  if (exact[n] || exact[compact]) return exact[n] ?? exact[compact];
+  if (compact.startsWith("data") || compact.startsWith("date") || compact.includes("venciment") || compact.includes("competenc")) {
+    return "date";
+  }
+  if (compact === "saldo" || compact.startsWith("saldo") || compact.includes("quantidade") || compact === "qtd" || compact === "qtde") {
+    return null;
+  }
+  if (
+    compact.includes("historico") ||
+    compact.includes("descricao") ||
+    compact.includes("transacao") ||
+    compact.includes("lancamento") ||
+    compact.includes("movimento") ||
+    compact.includes("estabelec") ||
+    compact === "title"
+  ) {
+    return "description";
+  }
+  if (compact.includes("debito")) return "debit";
+  if (compact.includes("credito")) return "credit";
+  if (compact.includes("valor") || compact.includes("amount") || compact.includes("preco") || compact.startsWith("vlr")) {
+    return "amount";
+  }
+  if (compact.includes("categoria") || compact.includes("category")) return "category";
+  if (compact.includes("observac")) return "notes";
+  return null;
 }
 
 function excelSerialToISO(serial: number) {
@@ -62,14 +127,21 @@ function excelSerialToISO(serial: number) {
   return `${y}-${m}-${d}`;
 }
 
+function dateToLocalISO(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export function cellToString(value: unknown): string {
   if (value == null || value === "") return "";
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
-  if (typeof value === "object" && value && "text" in (value as object)) {
-    return String((value as { text: string }).text);
-  }
-  if (typeof value === "object" && value && "result" in (value as object)) {
-    return cellToString((value as { result: unknown }).result);
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return dateToLocalISO(value);
+  if (typeof value === "object" && value) {
+    const v = value as { richText?: { text?: string }[]; text?: string; result?: unknown };
+    if (Array.isArray(v.richText)) return v.richText.map((part) => part.text ?? "").join("").trim();
+    if (v.result != null) return cellToString(v.result);
+    if (v.text != null && String(v.text).trim()) return String(v.text).trim();
   }
   return String(value).trim();
 }
@@ -141,16 +213,20 @@ export async function parseWorkbook(buffer: ArrayBuffer, filename: string) {
   }
 
   const headers = rows[0].map((h) => h.trim());
-  const mappedHeaders = headers.map((h) => HEADER_ALIASES[normalizeHeader(h)] ?? null);
+  const mappedHeaders = headers.map((h) => mapColumnHeader(h));
   const idx = (key: string) => mappedHeaders.findIndex((h) => h === key);
 
   const dateIdx = idx("date");
-  const descIdx = idx("description");
+  let descIdx = idx("description");
   const amountIdx = idx("amount");
-  if (dateIdx < 0 || descIdx < 0 || amountIdx < 0) {
+  const debitIdx = idx("debit");
+  const creditIdx = idx("credit");
+  const categoryIdx = idx("category");
+  if (descIdx < 0 && categoryIdx >= 0) descIdx = categoryIdx;
+  if (descIdx < 0 || (amountIdx < 0 && debitIdx < 0 && creditIdx < 0)) {
     return {
       error:
-        "Não foi possível mapear as colunas. Use ao menos: Data, Descrição e Valor. Baixe o modelo padrão se precisar.",
+        "Não foi possível mapear as colunas. Use ao menos descrição (ou categoria) e valor. Data é opcional.",
       rows: [] as MappedRow[],
       headers,
     };
@@ -159,17 +235,22 @@ export async function parseWorkbook(buffer: ArrayBuffer, filename: string) {
   const mapped: MappedRow[] = [];
   for (const raw of rows.slice(1)) {
     const issues: string[] = [];
-    const date = parseDateCell(raw[dateIdx]);
-    if (!date) issues.push("Data inválida");
+    const date = dateIdx >= 0 ? parseDateCell(raw[dateIdx]) : null;
+    if (dateIdx >= 0 && !date) issues.push("Data inválida");
     const description = (raw[descIdx] ?? "").trim();
     if (!description) issues.push("Descrição vazia");
-    const amountRaw = parseMoneyToCents(raw[amountIdx] ?? "");
-    if (amountRaw == null) issues.push("Valor inválido");
+    const debit = debitIdx >= 0 ? parseMoneyToCents(raw[debitIdx] ?? "") : null;
+    const credit = creditIdx >= 0 ? parseMoneyToCents(raw[creditIdx] ?? "") : null;
+    let signed = amountIdx >= 0 ? parseMoneyToCents(raw[amountIdx] ?? "") : null;
+    if (signed == null && (debit != null || credit != null)) {
+      signed = (credit ?? 0) - (debit ?? 0);
+    }
+    if (signed == null) issues.push("Valor inválido");
     const typeCol = idx("type") >= 0 ? raw[idx("type")] : "";
-    const signed = amountRaw ?? 0;
-    const type = inferType(typeCol, signed);
-    const amount = Math.abs(signed);
-    const category = idx("category") >= 0 ? raw[idx("category")] : "";
+    const amountSigned = signed ?? 0;
+    const type = inferType(typeCol, amountSigned);
+    const amount = Math.abs(amountSigned);
+    const category = categoryIdx >= 0 ? raw[categoryIdx] : "";
     const account = idx("account") >= 0 ? raw[idx("account")] : "";
     const notes = idx("notes") >= 0 ? raw[idx("notes")] : "";
     const isoDate = date ?? "";
