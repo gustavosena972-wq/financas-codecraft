@@ -360,7 +360,14 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
           })}
           {busy ? (
             <div className="acct-row bot">
-              <div className="acct-bubble thinking">Pensando…</div>
+              <div className="acct-bubble thinking">
+                <span className="think-dots" aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+                Pensando
+              </div>
             </div>
           ) : null}
           {pending ? (

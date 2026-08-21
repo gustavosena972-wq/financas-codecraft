@@ -32,7 +32,7 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-bg">
-      <header className="h-14 border-b border-line bg-paper/90 backdrop-blur px-4 sm:px-6 flex items-center justify-between gap-3">
+      <header className="h-14 border-b border-line bg-paper/90 backdrop-blur px-4 sm:px-6 flex items-center justify-between gap-3 app-top">
         <div className="flex items-center gap-3 min-w-0">
           <span className="mark">FC</span>
           <div className="hidden sm:block min-w-0">

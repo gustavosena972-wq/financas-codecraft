@@ -6,7 +6,7 @@ import { HeroPreview } from "@/components/hero-preview";
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-panel text-[#e8edf2]">
-      <header className="flex items-center justify-between px-8 py-5 border-b border-[#2c4458]">
+      <header className="flex items-center justify-between px-8 py-5 border-b border-[#2c4458] sticky top-0 z-20 bg-panel/90 backdrop-blur">
         <div className="flex items-center gap-2">
           <span className="mark">FC</span>
           <span className="font-semibold tracking-tight">Finanças CodeCraft</span>
@@ -21,10 +21,10 @@ export default function HomePage() {
         </nav>
       </header>
 
-      <section className="px-8 py-24 max-w-6xl mx-auto grid lg:grid-cols-[1.1fr_.9fr] gap-14 items-center">
+      <section className="hero-stage px-8 py-24 max-w-6xl mx-auto grid lg:grid-cols-[1.1fr_.9fr] gap-14 items-center">
         <div className="rise">
           <p className="text-gold text-xs tracking-[0.2em] uppercase mb-4">Dois espaços. Um chat em cada.</p>
-          <h1 className="text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.12] text-white max-w-3xl">
+          <h1 className="text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.12] text-white max-w-3xl hero-title">
             Pessoa de um lado.
             <br />
             Empresa do outro.

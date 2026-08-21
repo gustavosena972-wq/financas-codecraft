@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const SCENES = [
   [
@@ -27,6 +27,11 @@ export function HeroPreview() {
   const [scene, setScene] = useState(0);
   const [hot, setHot] = useState<number | null>(null);
   const cells = SCENES[scene];
+
+  useEffect(() => {
+    const id = window.setInterval(() => setScene((s) => (s + 1) % SCENES.length), 4200);
+    return () => window.clearInterval(id);
+  }, []);
 
   return (
     <div className="rounded-xl border border-[#2c4458] bg-panel-2 p-6 text-sm space-y-4 float-card">
