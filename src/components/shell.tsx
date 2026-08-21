@@ -8,6 +8,7 @@ import {
   Flag,
   LayoutDashboard,
   LogOut,
+  MessageCircle,
   PiggyBank,
   Receipt,
   Settings,
@@ -30,6 +31,7 @@ const NAV = [
   { href: "/app/fluxo", label: "Fluxo de caixa", icon: ArrowLeftRight },
   { href: "/app/importar", label: "Planilha", icon: Upload },
   { href: "/app/exportar", label: "Exportar", icon: Download },
+  { href: "/app/ajuda", label: "Ajuda", icon: MessageCircle },
   { href: "/app/planos", label: "Planos", icon: Sparkles },
   { href: "/app/configuracoes", label: "Configurações", icon: Settings },
 ];

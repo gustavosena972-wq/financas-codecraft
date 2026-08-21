@@ -4,6 +4,7 @@ export type Plan = {
   id: PlanId;
   name: string;
   price: string;
+  priceValue: number | null;
   period: string;
   forWho: string;
   includes: string[];
@@ -20,6 +21,7 @@ export const PLANS: Plan[] = [
     id: "FREE",
     name: "Free",
     price: "R$ 0",
+    priceValue: 0,
     period: "para sempre",
     forWho: "Organizar o caixa e a planilha que você já usa.",
     includes: [
@@ -36,6 +38,7 @@ export const PLANS: Plan[] = [
     id: "PRO",
     name: "Pro",
     price: "R$ 29,90",
+    priceValue: 29.9,
     period: "por mês",
     forWho: "Quem já lança e quer o app pensando o mês à frente.",
     includes: ["Tudo do Free"],
@@ -52,6 +55,7 @@ export const PLANS: Plan[] = [
     id: "BUSINESS",
     name: "Business",
     price: "R$ 79,90",
+    priceValue: 79.9,
     period: "por mês",
     forWho: "Quem precisa separar a vida pessoal da empresa.",
     includes: ["Tudo do Pro, inclusive a IA"],
@@ -66,6 +70,7 @@ export const PLANS: Plan[] = [
     id: "ENTERPRISE",
     name: "Enterprise",
     price: "A partir de R$ 199",
+    priceValue: null,
     period: "combinado com a operação",
     forWho: "Operação maior, com gente e integração.",
     includes: ["Tudo do Business"],

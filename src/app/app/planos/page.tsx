@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PlansGrid } from "@/components/plans-grid";
+import { PixPay } from "@/components/pix-pay";
 import { planById, type PlanId } from "@/lib/plans";
 import { requireSession, setUserPlan } from "@/lib/store";
-import { go } from "@/lib/types";
+import { go, newId } from "@/lib/types";
+import { whatsappLink } from "@/lib/pix";
 
 export default function PlanosPage() {
   const [plan, setPlan] = useState<PlanId>("FREE");
+  const [checkout, setCheckout] = useState<PlanId | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const txid = useMemo(() => `FC${newId().replace(/-/g, "").slice(0, 18).toUpperCase()}`, [checkout]);
+  const chosen = checkout ? planById(checkout) : null;
 
   useEffect(() => {
     void (async () => {
@@ -22,16 +27,34 @@ export default function PlanosPage() {
     })();
   }, []);
 
-  async function updatePlan(next: PlanId) {
-    setBusy(true);
+  async function onSelect(next: PlanId) {
+    if (next === "FREE") {
+      setBusy(true);
+      try {
+        await setUserPlan("FREE");
+        setPlan("FREE");
+        setCheckout(null);
+        setMessage("Voltou para o Free.");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+    if (next === "ENTERPRISE") return;
+    setCheckout(next);
     setMessage(null);
+  }
+
+  async function confirmPaid() {
+    if (!checkout || checkout === "FREE") return;
+    setBusy(true);
     try {
-      await setUserPlan(next);
-      setPlan(next);
-      const chosen = planById(next);
-      setMessage(`Plano atualizado para ${chosen.name}.`);
+      await setUserPlan(checkout);
+      setPlan(checkout);
+      setMessage(`Pagamento informado. O PIX foi para 31999758385. O plano ${planById(checkout).name} ficou ativo neste login. Envie o comprovante no WhatsApp se quiser conferência.`);
+      setCheckout(null);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Não deu para atualizar o plano agora.");
+      setMessage(err instanceof Error ? err.message : "Não deu para registrar agora.");
     } finally {
       setBusy(false);
     }
@@ -42,17 +65,30 @@ export default function PlanosPage() {
       <div>
         <h1 className="text-2xl font-semibold">Planos</h1>
         <p className="text-sm text-muted max-w-2xl">
-          Atualize o plano quando quiser. O Free já organiza a planilha, mostra a agenda e deixa 3 recorrentes e 1 meta.
-          O Pro sobe de verdade: IA, recorrentes e metas sem limite.
+          O Free já organiza a planilha. Para Pro ou Business o pagamento é PIX na chave 31999758385.
+          O dinheiro cai na conta da CodeCraft. O chat não confirma pagamento sozinho.
         </p>
       </div>
       <div className={busy ? "pointer-events-none opacity-70" : ""}>
-        <PlansGrid mode="account" current={plan} onSelect={(id) => void updatePlan(id)} />
+        <PlansGrid mode="account" current={plan} onSelect={(id) => void onSelect(id)} />
       </div>
+      {chosen && chosen.priceValue ? (
+        <div className="space-y-4">
+          <PixPay amount={chosen.priceValue} txid={txid} label={`Plano ${chosen.name} · mensal`} />
+          <div className="flex flex-wrap gap-2">
+            <button className="btn btn-primary" disabled={busy} onClick={() => void confirmPaid()}>
+              Já paguei este PIX
+            </button>
+            <a className="btn btn-ghost" href={whatsappLink(`Olá! Paguei o plano ${chosen.name} no PIX 31999758385.`)}>
+              Mandar comprovante no WhatsApp
+            </a>
+            <button className="btn btn-ghost" onClick={() => setCheckout(null)}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ) : null}
       {message ? <p className="text-sm text-muted">{message}</p> : null}
-      <p className="text-xs text-muted">
-        A cobrança ainda não está ligada. Por agora você escolhe o plano para ver o que vem nele.
-      </p>
     </div>
   );
 }
