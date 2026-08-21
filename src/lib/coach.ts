@@ -14,6 +14,7 @@ import {
 import { billsOverview, spendByCostCenter } from "./ops";
 import { bucketSpend, reserveMonths, split503020 } from "./tools";
 import type { PlanId } from "./plans";
+import { buildOrcamentoTab, loadMonthPlan, planYearMonths } from "./month-plan";
 
 export type SheetRow = {
   month: string;
@@ -37,7 +38,24 @@ export type SheetTab = {
   headers: string[];
   rows: string[][];
   nowRow?: number;
+  monthKeys?: string[];
+  editableCols?: number[];
 };
+
+export type SheetCharts = {
+  thisFree: number;
+  nextFree: number;
+  nextFreeIfCut: number;
+  nextIncome: number;
+  nextPay: number;
+  nextPayIfCut: number;
+  thisLabel: string;
+  nextLabel: string;
+  series: { month: string; income: number; expense: number; net: number }[];
+  slices: { name: string; color: string; amount: number }[];
+};
+
+export const SHEET_SLICE_COLORS = ["#c4a35a", "#1f8a62", "#b94a3c", "#3d6f8c", "#7a5a12", "#5a6a76"];
 
 function averagePositive(values: number[]) {
   const usable = values.filter((value) => value > 0);
@@ -194,11 +212,62 @@ export function buildMoneySheet(
   }
 
   const empty = history.every((row) => !row.txs.length);
+  const yearMonths = planYearMonths(now);
+  const savedPlan = loadMonthPlan(workspaceId);
+  const monthValues = yearMonths.map((month) => {
+    const summary = monthSummary(workspaceId, month);
+    const planned = savedPlan.find((item) => item.month === month);
+    return {
+      month,
+      income: planned?.income || summary.income,
+      expense: planned?.expense || summary.expense,
+    };
+  });
+  const next = monthValues.find((item) => item.month === shiftMonth(now, 1)) ?? {
+    month: shiftMonth(now, 1),
+    income: incomeAvg,
+    expense: expenseAvg,
+  };
+  const nextPayIfCut = Math.max(0, next.expense - saveMonth);
+  const charts: SheetCharts = {
+    thisFree: current.net,
+    nextFree: next.income - next.expense,
+    nextFreeIfCut: next.income - nextPayIfCut,
+    nextIncome: next.income,
+    nextPay: next.expense,
+    nextPayIfCut,
+    thisLabel: formatMonthLabel(now),
+    nextLabel: formatMonthLabel(next.month),
+    series: monthValues.map((item) => ({
+      month: item.month,
+      income: item.income,
+      expense: item.expense,
+      net: item.income - item.expense,
+    })),
+    slices: categorySpend(workspaceId, now)
+      .slice(0, 6)
+      .map((item, i) => ({ name: item.name, amount: item.amount, color: SHEET_SLICE_COLORS[i % SHEET_SLICE_COLORS.length] })),
+  };
+  const thisPlan = monthValues.find((item) => item.month === now);
+  if (thisPlan) charts.thisFree = thisPlan.income - thisPlan.expense;
+  const graficos = tab(
+    "graficos",
+    "Gráficos",
+    ["O que", "Valor"],
+    [
+      ["Livre neste mês", money(charts.thisFree)],
+      [`Livre em ${charts.nextLabel} se nada mudar`, money(charts.nextFree)],
+      [`Livre em ${charts.nextLabel} se desapertar`, money(charts.nextFreeIfCut)],
+    ],
+  );
+  const orcamento = buildOrcamentoTab(yearMonths, now, monthValues);
   const tabs = paid
     ? company
-      ? companyTabs(workspaceId, rows, now, today, current, currentBalance, incomeAvg, expenseAvg, full)
-      : personTabs(workspaceId, rows, now, current, currentBalance, full)
+      ? [graficos, orcamento, ...companyTabs(workspaceId, rows, now, today, current, currentBalance, incomeAvg, expenseAvg, full)]
+      : [graficos, orcamento, ...personTabs(workspaceId, rows, now, current, currentBalance, full)]
     : [
+        graficos,
+        orcamento,
         tab(
           "caixa",
           "Caixa",
@@ -226,6 +295,8 @@ export function buildMoneySheet(
     company,
     fileName: company ? (paid ? "Tesouraria.xlsx" : "Caixa.xlsx") : paid ? "Financas-Pessoal.xlsx" : "Caixa.xlsx",
     tabs,
+    openTab: empty ? "orcamento" : "graficos",
+    charts,
   };
 }
 

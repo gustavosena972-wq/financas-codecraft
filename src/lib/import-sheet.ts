@@ -1,11 +1,29 @@
-import { brl, formatMonthLabel, monthKey } from "./money";
-import type { CutTip, SheetTab } from "./coach";
+import { brl, formatMonthLabel, monthKey, shiftMonth } from "./money";
+import type { CutTip, SheetCharts, SheetTab } from "./coach";
+import { SHEET_SLICE_COLORS } from "./coach";
 import type { OrganizeResult } from "./organize";
 import { split503020 } from "./tools";
+import { buildOrcamentoTab, planYearMonths } from "./month-plan";
 
 function money(cents: number) {
   if (!cents) return "0,00";
   return (cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function monthForecast(result: OrganizeResult, month: string, income: number, pay: number, saved: number) {
+  const nextKey = month === "sem-data" ? monthKey(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)) : shiftMonth(month, 1);
+  const nextInFile = result.months.find((item) => item.month === nextKey);
+  const nextIncome = nextInFile?.income || income;
+  const nextPay = nextInFile?.expense || pay;
+  const nextPayIfCut = Math.max(0, nextPay - saved);
+  return {
+    nextKey,
+    nextIncome,
+    nextPay,
+    nextPayIfCut,
+    nextFree: nextIncome - nextPay,
+    nextFreeIfCut: nextIncome - nextPayIfCut,
+  };
 }
 
 function tab(id: string, name: string, headers: string[], rows: string[][], nowRow?: number): SheetTab {
@@ -56,6 +74,9 @@ export function importedSheetView(result: OrganizeResult) {
   const pay = focus?.expense ?? 0;
   const income = focus?.income ?? 0;
   const leftover = income - pay;
+  const cuts = cats.filter((item) => item.expense > 0 && canCut(item.name)).slice(0, 3);
+  const saved = cuts.reduce((s, item) => s + Math.round(item.expense * 0.2), 0);
+  const forecast = monthForecast(result, month, income, pay, saved);
   const tips: CutTip[] = [];
 
   for (const cat of cats.filter((item) => item.expense > 0 && canCut(item.name)).slice(0, 4)) {
@@ -85,6 +106,16 @@ export function importedSheetView(result: OrganizeResult) {
   const allRows = launches.length ? launches : monthRowsShown;
   const display = allRows.slice(0, 180);
   const nowRow = display.findIndex((row) => row.date?.slice(0, 7) === month);
+  const focusMonth = month === "sem-data" ? monthKey() : month;
+  const yearMonths = planYearMonths(focusMonth);
+  const yearValues = yearMonths.map((key) => {
+    const found = result.months.find((item) => item.month === key);
+    return {
+      month: key,
+      income: found?.income ?? (key === month ? income : 0),
+      expense: found?.expense ?? (key === month ? pay : 0),
+    };
+  });
 
   const tabs: SheetTab[] = [
     tab(
@@ -112,6 +143,17 @@ export function importedSheetView(result: OrganizeResult) {
         ["Lançamentos no mês", String(monthRowsShown.length || cats.length)],
       ],
     ),
+    tab(
+      "graficos",
+      "Gráficos",
+      ["O que", "Valor"],
+      [
+        ["Livre neste mês", money(leftover)],
+        [`Livre em ${formatMonthLabel(forecast.nextKey)} se nada mudar`, money(forecast.nextFree)],
+        [`Livre em ${formatMonthLabel(forecast.nextKey)} se desapertar`, money(forecast.nextFreeIfCut)],
+      ],
+    ),
+    buildOrcamentoTab(yearMonths, focusMonth, yearValues),
     tab(
       "pagar",
       "A pagar",
@@ -151,6 +193,30 @@ export function importedSheetView(result: OrganizeResult) {
     company: false,
     fileName: result.filename || "Planilha.xlsx",
     tabs,
+    openTab: "graficos",
+    charts: {
+      thisFree: leftover,
+      nextFree: forecast.nextFree,
+      nextFreeIfCut: forecast.nextFreeIfCut,
+      nextIncome: forecast.nextIncome,
+      nextPay: forecast.nextPay,
+      nextPayIfCut: forecast.nextPayIfCut,
+      thisLabel: month === "sem-data" ? "Este mês" : formatMonthLabel(month),
+      nextLabel: formatMonthLabel(forecast.nextKey),
+      series: (() => {
+        const dated = result.months.filter((item) => item.month !== "sem-data");
+        const hasNext = dated.some((item) => item.month === forecast.nextKey);
+        const rows = dated.length ? [...dated] : [{ month, income, expense: pay, net: leftover }];
+        if (!hasNext) {
+          rows.push({ month: forecast.nextKey, income: forecast.nextIncome, expense: forecast.nextPay, net: forecast.nextFree });
+        }
+        return rows;
+      })(),
+      slices: cats
+        .filter((item) => item.expense > 0)
+        .slice(0, 6)
+        .map((item, i) => ({ name: item.name, amount: item.expense, color: SHEET_SLICE_COLORS[i % SHEET_SLICE_COLORS.length] })),
+    } satisfies SheetCharts,
   };
 }
 
@@ -165,12 +231,18 @@ export function analyzeImported(result: OrganizeResult) {
   const pay = focus.expense;
   const income = focus.income;
   const leftover = income - pay;
+  const cuts = cats.filter((item) => item.expense > 0 && canCut(item.name)).slice(0, 3);
+  const saved = cuts.reduce((s, item) => s + Math.round(item.expense * 0.2), 0);
+  const forecast = monthForecast(result, month, income, pay, saved);
   const lines: string[] = [];
   const launchCount = result.rows.filter((row) => !row.issues.length).length;
   lines.push(`Abri a planilha inteira no app${launchCount ? ` (${launchCount} lançamentos)` : ""}.`);
   lines.push(`Análise de ${label}: entra ${brl(income)}. Você vai pagar ${brl(pay)} de tudo neste mês.`);
   if (leftover >= 0) lines.push(`Se pagar tudo, sobra ${brl(leftover)}.`);
   else lines.push(`Se pagar tudo, falta ${brl(Math.abs(leftover))}. O mês aperta.`);
+  lines.push(
+    `Dinheiro livre em ${formatMonthLabel(forecast.nextKey)}: se nada mudar, ${forecast.nextFree >= 0 ? brl(forecast.nextFree) : "falta " + brl(Math.abs(forecast.nextFree))}. Se desapertar, fica ${forecast.nextFreeIfCut >= 0 ? brl(forecast.nextFreeIfCut) : "faltando " + brl(Math.abs(forecast.nextFreeIfCut))}. Olha a aba Gráficos.`,
+  );
 
   const heavy = cats.filter((item) => item.expense > 0).slice(0, 4);
   if (heavy.length) {
@@ -179,8 +251,6 @@ export function analyzeImported(result: OrganizeResult) {
     );
   }
 
-  const cuts = cats.filter((item) => item.expense > 0 && canCut(item.name)).slice(0, 3);
-  const saved = cuts.reduce((s, item) => s + Math.round(item.expense * 0.2), 0);
   if (cuts.length) {
     lines.push(
       "Estratégias para desapertar: " +
@@ -209,6 +279,6 @@ export function analyzeImported(result: OrganizeResult) {
     );
   }
 
-  lines.push("A planilha grande está aberta embaixo. Se quiser gravar isso no controle, fala “pode aplicar”.");
+  lines.push("A planilha e a aba Gráficos estão abertas embaixo. Se quiser gravar isso no controle, fala “pode aplicar”.");
   return lines.join(" ");
 }

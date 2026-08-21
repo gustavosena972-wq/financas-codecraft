@@ -23,8 +23,8 @@ type Msg = { from: "user" | "bot"; body: string };
 
 function welcomeBot(isCompany: boolean) {
   return isCompany
-    ? "Este chat é só da empresa. Manda a planilha do computador: eu leio, sugiro, e só mudo se você gostar. Se ainda não tiver planilha, pede para eu fazer uma. Ferramentas de tesouraria entram nos planos pagos."
-    : "Este chat é só da pessoa. Manda a planilha: eu estruturo, sugiro, e só aplico se você gostar. Se não tiver arquivo, pede para eu montar uma. Ferramentas da pessoa (corte, 50-30-20) entram nos planos pagos.";
+    ? "Este chat é só da empresa. Manda a planilha, ou se ainda não tiver arquivo abre a aba Orçamento e vai colocando entra e teto de cada mês. Eu sugiro; só mudo se você gostar."
+    : "Este chat é só da pessoa. Manda a planilha, ou se ainda não tiver arquivo abre a aba Orçamento e preenche mês a mês. Eu sugiro; só aplico se você gostar.";
 }
 
 function downloadBuffer(buffer: ArrayBuffer, filename: string) {
@@ -56,6 +56,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
   const [dragOver, setDragOver] = useState(false);
   const [pending, setPending] = useState<OrganizeResult | null>(null);
   const [showSheet, setShowSheet] = useState(true);
+  const [wantTab, setWantTab] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<{ id: string; name: string }[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string; kind: string }[]>([]);
   const logRef = useRef<HTMLDivElement>(null);
@@ -125,7 +126,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     refreshSheet(workspaceId, plan, company);
     setPulse(financePulse(workspaceId));
     setShowSheet(true);
-    return ("ok" in applied ? applied.ok : "Apliquei a planilha.") + " Os números já estão no controle. A planilha grande continua aberta.";
+    return ("ok" in applied ? applied.ok : "Apliquei a planilha.") + " Os números já estão no controle. A aba Gráficos mostra o dinheiro livre do próximo mês.";
   }
 
   async function makeSheet() {
@@ -151,6 +152,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     setHand(false);
     setBusy(false);
     setShowSheet(false);
+    setWantTab(null);
     if (workspaceId) localStorage.setItem(`fc-chat-${workspaceId}`, JSON.stringify({ messages: [{ from: "bot", body: welcomeBot(company) }], showSheet: false }));
   }
 
@@ -174,7 +176,15 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       return "Deixei como estava. A planilha do computador não entrou no controle.";
     }
 
-    if (pending && /(pagar|desapert|apert|orcamento|orçamento|analis|estrateg|estratég|quanto (vou|vai)|este mes|este mês|situacao|situação)/.test(n)) {
+    if (/(montar orcamento|montar orçamento|mes a mes|mês a mês|nao tenho planilha|não tenho planilha|preencher orcamento|preencher orçamento)/.test(n)) {
+      setImported(null);
+      setShowSheet(true);
+      setWantTab("orcamento");
+      refreshSheet(workspaceId, plan, company);
+      return "Abri a aba Orçamento. Cada linha é um mês: Entra e o teto que você planeja gastar. O Livre e o gráfico do mês que vem saem daí. Se tiver Excel, manda no clipe.";
+    }
+
+    if (pending && /(pagar|desapert|apert|orcamento|orçamento|analis|estrateg|estratég|quanto (vou|vai)|este mes|este mês|situacao|situação|livre|grafico|gráfico|proximo|próximo)/.test(n)) {
       return analyzeImported(pending);
     }
 
@@ -264,6 +274,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       setPending(organized);
       setImported(importedSheetView(organized));
       setShowSheet(true);
+      setWantTab("graficos");
       setMessages((current) => [...current, { from: "bot", body: analyzeImported(organized) }]);
     } catch {
       setMessages((current) => [...current, { from: "bot", body: "Não consegui abrir esse arquivo. Manda Excel ou CSV." }]);
@@ -273,7 +284,9 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
   }
 
   const chips = [
+    "Montar orçamento mês a mês",
     "Quanto vou pagar este mês?",
+    "Quanto de dinheiro livre no próximo mês?",
     "Como desapertar o orçamento?",
     "Como está minha situação?",
     "Faz uma planilha",
@@ -334,12 +347,15 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
               <h2>{company ? "Como está o caixa hoje?" : "Como posso olhar suas finanças hoje?"}</h2>
               <p>
                 {company
-                  ? "Solta a planilha da empresa. Eu sugiro. Só aplico se você gostar. Se não tiver arquivo, eu monto um."
-                  : "Solta o Excel da pessoa. Eu estruturo e sugiro. Só mudo se você gostar. Se não tiver, eu faço a planilha."}
+                  ? "Solta a planilha da empresa, ou se ainda não tiver arquivo preenche o orçamento mês a mês aqui."
+                  : "Solta o Excel da pessoa, ou se ainda não tiver arquivo preenche o orçamento de cada mês aqui."}
               </p>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 <button type="button" className="btn btn-primary" onClick={() => fileRef.current?.click()}>
                   Abrir planilha
+                </button>
+                <button type="button" className="btn btn-ghost" onClick={() => void send("Montar orçamento mês a mês")}>
+                  Preencher mês a mês
                 </button>
                 <button type="button" className="btn btn-ghost" onClick={() => void send("Faz uma planilha")}>
                   Fazer planilha
@@ -382,7 +398,10 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
           ) : null}
           {studio && (imported || sheet) && showSheet ? (
             <div className="chat-sheet">
-              <MoneySheet sheet={imported ?? sheet!} />
+              <MoneySheet
+                sheet={{ ...(imported ?? sheet!), openTab: wantTab ?? (imported ?? sheet)!.openTab }}
+                workspaceId={workspaceId}
+              />
               {!paid && !imported ? (
                 <p className="text-sm text-muted px-1 pt-2">
                   No grátis eu mostro este mês. Nos planos de R$ 100 e R$ 200 o chat prevê os próximos meses e libera as ferramentas.{" "}
@@ -443,6 +462,9 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
             </button>
             <button type="button" className="acct-icon" title="Anexar arquivo" disabled={busy} onClick={() => fileRef.current?.click()}>
               <Paperclip size={18} />
+            </button>
+            <button type="button" className="acct-chip" disabled={busy} onClick={() => void send("Montar orçamento mês a mês")}>
+              Preencher mês a mês
             </button>
             <button type="button" className="acct-chip" disabled={busy} onClick={() => setHand((v) => !v)}>
               {hand ? "Esconder mão" : "Colocar na mão"}

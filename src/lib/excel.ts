@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import { parseMoneyToCents } from "./money";
+import { formatMonthLabel, monthKey, parseMoneyToCents } from "./money";
 
 export type MappedRow = {
   date: string;
@@ -360,6 +360,19 @@ async function buildSheetBuffer(
     sheet.addRow({ date, description, amount, type, category, account, notes });
   }
   sheet.getRow(1).font = { bold: true };
+  const year = Number(monthKey().slice(0, 4));
+  const orc = workbook.addWorksheet("Orcamento");
+  orc.addRow(["Mês", "Entra", "Orçamento", "Livre"]);
+  orc.getRow(1).font = { bold: true };
+  for (let i = 0; i < 12; i += 1) {
+    const month = `${year}-${String(i + 1).padStart(2, "0")}`;
+    const r = i + 2;
+    orc.addRow([formatMonthLabel(month), 0, 0, { formula: `B${r}-C${r}` }]);
+  }
+  orc.getColumn(1).width = 22;
+  orc.getColumn(2).width = 14;
+  orc.getColumn(3).width = 14;
+  orc.getColumn(4).width = 14;
   return workbook.xlsx.writeBuffer();
 }
 

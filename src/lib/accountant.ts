@@ -387,7 +387,7 @@ export function accountantReply(message: string, workspaceId: string): Accountan
   if (/(saldo|sobra|resumo|caixa)/.test(t)) {
     if (pulse.level === "empty") {
       return {
-        body: "Ainda não tem movimento. Três caminhos: anexa a planilha neste chat, abre Colocar na mão, ou escreve aqui — gastei 200 no mercado, aluguel 1500, ganho 4000.",
+        body: "Ainda não tem movimento. Abre a aba Orçamento e preenche entra e teto de cada mês, anexa a planilha, ou lança na mão.",
       };
     }
     const top = data.spend[0];
@@ -404,7 +404,7 @@ export function accountantReply(message: string, workspaceId: string): Accountan
   return {
     body:
       pulse.level === "empty"
-        ? "Pergunta o que quiser sobre dinheiro, orçamento ou conta. Se ainda não tem nada salvo, anexa a planilha, coloca o mês na mão ou fala o gasto aqui. Eu não peço senha."
+        ? "Pergunta o que quiser sobre dinheiro, orçamento ou conta. Se ainda não tem arquivo salvo, abre a aba Orçamento e vai colocando mês a mês. Eu não peço senha."
         : `${pulseLine(pulse)} Pode perguntar de reserva, dívida, cartão, imposto, o que cortar, os meses passados ou o próximo trimestre. Se for um gasto, fala o valor que eu lanço.`,
   };
 }

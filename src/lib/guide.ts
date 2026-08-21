@@ -30,7 +30,7 @@ export const START_STEPS = [
 ];
 
 export const GUIDE: GuideItem[] = [
-  { href: "/app", title: "Chat", does: "Tela grande: manda a planilha, lança na mão ou pergunta. O chat analisa, planeja o futuro e alerta se está crítica, média ou boa.", tip: "Clipe para a planilha. Colocar na mão se ainda não tem arquivo." },
+  { href: "/app", title: "Chat", does: "Tela grande: manda a planilha, preenche o orçamento mês a mês ou pergunta. O chat analisa, planeja o futuro e alerta se está crítica, média ou boa.", tip: "Clipe para a planilha. Sem arquivo, abre Orçamento e vai colocando cada mês." },
   { href: "/app/lancamentos", title: "Lançar na mão", does: "Uma linha por movimento: salário, aluguel, mercado.", tip: "Descreva simples: “Aluguel”, “iFood”." },
   { href: "/app/contas", title: "Contas", does: "Onde o dinheiro mora: banco, carteira, cartão.", tip: "Uma conta por lugar real." },
   { href: "/app/agenda", title: "Contas do mês", does: "O que se repete, tipo aluguel ou internet.", tip: "No mês, lance o recorrente. Não sai sozinho do banco." },

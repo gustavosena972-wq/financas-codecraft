@@ -138,4 +138,37 @@ export function BudgetBars({
   );
 }
 
+export function FreeMoneyChart({
+  thisLabel,
+  nextLabel,
+  thisFree,
+  nextFree,
+  nextFreeIfCut,
+}: {
+  thisLabel: string;
+  nextLabel: string;
+  thisFree: number;
+  nextFree: number;
+  nextFreeIfCut: number;
+}) {
+  const data = [
+    { name: thisLabel, Livre: thisFree / 100 },
+    { name: nextLabel, Livre: nextFree / 100, "Se desapertar": nextFreeIfCut / 100 },
+  ];
+  return (
+    <div className="h-64">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data}>
+          <CartesianGrid stroke="#d5dde4" vertical={false} />
+          <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+          <YAxis tick={{ fontSize: 12 }} />
+          <Tooltip formatter={(value) => brl(Math.round(Number(value) * 100))} />
+          <Bar dataKey="Livre" fill="#1f8a62" radius={4} />
+          <Bar dataKey="Se desapertar" fill="#c4a35a" radius={4} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 export { tooltipMoney };

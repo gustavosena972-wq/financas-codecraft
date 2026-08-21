@@ -36,7 +36,7 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "Três jeitos no chat: clipe para mandar a planilha, Colocar na mão se ainda não tem arquivo, ou fala o gasto. Sem baixar modelo.",
+      body: "Três jeitos no chat: clipe para mandar a planilha, Preencher mês a mês na aba Orçamento se ainda não tem arquivo, ou lança o gasto na mão.",
     };
   }
   if (/(ferramenta|simul|educacao|educação|50.30.20|reserva)/.test(text)) {

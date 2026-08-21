@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import { companyPaid, personPaid, type PlanId } from "./plans";
 import { buildBusinessSampleBuffer, buildPersonalSampleBuffer } from "./excel";
+import { formatMonthLabel, monthKey } from "./money";
 
 const GREEN = "FF217346";
 
@@ -22,6 +23,17 @@ function pctCols(sheet: ExcelJS.Worksheet, cols: number[]) {
 function grid(sheet: ExcelJS.Worksheet) {
   sheet.views = [{ state: "frozen", ySplit: 1, xSplit: 1, activeCell: "A2" }];
   sheet.properties.defaultRowHeight = 18;
+}
+
+function addOrcamentoAno(wb: ExcelJS.Workbook) {
+  const year = Number(monthKey().slice(0, 4));
+  const rows = Array.from({ length: 12 }, (_, i) => {
+    const month = `${year}-${String(i + 1).padStart(2, "0")}`;
+    const r = i + 2;
+    return [formatMonthLabel(month), 0, 0, { formula: `B${r}-C${r}`, result: 0 }];
+  });
+  const sheet = addSheet(wb, "Orcamento", ["Mês", "Entra", "Orçamento", "Livre"], rows);
+  moneyCols(sheet, [2, 3, 4]);
 }
 
 function addSheet(wb: ExcelJS.Workbook, name: string, headers: string[], rows: (string | number | { formula: string; result?: number | string })[][]) {
@@ -136,6 +148,7 @@ async function buildPersonWorkbook(full: boolean) {
     moneyCols(wb.getWorksheet("Previsao")!, [2, 3, 4, 5]);
   }
 
+  addOrcamentoAno(wb);
   return wb.xlsx.writeBuffer();
 }
 
@@ -299,5 +312,6 @@ async function buildCompanyWorkbook(full: boolean) {
     moneyCols(prev, [2, 3, 4, 5]);
   }
 
+  addOrcamentoAno(wb);
   return wb.xlsx.writeBuffer();
 }
