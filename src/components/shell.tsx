@@ -39,40 +39,20 @@ export function AppShell({
             <div className="font-semibold tracking-tight text-sm">Finanças CodeCraft</div>
             <div className="text-[11px] text-muted truncate">Olá, {userName.split(" ")[0]}</div>
           </div>
-          <div className="flex items-center gap-1.5 min-w-0">
-            <div className="flex rounded-lg border border-line overflow-hidden">
-              {workspaces.map((ws) => (
-                <form key={ws.id} action={switchWorkspaceAction}>
-                  <input type="hidden" name="workspaceId" value={ws.id} />
-                  <button
-                    type="submit"
-                    className={`px-3 py-1.5 text-sm ${
-                      ws.id === activeId ? "bg-ink text-white" : "bg-paper text-muted hover:bg-bg-2"
-                    }`}
-                  >
-                    {ws.type === "BUSINESS" ? "Empresa" : "Pessoa"}
-                  </button>
-                </form>
-              ))}
-            </div>
-            {studio ? (
-              <div className="flex items-center gap-1">
+          <div className="flex rounded-lg border border-line overflow-hidden">
+            {workspaces.map((ws) => (
+              <form key={ws.id} action={switchWorkspaceAction}>
+                <input type="hidden" name="workspaceId" value={ws.id} />
                 <button
-                  type="button"
-                  className="btn btn-ghost btn-tab"
-                  onClick={() => window.dispatchEvent(new Event("fc-new-chat"))}
+                  type="submit"
+                  className={`px-3 py-1.5 text-sm ${
+                    ws.id === activeId ? "bg-ink text-white" : "bg-paper text-muted hover:bg-bg-2"
+                  }`}
                 >
-                  Nova conversa
+                  {ws.type === "BUSINESS" ? "Empresa" : "Pessoa"}
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-danger btn-tab"
-                  onClick={() => window.dispatchEvent(new Event("fc-delete-chat"))}
-                >
-                  Excluir
-                </button>
-              </div>
-            ) : null}
+              </form>
+            ))}
           </div>
         </div>
         <div className="flex items-center gap-2">

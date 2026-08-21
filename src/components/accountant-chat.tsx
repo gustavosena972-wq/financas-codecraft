@@ -157,17 +157,6 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     startNewChat();
   }
 
-  useEffect(() => {
-    const onNew = () => startNewChat();
-    const onDel = () => deleteChat();
-    window.addEventListener("fc-new-chat", onNew);
-    window.addEventListener("fc-delete-chat", onDel);
-    return () => {
-      window.removeEventListener("fc-new-chat", onNew);
-      window.removeEventListener("fc-delete-chat", onDel);
-    };
-  });
-
   async function answer(raw: string) {
     const t = raw.trim();
     const n = t
@@ -309,9 +298,14 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     >
       {studio ? (
         <header className="claude-top">
-          <div>
-            <p className="text-[11px] uppercase tracking-wide text-gold font-semibold">{company ? "Empresa" : "Pessoa"}</p>
-            <h1 className="font-semibold text-lg mt-0.5">{company ? "Chat do caixa" : "Chat da pessoa"}</h1>
+          <div className="chat-abas">
+            <div className="chat-aba on">{company ? "Chat do caixa" : "Chat da pessoa"}</div>
+            <button type="button" className="chat-aba-btn" onClick={startNewChat}>
+              Nova conversa
+            </button>
+            <button type="button" className="chat-aba-btn danger" onClick={deleteChat}>
+              Excluir
+            </button>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end claude-actions">
             <Link href="/app/planos" className="text-sm text-muted">

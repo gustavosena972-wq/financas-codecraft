@@ -316,15 +316,53 @@ html[data-theme="dark"] .btn-ghost {
 }
 .claude-top {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 24px;
+  padding: 10px 24px 0;
   border-bottom: 1px solid var(--line);
   background: var(--paper);
   position: relative;
   z-index: 8;
 }
+.chat-abas {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 0;
+}
+.chat-aba {
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  background: var(--bg);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.chat-aba.on {
+  background: var(--paper);
+  position: relative;
+  z-index: 1;
+}
+.chat-aba-btn {
+  margin-bottom: 4px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.chat-aba-btn.danger {
+  background: #f8e8e5;
+  color: var(--negative);
+  border-color: #e8cfc9;
+}
+.claude-actions { padding-bottom: 8px; }
 .claude-actions .btn { cursor: pointer; pointer-events: auto; }
 .claude-stage {
   flex: 1;
