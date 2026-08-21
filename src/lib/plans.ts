@@ -49,6 +49,7 @@ export const PLANS: Plan[] = [
     forWho: "O chat ganha as ferramentas da pessoa: corte, 50-30-20, moradia e dívida.",
     includes: [
       "Tudo do Grátis",
+      "Planilha completa: 50-30-20, reserva, contas e fórmulas",
       "Previsão dos próximos 6 meses",
       "50-30-20, corte e teto de moradia",
       "Simulador de dívida",
@@ -68,6 +69,7 @@ export const PLANS: Plan[] = [
     forWho: "O pacote cheio da pessoa. Ano inteiro no chat e IA na categoria.",
     includes: [
       "Tudo do Pessoa 100",
+      "Planilha cheia: metas e previsão do ano com fórmula",
       "Previsão do ano todo",
       "IA sugere categoria",
       "Reserva e o que cortar com mais detalhe",
@@ -102,6 +104,7 @@ export const PLANS: Plan[] = [
     forWho: "Ferramentas de tesouraria no chat: giro, preço, títulos e DRE.",
     includes: [
       "Tudo do Grátis da empresa",
+      "Planilha de tesouraria: DRE, fluxo, títulos, giro e indicadores",
       "Previsão dos próximos 6 meses",
       "Giro: não gaste o que ainda não caiu",
       "Precificar serviço com imposto e margem",
@@ -121,6 +124,7 @@ export const PLANS: Plan[] = [
     forWho: "O pacote cheio da empresa. Fecha o mês e equipe.",
     includes: [
       "Tudo do Empresa 100",
+      "Planilha cheia: fechamento, equipe, conciliação e ano",
       "Previsão do ano todo",
       "Fechamento de mês",
       "Equipe e auditoria",

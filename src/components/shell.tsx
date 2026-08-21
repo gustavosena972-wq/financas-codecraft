@@ -86,7 +86,7 @@ export function AppShell({
         )}
       </main>
       {studio ? null : <HelpFab />}
-      <WelcomeGuide />
+      {studio ? null : <WelcomeGuide />}
     </div>
   );
 }

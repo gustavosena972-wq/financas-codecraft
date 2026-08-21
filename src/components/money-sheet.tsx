@@ -1,16 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { brl } from "@/lib/money";
 import type { buildMoneySheet } from "@/lib/coach";
 
 const TIPS_KEY = "fc-cut-tips";
-const COLS = ["A", "B", "C", "D", "E"] as const;
-const HEADERS = ["Mês", "Entra", "Sai", "Sobra", "Saldo"] as const;
+
+function colLetter(index: number) {
+  let n = index;
+  let out = "";
+  do {
+    out = String.fromCharCode(65 + (n % 26)) + out;
+    n = Math.floor(n / 26) - 1;
+  } while (n >= 0);
+  return out;
+}
 
 export function MoneySheet({ sheet }: { sheet: ReturnType<typeof buildMoneySheet> }) {
   const [done, setDone] = useState<string[]>([]);
   const [picked, setPicked] = useState<{ row: number; col: number }>({ row: 0, col: 0 });
+  const [tabId, setTabId] = useState(sheet.tabs[0]?.id ?? "caixa");
 
   useEffect(() => {
     try {
@@ -20,6 +29,13 @@ export function MoneySheet({ sheet }: { sheet: ReturnType<typeof buildMoneySheet
     }
   }, []);
 
+  useEffect(() => {
+    if (!sheet.tabs.some((tab) => tab.id === tabId)) setTabId(sheet.tabs[0]?.id ?? "caixa");
+  }, [sheet.tabs, tabId]);
+
+  const tab = sheet.tabs.find((item) => item.id === tabId) ?? sheet.tabs[0];
+  const cols = useMemo(() => (tab ? tab.headers.map((_, i) => colLetter(i)) : []), [tab]);
+
   function toggleTip(title: string) {
     const next = done.includes(title) ? done.filter((t) => t !== title) : [title, ...done];
     setDone(next);
@@ -27,62 +43,26 @@ export function MoneySheet({ sheet }: { sheet: ReturnType<typeof buildMoneySheet
   }
 
   const headerPick = picked.row < 0;
-  const activeRow = headerPick ? undefined : sheet.rows[picked.row] ?? sheet.rows[0];
-  const cellText = headerPick ? HEADERS[picked.col] ?? "" : cellValue(activeRow, picked.col);
-  const cellName = `${COLS[picked.col] ?? "A"}${headerPick ? 1 : picked.row + 2}`;
+  const dataRow = !headerPick && tab ? tab.rows[picked.row] : undefined;
+  const cellText = headerPick ? (tab?.headers[picked.col] ?? "") : (dataRow?.[picked.col] ?? "");
+  const cellName = `${cols[picked.col] ?? "A"}${headerPick ? 1 : picked.row + 2}`;
 
-  if (sheet.empty) {
-    return (
-      <section className="xls rise">
-        <div className="xls-bar">Livro1.xlsx</div>
-        <div className="xls-fx">
-          <span>fx</span>
-          <em>A1</em>
-          <input readOnly value="" placeholder="Manda o Excel ou pede para eu fazer uma planilha" />
-        </div>
-        <div className="xls-scroll">
-          <table className="xls-grid">
-            <thead>
-              <tr>
-                <th className="xls-corner" />
-                {COLS.map((col) => (
-                  <th key={col}>{col}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: 12 }, (_, i) => (
-                <tr key={i}>
-                  <th>{i + 1}</th>
-                  {COLS.map((col) => (
-                    <td key={col} />
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="xls-tabs">
-          <span className="on">Plan1</span>
-        </div>
-      </section>
-    );
-  }
+  if (!tab) return null;
 
   return (
     <section className="xls rise">
-      <div className="xls-bar">Caixa.xlsx</div>
+      <div className="xls-bar">{sheet.fileName ?? "Caixa.xlsx"}</div>
       <div className="xls-fx">
         <span>fx</span>
         <em>{cellName}</em>
-        <input readOnly value={cellText} />
+        <input readOnly value={sheet.empty && !sheet.paid ? "" : cellText} placeholder={sheet.empty ? "Manda o Excel ou pede para eu fazer uma planilha" : ""} />
       </div>
       <div className="xls-scroll">
         <table className="xls-grid">
           <thead>
             <tr>
               <th className="xls-corner" />
-              {COLS.map((col, colIdx) => (
+              {cols.map((col, colIdx) => (
                 <th key={col} className={picked.col === colIdx ? "xls-col-on" : ""}>
                   {col}
                 </th>
@@ -92,9 +72,9 @@ export function MoneySheet({ sheet }: { sheet: ReturnType<typeof buildMoneySheet
           <tbody>
             <tr>
               <th>1</th>
-              {HEADERS.map((header, colIdx) => (
+              {tab.headers.map((header, colIdx) => (
                 <td
-                  key={header}
+                  key={header + colIdx}
                   className={`xls-head ${picked.row === -1 && picked.col === colIdx ? "xls-cell-on" : ""}`}
                   onClick={() => setPicked({ row: -1, col: colIdx })}
                 >
@@ -102,36 +82,41 @@ export function MoneySheet({ sheet }: { sheet: ReturnType<typeof buildMoneySheet
                 </td>
               ))}
             </tr>
-            {sheet.rows.map((row, rowIdx) => {
-              const values = [row.label, money(row.income), money(row.expense), money(row.net), row.kind === "past" ? "" : money(row.balance)];
-              return (
-                <tr key={row.month} className={row.kind === "now" ? "xls-now" : ""}>
-                  <th className={picked.row === rowIdx ? "xls-row-on" : ""}>{rowIdx + 2}</th>
-                  {values.map((value, colIdx) => {
-                    const on = picked.row === rowIdx && picked.col === colIdx;
-                    const num = colIdx > 0;
-                    const negative = colIdx === 3 && row.net < 0;
-                    return (
-                      <td
-                        key={COLS[colIdx]}
-                        className={`${num ? "xls-num" : ""} ${negative ? "xls-neg" : ""} ${on ? "xls-cell-on" : ""}`}
-                        onClick={() => setPicked({ row: rowIdx, col: colIdx })}
-                      >
-                        {value}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
+            {(sheet.empty && !sheet.paid
+              ? Array.from({ length: 12 }, () => cols.map(() => ""))
+              : tab.rows
+            ).map((values, rowIdx) => (
+              <tr key={rowIdx} className={tab.nowRow === rowIdx ? "xls-now" : ""}>
+                <th className={picked.row === rowIdx ? "xls-row-on" : ""}>{rowIdx + 2}</th>
+                {values.map((value, colIdx) => {
+                  const on = picked.row === rowIdx && picked.col === colIdx;
+                  const headerName = tab.headers[colIdx] ?? "";
+                  const num = /valor|renda|gasto|entra|sai|sobra|saldo|receita|custo|folha|imposto|opex|resultado|orcado|real|alvo|teto|folga|base/i.test(headerName);
+                  const formula = /fórmula|formula/i.test(headerName);
+                  const negative = typeof value === "string" && value.startsWith("-") && num;
+                  return (
+                    <td
+                      key={`${rowIdx}-${colIdx}`}
+                      className={`${num ? "xls-num" : ""} ${formula ? "xls-fx-cell" : ""} ${negative ? "xls-neg" : ""} ${on ? "xls-cell-on" : ""}`}
+                      onClick={() => setPicked({ row: rowIdx, col: colIdx })}
+                    >
+                      {value}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
       <div className="xls-tabs">
-        <span className="on">Caixa</span>
-        <span>Previsão</span>
+        {sheet.tabs.map((item) => (
+          <button key={item.id} type="button" className={item.id === tab.id ? "on" : ""} onClick={() => { setTabId(item.id); setPicked({ row: 0, col: 0 }); }}>
+            {item.name}
+          </button>
+        ))}
       </div>
-      {sheet.tips.length ? (
+      {sheet.tips.length && !sheet.empty ? (
         <div className="xls-notes">
           {sheet.tips.map((tip) => {
             const marked = done.includes(tip.title);
@@ -147,19 +132,4 @@ export function MoneySheet({ sheet }: { sheet: ReturnType<typeof buildMoneySheet
       ) : null}
     </section>
   );
-}
-
-function money(cents: number) {
-  if (!cents) return "";
-  return brl(cents).replace("R$\u00a0", "R$ ").replace("R$ ", "");
-}
-
-function cellValue(row: ReturnType<typeof buildMoneySheet>["rows"][number] | undefined, col: number) {
-  if (!row) return "";
-  if (col === 0) return row.label;
-  if (col === 1) return money(row.income);
-  if (col === 2) return money(row.expense);
-  if (col === 3) return money(row.net);
-  if (col === 4) return row.kind === "past" ? "" : money(row.balance);
-  return "";
 }

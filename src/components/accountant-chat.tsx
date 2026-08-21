@@ -9,7 +9,7 @@ import { addChatSpendsAction } from "@/app/actions/transactions";
 import { saveChatBudgetAction } from "@/app/actions/budgets";
 import { applyOrganizeAction } from "@/app/actions/import";
 import { organizeWorkbook, type OrganizeResult } from "@/lib/organize";
-import { buildBusinessSampleBuffer, buildPersonalSampleBuffer } from "@/lib/excel";
+import { buildChatWorkbook } from "@/lib/workbooks";
 import { listAccounts, listCategories, requireSession } from "@/lib/store";
 import { planForecastMonths, planHasAi, type PlanId, workspaceToolsPaid } from "@/lib/plans";
 import { runChatTool, toolsForChat, wantsApply, wantsReject, wantsSheetCreate } from "@/lib/chat-tools";
@@ -53,15 +53,18 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
   const [sheet, setSheet] = useState<ReturnType<typeof buildMoneySheet> | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [pending, setPending] = useState<OrganizeResult | null>(null);
+  const [showSheet, setShowSheet] = useState(true);
   const [accounts, setAccounts] = useState<{ id: string; name: string }[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string; kind: string }[]>([]);
   const logRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const loadedFor = useRef("");
 
   function refreshSheet(id: string, nextPlan: PlanId, isCompany: boolean) {
     const months = planForecastMonths(nextPlan, isCompany);
-    setPaid(workspaceToolsPaid(nextPlan, isCompany));
-    setSheet(buildMoneySheet(id, months > 1, months));
+    const nextPaid = workspaceToolsPaid(nextPlan, isCompany);
+    setPaid(nextPaid);
+    setSheet(buildMoneySheet(id, nextPaid, months, { company: isCompany, plan: nextPlan }));
   }
 
   useEffect(() => {
@@ -78,9 +81,35 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       setCategories(listCategories(id));
       setAiEnabled(planHasAi(session.user.plan));
       refreshSheet(id, session.user.plan, isCompany);
-      setMessages((current) => (current.length ? current : [{ from: "bot", body: welcomeBot(isCompany) }]));
     })();
   }, [live]);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    loadedFor.current = "";
+    try {
+      const raw = localStorage.getItem(`fc-chat-${workspaceId}`);
+      if (raw) {
+        const saved = JSON.parse(raw) as { messages?: Msg[]; showSheet?: boolean };
+        if (saved.messages?.length) {
+          setMessages(saved.messages);
+          setShowSheet(Boolean(saved.showSheet));
+          loadedFor.current = workspaceId;
+          return;
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+    setMessages([{ from: "bot", body: welcomeBot(company) }]);
+    setShowSheet(true);
+    loadedFor.current = workspaceId;
+  }, [workspaceId, company]);
+
+  useEffect(() => {
+    if (!workspaceId || loadedFor.current !== workspaceId) return;
+    localStorage.setItem(`fc-chat-${workspaceId}`, JSON.stringify({ messages, showSheet }));
+  }, [workspaceId, messages, showSheet]);
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
@@ -93,13 +122,23 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     if ("error" in applied && applied.error) return applied.error;
     refreshSheet(workspaceId, plan, company);
     setPulse(financePulse(workspaceId));
+    setShowSheet(true);
     return ("ok" in applied ? applied.ok : "Apliquei a planilha.") + " Agora eu monto a previsão dos meses em cima do que entrou.";
   }
 
   async function makeSheet() {
-    const buffer = await (company ? buildBusinessSampleBuffer() : buildPersonalSampleBuffer());
-    downloadBuffer(buffer as ArrayBuffer, company ? "planilha-empresa.xlsx" : "planilha-pessoa.xlsx");
-    return "Montei uma planilha modelo e baixei no seu computador. Preenche com os seus números e manda de volta aqui. Eu sugiro; só mudo se você gostar.";
+    const buffer = await buildChatWorkbook(company, plan);
+    const name = company
+      ? paid
+        ? "Tesouraria-Empresa.xlsx"
+        : "planilha-empresa.xlsx"
+      : paid
+        ? "Financas-Pessoal.xlsx"
+        : "planilha-pessoa.xlsx";
+    downloadBuffer(buffer as ArrayBuffer, name);
+    return paid
+      ? "Baixei a planilha completa do plano pago: várias abas e fórmulas (DRE, caixa, giro, indicadores). Preenche os dados; as contas se fazem sozinhas. Manda de volta que eu sugiro; só mudo se você gostar."
+      : "Montei uma planilha modelo e baixei no seu computador. Preenche com os seus números e manda de volta aqui. Eu sugiro; só mudo se você gostar.";
   }
 
   function startNewChat() {
@@ -108,6 +147,14 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     setInput("");
     setHand(false);
     setBusy(false);
+    setShowSheet(false);
+    if (workspaceId) localStorage.setItem(`fc-chat-${workspaceId}`, JSON.stringify({ messages: [{ from: "bot", body: welcomeBot(company) }], showSheet: false }));
+  }
+
+  function deleteChat() {
+    if (!window.confirm("Apagar esta conversa? O dinheiro lançado continua. Só some o chat.")) return;
+    if (workspaceId) localStorage.removeItem(`fc-chat-${workspaceId}`);
+    startNewChat();
   }
 
   async function answer(raw: string) {
@@ -170,6 +217,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     }
     setPulse(financePulse(workspaceId));
     refreshSheet(workspaceId, plan, company);
+    setShowSheet(true);
     return reply.body;
   }
 
@@ -206,6 +254,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
         return;
       }
       setPending(organized);
+      setShowSheet(true);
       const notes = organized.notes.join(" ");
       setMessages((current) => [
         ...current,
@@ -253,9 +302,12 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
             <p className="text-[11px] uppercase tracking-wide text-gold font-semibold">{company ? "Empresa" : "Pessoa"}</p>
             <h1 className="font-semibold text-lg mt-0.5">{company ? "Chat do caixa" : "Chat da pessoa"}</h1>
           </div>
-          <div className="flex items-center gap-2 flex-wrap justify-end">
+          <div className="flex items-center gap-2 flex-wrap justify-end claude-actions">
             <button type="button" className="btn btn-ghost" onClick={startNewChat}>
               Nova conversa
+            </button>
+            <button type="button" className="btn btn-danger" onClick={deleteChat}>
+              Excluir
             </button>
             <Link href="/app/planos" className="text-sm text-muted">
               Planos
@@ -322,7 +374,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
               </button>
             </div>
           ) : null}
-          {studio && sheet && !sheet.empty ? (
+          {studio && sheet && showSheet ? (
             <div className="chat-sheet">
               <MoneySheet sheet={sheet} />
               {!paid ? (
