@@ -20,6 +20,12 @@ import { buildMoneySheet } from "@/lib/coach";
 
 type Msg = { from: "user" | "bot"; body: string };
 
+function welcomeBot(isCompany: boolean) {
+  return isCompany
+    ? "Este chat é só da empresa. Manda a planilha do computador: eu leio, sugiro, e só mudo se você gostar. Se ainda não tiver planilha, pede para eu fazer uma. Ferramentas de tesouraria entram nos planos pagos."
+    : "Este chat é só da pessoa. Manda a planilha: eu estruturo, sugiro, e só aplico se você gostar. Se não tiver arquivo, pede para eu montar uma. Ferramentas da pessoa (corte, 50-30-20) entram nos planos pagos.";
+}
+
 function downloadBuffer(buffer: ArrayBuffer, filename: string) {
   const blob = new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -72,18 +78,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       setCategories(listCategories(id));
       setAiEnabled(planHasAi(session.user.plan));
       refreshSheet(id, session.user.plan, isCompany);
-      setMessages((current) =>
-        current.length
-          ? current
-          : [
-              {
-                from: "bot",
-                body: isCompany
-                  ? "Este chat é só da empresa. Manda a planilha do computador: eu leio, sugiro, e só mudo se você gostar. Se ainda não tiver planilha, pede para eu fazer uma. Ferramentas de tesouraria entram nos planos pagos."
-                  : "Este chat é só da pessoa. Manda a planilha: eu estruturo, sugiro, e só aplico se você gostar. Se não tiver arquivo, pede para eu montar uma. Ferramentas da pessoa (corte, 50-30-20) entram nos planos pagos.",
-              },
-            ],
-      );
+      setMessages((current) => (current.length ? current : [{ from: "bot", body: welcomeBot(isCompany) }]));
     })();
   }, [live]);
 
@@ -105,6 +100,14 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     const buffer = await (company ? buildBusinessSampleBuffer() : buildPersonalSampleBuffer());
     downloadBuffer(buffer as ArrayBuffer, company ? "planilha-empresa.xlsx" : "planilha-pessoa.xlsx");
     return "Montei uma planilha modelo e baixei no seu computador. Preenche com os seus números e manda de volta aqui. Eu sugiro; só mudo se você gostar.";
+  }
+
+  function startNewChat() {
+    setMessages([{ from: "bot", body: welcomeBot(company) }]);
+    setPending(null);
+    setInput("");
+    setHand(false);
+    setBusy(false);
   }
 
   async function answer(raw: string) {
@@ -251,6 +254,9 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
             <h1 className="font-semibold text-lg mt-0.5">{company ? "Chat do caixa" : "Chat da pessoa"}</h1>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
+            <button type="button" className="btn btn-ghost" onClick={startNewChat}>
+              Nova conversa
+            </button>
             <Link href="/app/planos" className="text-sm text-muted">
               Planos
             </Link>
