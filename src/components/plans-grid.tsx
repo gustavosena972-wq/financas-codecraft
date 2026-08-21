@@ -99,7 +99,7 @@ export function PlansGrid({
     <div className="space-y-12">
       <Group
         title="Planos para pessoa"
-        body={`Gastos, teto do mês e o que cortar. PIX ${PIX_PLAN_KEY}.`}
+        body={`Chat, alerta do mês e educação. PIX ${PIX_PLAN_KEY}.`}
         audience="person"
         current={current}
         onSelect={onSelect}
@@ -107,7 +107,7 @@ export function PlansGrid({
       />
       <Group
         title="Planos para empresa"
-        body={`Títulos, DRE e equipe. Não mistura com o pessoal. PIX ${PIX_PLAN_KEY}.`}
+        body={`Jarvis, títulos, DRE e giro. Não mistura com o pessoal. PIX ${PIX_PLAN_KEY}.`}
         audience="company"
         current={current}
         onSelect={onSelect}

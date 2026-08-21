@@ -30,7 +30,7 @@ export function WelcomeGuide() {
           <>
             <h2 className="text-lg font-semibold">Pronto. Use o app no seu ritmo.</h2>
             <p className="text-sm text-muted">
-              Conta, lançamento, visão geral. Pessoa e empresa não se misturam — troque no topo. Planos pagam no PIX 31999758385.
+              Conta, lançamento e o chat. Pessoa e empresa não se misturam — troque no topo. Planos pagam no PIX 31999758385.
             </p>
             <div className="flex gap-2">
               <Link href="/app/comecar" className="btn btn-primary" onClick={done}>

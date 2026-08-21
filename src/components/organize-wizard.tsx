@@ -3,19 +3,7 @@
 import { useState } from "react";
 import { applyOrganizeAction } from "@/app/actions/import";
 import { brl } from "@/lib/money";
-import { buildOrganizedBuffer, organizeWorkbook, type OrganizeResult } from "@/lib/organize";
-
-async function downloadBuffer(buffer: Awaited<ReturnType<typeof buildOrganizedBuffer>>, filename: string) {
-  const blob = new Blob([buffer as ArrayBuffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+import { organizeWorkbook, type OrganizeResult } from "@/lib/organize";
 
 export function OrganizeWizard() {
   const [busy, setBusy] = useState(false);
@@ -57,11 +45,10 @@ export function OrganizeWizard() {
           <input name="file" type="file" accept=".xlsx,.xls,.csv,.txt" required />
         </label>
         <p className="text-sm text-muted">
-          Pode ser o orçamento do ano, do mês, ou a planilha que você travou no Excel. O app organiza,
-          mostra o que entendeu e deixa baixar uma versão clara.
+          Pode ser o orçamento do ano, do mês, ou a planilha que você já usa. O app lê e manda para os seus gastos.
         </p>
         <button className="btn btn-primary" disabled={busy}>
-          {busy ? "Lendo…" : "Organizar planilha"}
+          {busy ? "Lendo…" : "Mandar planilha"}
         </button>
       </form>
 
@@ -77,17 +64,8 @@ export function OrganizeWizard() {
               ))}
             </ul>
             <div className="flex flex-wrap gap-2 pt-2">
-              <button
-                className="btn btn-ghost"
-                disabled={busy}
-                onClick={async () =>
-                  downloadBuffer(await buildOrganizedBuffer(result), "planilha-organizada-financas-codecraft.xlsx")
-                }
-              >
-                Baixar organizada
-              </button>
               <button className="btn btn-primary" disabled={busy} onClick={() => void sendToApp()}>
-                Mandar para o app
+                Mandar para os gastos
               </button>
             </div>
           </div>

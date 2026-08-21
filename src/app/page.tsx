@@ -14,6 +14,7 @@ export default function HomePage() {
         <nav className="flex items-center gap-6 text-sm text-[#b7c4cf]">
           <a href="#pessoa">Pessoa</a>
           <a href="#empresa">Empresa</a>
+          <a href="#ferramentas">Ferramentas</a>
           <a href="#planos">Planos</a>
           <Link href="/login">Entrar</Link>
           <Link href="/cadastro" className="btn btn-primary">Começar</Link>
@@ -45,16 +46,16 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 items-start">
           <div>
             <p className="page-kicker">Para pessoa</p>
-            <h2 className="text-3xl font-semibold mt-2">Três passos. Sem DRE, sem título.</h2>
-            <p className="text-muted mt-3">
-              Coloca os gastos, olha o caixa e corta o que pesa. Plano grátis ou Pessoal por R$ 29.
-            </p>
+        <h2 className="text-3xl font-semibold mt-2">Um chat grande. Suas finanças no meio.</h2>
+        <p className="text-muted mt-3">
+          Manda a planilha, lança na mão ou pergunta. Ele olha o passado, planeja o próximo trimestre e avisa se está crítica, média ou boa.
+        </p>
           </div>
           <div className="grid gap-4">
             {[
-              ["1. Coloca os gastos", "Excel ou lançamento na mão. Mercado, aluguel, luz."],
-              ["2. A planilha monta o caixa", "O que entra, o que sai e a previsão dos próximos meses."],
-              ["3. A IA diz o que cortar", "Onde o dinheiro pesa e quanto baixa se negociar a conta."],
+              ["1. Coloca os gastos", "Planilha no clipe, na mão ou falando no chat."],
+              ["2. O contador analisa", "Meses passados, alerta e o que dá para cortar."],
+              ["3. Planeja a frente", "Teto para baixar gasto e melhorar o mês que vem."],
             ].map(([title, body], i) => (
               <article key={title} className={`card p-5 rise rise-d${i + 1}`}>
                 <h3 className="font-semibold">{title}</h3>
@@ -71,14 +72,36 @@ export default function HomePage() {
             <p className="page-kicker">Para empresa</p>
             <h2 className="text-3xl font-semibold mt-2">Tesouraria de verdade.</h2>
             <p className="text-muted mt-3">
-              Títulos, DRE, conciliação e equipe. Só aparece quando o espaço é Empresa. Plano Empresa R$ 199, Empresa Plus R$ 399.
+              Títulos, DRE, conciliação, giro e preço. Só no espaço Empresa. Plano Empresa R$ 199, Empresa Plus R$ 399.
             </p>
           </div>
           <div className="grid gap-4">
             {[
-              ["Títulos", "Contas a pagar e a receber. Baixa vira lançamento no caixa."],
-              ["DRE e fluxo", "Resultado do período e o saldo que ainda vai entrar ou sair."],
-              ["Conciliação e equipe", "Bate com o banco. Até 8 pessoas, ou sem teto no Plus."],
+              ["Jarvis e caixa", "Planilha, DRE, título e o próximo trimestre no chat."],
+              ["Tesouraria", "Pagar, receber, conciliar com o banco."],
+              ["Giro e preço", "Não gaste o que ainda não caiu. Precifique com imposto e margem."],
+            ].map(([title, body]) => (
+              <article key={title} className="card p-5">
+                <h3 className="font-semibold">{title}</h3>
+                <p className="text-sm text-muted mt-2">{body}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="ferramentas" className="bg-bg text-ink py-20 px-8">
+        <div className="max-w-6xl mx-auto">
+          <p className="page-kicker">Ferramentas</p>
+          <h2 className="text-3xl font-semibold mt-2">Não é só conversa. É conta.</h2>
+          <p className="text-muted mt-3 max-w-2xl">
+            O chat pensa com você. As ferramentas testam o número: reserva, 50-30-20, corte, dívida, moradia, giro e preço de serviço.
+          </p>
+          <div className="grid md:grid-cols-3 gap-4 mt-10">
+            {[
+              ["Reserva e alerta", "Quantos meses o saldo cobre o essencial. Crítica, média ou boa."],
+              ["Corte e teto", "E se baixar 20% do que mais pesa? 50-30-20 no mês real."],
+              ["Dívida e preço", "Quando o cartão acaba. Empresa: o que cobrar com imposto e margem."],
             ].map(([title, body]) => (
               <article key={title} className="card p-5">
                 <h3 className="font-semibold">{title}</h3>
@@ -93,7 +116,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-semibold">Planos</h2>
           <p className="text-muted mt-2 max-w-2xl">
-            Pessoa mais em conta. Empresa mais completa — e mais cara. Pagamento só no PIX {PIX_PLAN_KEY}.
+          Pessoa mais em conta. Empresa fecha tesouraria. Grátis já tem chat e educação; Pessoal libera as simuladoras. Pagamento só no PIX {PIX_PLAN_KEY}.
           </p>
           <div className="mt-10">
             <PlansGrid mode="public" />

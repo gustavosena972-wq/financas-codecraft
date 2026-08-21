@@ -56,8 +56,8 @@ export default function TransactionsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Lançamentos</h1>
-        <p className="text-sm text-muted">Receitas, despesas e transferências. Busque e mude o mês sem sair daqui.</p>
+        <h1 className="text-2xl font-semibold">Lançar na mão</h1>
+        <p className="text-sm text-muted">Uma linha por gasto. Também pode falar no chat ou mandar a planilha pelo clipe.</p>
       </div>
       <div className="flex flex-wrap gap-2 items-end">
         <label className="field">

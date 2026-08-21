@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { HelpChat } from "@/components/help-chat";
+import { AccountantChat } from "@/components/accountant-chat";
 
 export function HelpFab() {
   const [open, setOpen] = useState(false);
@@ -9,11 +9,11 @@ export function HelpFab() {
     <>
       {open ? (
         <div className="help-panel">
-          <HelpChat compact />
+          <AccountantChat compact />
         </div>
       ) : null}
-      <button className={`help-fab ${open ? "open" : ""}`} type="button" onClick={() => setOpen((v) => !v)} aria-label="Ajuda">
-        {open ? "×" : "?"}
+      <button className={`help-fab ${open ? "open" : ""}`} type="button" onClick={() => setOpen((v) => !v)} aria-label="Contador">
+        {open ? "×" : "AI"}
       </button>
     </>
   );

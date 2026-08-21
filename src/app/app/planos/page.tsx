@@ -66,7 +66,7 @@ export default function PlanosPage() {
       <div>
         <h1 className="text-2xl font-semibold">Planos</h1>
         <p className="text-sm text-muted max-w-2xl">
-          Pessoa: Grátis ou R$ 29. Empresa: R$ 199 ou R$ 399. Pagamento só na chave PIX 31999758385.
+          Pessoa: Grátis ou R$ 29. Empresa: R$ 199 ou R$ 399. Grátis já tem chat, alerta e educação. Pagamento só na chave PIX 31999758385.
         </p>
       </div>
       <div className={busy ? "pointer-events-none opacity-70" : ""}>

@@ -102,8 +102,8 @@ export function AppShell({
             </form>
           </div>
         </header>
-        <ScreenTip mode={kind} />
-        <main className="p-6 lg:p-8 max-w-6xl">
+        {pathname === "/app" ? null : <ScreenTip mode={kind} />}
+        <main className={pathname === "/app" ? "studio-main" : "p-6 lg:p-8 max-w-6xl"}>
           {blockedCompany ? (
             <div className="card p-8 max-w-lg space-y-3">
               <p className="page-kicker">Espaço pessoal</p>
@@ -125,7 +125,7 @@ export function AppShell({
             children
           )}
         </main>
-        <HelpFab />
+        {pathname !== "/app" ? <HelpFab /> : null}
         <WelcomeGuide />
       </div>
     </div>

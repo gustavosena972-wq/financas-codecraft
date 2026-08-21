@@ -12,32 +12,33 @@ export const START_STEPS = [
   {
     n: "1",
     title: "Coloca os gastos",
-    body: "Manda o Excel ou lança na mão. Conta, aluguel, mercado, tudo.",
-    href: "/app/importar",
+    body: "Manda a planilha, fala no chat ou lança na mão.",
+    href: "/app",
   },
   {
     n: "2",
-    title: "A planilha monta o caixa",
-    body: "Saldo, o que sai em cada mês e a previsão dos próximos três.",
+    title: "O contador organiza",
+    body: "Saldo, alerta do mês e o que dá para cortar.",
     href: "/app",
   },
   {
     n: "3",
-    title: "A IA diz o que cortar",
-    body: "Onde o dinheiro pesa e quanto você baixa se negociar a conta.",
+    title: "Segue o que cortar",
+    body: "O chat diz o que manter e como baixar a moradia.",
     href: "/app",
   },
 ];
 
 export const GUIDE: GuideItem[] = [
-  { href: "/app", title: "Visão geral", does: "É a planilha: caixa, previsão dos próximos meses e o que cortar.", tip: "Manda os gastos e volta aqui." },
+  { href: "/app", title: "Chat", does: "Tela grande: manda a planilha, lança na mão ou pergunta. O chat analisa, planeja o futuro e alerta se está crítica, média ou boa.", tip: "Clipe para a planilha. Colocar na mão se ainda não tem arquivo." },
   { href: "/app/lancamentos", title: "Lançar na mão", does: "Uma linha por movimento: salário, aluguel, mercado.", tip: "Descreva simples: “Aluguel”, “iFood”." },
   { href: "/app/contas", title: "Contas", does: "Onde o dinheiro mora: banco, carteira, cartão.", tip: "Uma conta por lugar real." },
   { href: "/app/agenda", title: "Contas do mês", does: "O que se repete, tipo aluguel ou internet.", tip: "No mês, lance o recorrente. Não sai sozinho do banco." },
   { href: "/app/orcamento", title: "Teto do mês", does: "Você diz o limite. O app mostra se passou.", tip: "Ponha valor só no que importa." },
   { href: "/app/metas", title: "Metas", does: "Um alvo de caixa. O progresso usa o saldo de agora.", tip: "Uma meta já basta no começo.", audience: "personal" },
-  { href: "/app/importar", title: "Colocar gastos", does: "Manda o Excel. O app organiza e joga no caixa.", tip: "Depois abra a visão geral." },
-  { href: "/app/exportar", title: "Baixar Excel", does: "Tira o mês em planilha, para você ou o contador.", tip: "Escolha o mês e baixe." },
+  { href: "/app/ferramentas", title: "Ferramentas", does: "Reserva, meses passados, 50-30-20, corte, dívida, moradia. Empresa: giro e preço.", tip: "No Grátis você vê alerta e reserva. O resto entra no Pessoal." },
+  { href: "/app/educacao", title: "Educação", does: "Banco de reserva, cartão, DRE, MEI e o que o chat também usa.", tip: "Aperte Perguntar no chat para cruzar com os seus números." },
+  { href: "/app/importar", title: "Mandar planilha", does: "Manda o Excel que você já tem. O app lê e joga nos gastos.", tip: "Depois volte ao chat." },
   { href: "/app/titulos", title: "Títulos", does: "O que a empresa ainda vai pagar ou receber.", tip: "Quando pagar, use Baixar. O caixa atualiza.", audience: "company" },
   { href: "/app/dre", title: "DRE", does: "Resultado da empresa: sobrou ou faltou, e por quê.", tip: "Use no fim do mês. Dá para imprimir.", audience: "company" },
   { href: "/app/fluxo", title: "Fluxo de caixa", does: "Saldo de agora e o que ainda entra ou sai.", tip: "Olhe antes de um pagamento grande.", audience: "company" },
@@ -68,7 +69,7 @@ export const VIDEO_SCENES = [
   {
     image: "/guide/scene-2.png",
     title: "1. Gastos",
-    voice: "Primeiro, coloca seus gastos. Planilha do computador ou lançamento na mão.",
+    voice: "Primeiro, coloca seus gastos. Planilha, chat ou na mão.",
   },
   {
     image: "/guide/scene-3.png",
@@ -78,7 +79,7 @@ export const VIDEO_SCENES = [
   {
     image: "/guide/scene-4.png",
     title: "3. Planilha",
-    voice: "Na visão geral está a planilha. Olhe o futuro e o que cortar. Títulos e DRE ficam para a empresa.",
+    voice: "No chat você manda a planilha, lança na mão ou pergunta. Ele olha o passado, o próximo trimestre e se a situação está crítica, média ou boa.",
   },
 ];
 

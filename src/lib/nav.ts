@@ -4,9 +4,8 @@ import {
   BookOpen,
   Building2,
   CalendarDays,
-  FileSpreadsheet,
   Flag,
-  LayoutDashboard,
+  GraduationCap,
   ListChecks,
   MessageCircle,
   PiggyBank,
@@ -18,6 +17,7 @@ import {
   Upload,
   Users,
   Wallet,
+  Wrench,
 } from "lucide-react";
 
 export type WorkspaceKind = "PERSONAL" | "BUSINESS";
@@ -53,7 +53,9 @@ export function navFor(type: WorkspaceKind): NavGroup[] {
       {
         label: "Dia a dia",
         items: [
-          { href: "/app", label: "Visão geral", icon: LayoutDashboard },
+          { href: "/app", label: "Chat", icon: MessageCircle },
+          { href: "/app/ferramentas", label: "Ferramentas", icon: Wrench },
+          { href: "/app/educacao", label: "Educação", icon: GraduationCap },
           { href: "/app/lancamentos", label: "Lançamentos", icon: Receipt },
           { href: "/app/titulos", label: "Títulos", icon: ListChecks },
           { href: "/app/contas", label: "Contas", icon: Wallet },
@@ -74,7 +76,6 @@ export function navFor(type: WorkspaceKind): NavGroup[] {
         items: [
           { href: "/app/centros", label: "Centros e parceiros", icon: Building2 },
           { href: "/app/importar", label: "Planilha", icon: Upload },
-          { href: "/app/exportar", label: "Exportar", icon: FileSpreadsheet },
           { href: "/app/auditoria", label: "Auditoria", icon: Shield },
           { href: "/app/equipe", label: "Equipe", icon: Users },
         ],
@@ -94,8 +95,10 @@ export function navFor(type: WorkspaceKind): NavGroup[] {
     {
       label: "Seu dinheiro",
       items: [
-        { href: "/app", label: "Visão geral", icon: LayoutDashboard },
-        { href: "/app/importar", label: "Colocar gastos", icon: Upload },
+        { href: "/app", label: "Chat", icon: MessageCircle },
+        { href: "/app/ferramentas", label: "Ferramentas", icon: Wrench },
+        { href: "/app/educacao", label: "Educação", icon: GraduationCap },
+        { href: "/app/importar", label: "Mandar planilha", icon: Upload },
         { href: "/app/lancamentos", label: "Lançar na mão", icon: Receipt },
         { href: "/app/contas", label: "Contas", icon: Wallet },
         { href: "/app/agenda", label: "Contas do mês", icon: CalendarDays },
@@ -106,7 +109,6 @@ export function navFor(type: WorkspaceKind): NavGroup[] {
       items: [
         { href: "/app/orcamento", label: "Teto do mês", icon: PiggyBank },
         { href: "/app/metas", label: "Metas", icon: Flag },
-        { href: "/app/exportar", label: "Baixar Excel", icon: FileSpreadsheet },
       ],
     },
     {

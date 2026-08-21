@@ -27,12 +27,13 @@ export const PLANS: Plan[] = [
     price: "R$ 0",
     priceValue: 0,
     period: "para sempre",
-    forWho: "Só para pessoa. Coloca os gastos e vê o caixa.",
+    forWho: "Só para pessoa. Coloca os gastos, lê o alerta e estuda o básico.",
     includes: [
-      "Gastos, contas e visão geral",
-      "Planilha do computador",
-      "Até 3 contas que se repetem",
-      "1 meta",
+      "Chat do contador: planilha, na mão ou pergunta",
+      "Alerta se está crítica, média ou boa",
+      "Educação financeira",
+      "Reserva e histórico dos meses",
+      "Até 3 contas que se repetem e 1 meta",
     ],
     news: [],
     cta: "Continuar grátis",
@@ -44,12 +45,12 @@ export const PLANS: Plan[] = [
     price: "R$ 29",
     priceValue: 29,
     period: "por mês",
-    forWho: "Só para pessoa. IA do mês e teto sem limite.",
+    forWho: "Só para pessoa. Simula corte, dívida e teto em cima do mês real.",
     includes: ["Tudo do Grátis"],
     news: [
-      "IA mostra o que cortar",
-      "Contas do mês e metas sem limite",
-      "Teto do mês sem trava",
+      "Simulador de corte, 50-30-20, moradia e dívida",
+      "IA sugere categoria e o que cortar",
+      "Contas do mês, teto e metas sem limite",
     ],
     cta: "Assinar Pessoal",
     highlight: true,
@@ -61,13 +62,14 @@ export const PLANS: Plan[] = [
     price: "R$ 199",
     priceValue: 199,
     period: "por mês",
-    forWho: "Só para empresa. Títulos, DRE e conciliação.",
+    forWho: "Só para empresa. Jarvis, títulos, DRE e giro.",
     includes: [
       "Espaço Empresa separado do pessoal",
+      "Chat Jarvis com planilha e lançamento",
       "Contas a pagar e a receber",
       "DRE, fluxo e conciliação",
-      "Centros, parceiros e auditoria",
-      "Até 8 pessoas na equipe",
+      "Giro e precificação de serviço",
+      "Centros, parceiros, auditoria e até 8 pessoas",
     ],
     news: [],
     cta: "Assinar Empresa",
@@ -92,6 +94,10 @@ export const PLANS: Plan[] = [
 
 export function plansFor(audience: PlanAudience) {
   return PLANS.filter((p) => p.audience === audience);
+}
+
+export function planHasSimulators(plan: PlanId | string | null | undefined) {
+  return plan === "PRO" || plan === "BUSINESS" || plan === "ENTERPRISE";
 }
 
 export function planHasAi(plan: PlanId | string | null | undefined) {

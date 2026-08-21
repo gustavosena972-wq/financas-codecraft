@@ -29,14 +29,21 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "Pessoa: Grátis ou Pessoal R$ 29. Empresa: R$ 199 ou Empresa Plus R$ 399. Só no PIX 31999758385. Em Planos você gera o QR.",
+      body: "Pessoa: Grátis (chat, alerta, educação) ou Pessoal R$ 29 (simuladoras). Empresa: R$ 199 ou Empresa Plus R$ 399. Só no PIX 31999758385. Em Planos você gera o QR.",
     };
   }
   if (/(planilha|excel|import|orcamento)/.test(text)) {
     return {
       auto: true,
       human: false,
-      body: "Em Planilha você manda o Excel. O app organiza, joga no caixa e na visão geral aparece a previsão do mês e o que dá para cortar.",
+      body: "Três jeitos no chat: clipe para mandar a planilha, Colocar na mão se ainda não tem arquivo, ou fala o gasto. Sem baixar modelo.",
+    };
+  }
+  if (/(ferramenta|simul|educacao|educação|50.30.20|reserva)/.test(text)) {
+    return {
+      auto: true,
+      human: false,
+      body: "Ferramentas testa o número (reserva, corte, dívida). Educação explica. O chat junta os dois com o seu mês. No Grátis a reserva e o alerta já abrem; o resto é Pessoal.",
     };
   }
   if (/(agenda|recorrente|aluguel)/.test(text)) {
@@ -50,14 +57,14 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "São três passos: coloca os gastos, olha a planilha na visão geral, segue o que a IA apontou para cortar. Em Como usar tem um vídeo de um minuto.",
+      body: "No chat o contador analisa o mês, os meses passados e o próximo trimestre. Manda a planilha no clipe ou lança na mão se ainda não tem nada salvo.",
     };
   }
   if (/(cortar|previsao|futuro|o que vou gastar|baixar conta)/.test(text)) {
     return {
       auto: true,
       human: false,
-      body: "Isso fica na visão geral, na planilha de cima. Tem o que sai em cada mês e dicas para baixar conta. Primeiro manda os gastos em Planilha.",
+      body: "Pergunta no chat: o que cortar, como foram os meses, planeja o próximo trimestre, como está minha situação.",
     };
   }
   if (/(claro|escuro|tema|dark|light)/.test(text)) {
@@ -78,7 +85,7 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "Na visão geral a IA monta a planilha e aponta o que cortar. No plano Pessoal (R$ 29) ela também explica desvio do teto. Não mexe no dinheiro. PIX 31999758385.",
+      body: "No chat o contador lê os seus números, aponta o que cortar e lança o que você falar. Não mexe no dinheiro sozinho.",
     };
   }
 

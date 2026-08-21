@@ -10,7 +10,7 @@ export default function AjudaPage() {
       <div>
         <h1 className="text-2xl font-semibold">Ajuda</h1>
         <p className="text-sm text-muted max-w-2xl">
-          Primeiro o guia curto. O chat só tira dúvida simples. Compra, comprovante e senha passam por uma pessoa.
+          O chat do contador é a tela principal. Aqui é só PIX, comprovante e falar com uma pessoa.
         </p>
       </div>
       <Link href="/app/comecar" className="card p-5 block hover:border-gold">

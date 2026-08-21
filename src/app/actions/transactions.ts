@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { addTransaction, deleteTransaction, isMonthLocked, listTransactions, pushAudit, requireSession } from "@/lib/store";
+import { addTransaction, deleteTransaction, isMonthLocked, listAccounts, listCategories, listTransactions, pushAudit, requireSession } from "@/lib/store";
+import { applyCategorySuggestion } from "@/lib/ai";
 import { parseMoneyToCents, toInputDate } from "@/lib/money";
 import { newId, nowIso } from "@/lib/types";
 import type { TransactionType } from "@/lib/types";
@@ -66,6 +67,46 @@ export async function deleteTransactionAction(id: string) {
   const tx = listTransactions(session.workspace.id).find((item) => item.id === id);
   if (tx && isMonthLocked(session.workspace.id, tx.date)) return;
   await deleteTransaction(id, session.workspace.id);
+}
+
+export async function addChatSpendsAction(itemsJson: string) {
+  const session = await requireSession();
+  if (!session) return { error: "Sessão expirada." };
+  let items: Array<{ type: "INCOME" | "EXPENSE"; description: string; amount: number }>;
+  try {
+    items = JSON.parse(itemsJson);
+  } catch {
+    return { error: "Não entendi os gastos." };
+  }
+  if (!Array.isArray(items) || !items.length) return { error: "Nada para lançar." };
+  const account = listAccounts(session.workspace.id).find((a) => a.type === "CHECKING") ?? listAccounts(session.workspace.id)[0];
+  if (!account) return { error: "Cadastre uma conta primeiro." };
+  const categories = listCategories(session.workspace.id);
+  const today = toInputDate(new Date());
+  for (const item of items.slice(0, 12)) {
+    if (!item?.description || !item.amount) continue;
+    if (isMonthLocked(session.workspace.id, today)) return { error: "Este mês está fechado." };
+    const category = applyCategorySuggestion(item.description, item.type, undefined, categories);
+    await addTransaction({
+      id: newId(),
+      workspaceId: session.workspace.id,
+      accountId: account.id,
+      categoryId: category?.id ?? null,
+      type: item.type,
+      amount: Math.abs(item.amount),
+      date: `${today}T12:00:00`,
+      description: String(item.description).slice(0, 80),
+      notes: "via chat",
+      transferToAccountId: null,
+      importHash: null,
+      createdAt: nowIso(),
+    });
+  }
+  await pushAudit(session.user.id, "create", "transaction", {
+    workspaceId: session.workspace.id,
+    detail: "gastos pelo chat",
+  });
+  return { ok: "Lançado." };
 }
 
 export async function duplicateTransactionAction(id: string) {
