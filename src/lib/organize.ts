@@ -57,22 +57,29 @@ const MONTH_INDEX: Record<string, number> = {
 
 const HEADER_MAP: Record<string, string> = {
   data: "date",
+  date: "date",
   vencimento: "date",
   mes: "date",
   descricao: "description",
   historico: "description",
   item: "description",
   lancamento: "description",
+  nome: "description",
+  gasto: "description",
   valor: "amount",
   previsto: "amount",
   orcado: "amount",
   planejado: "amount",
   realizado: "amount",
+  preco: "amount",
+  rs: "amount",
   tipo: "type",
   categoria: "category",
   conta: "account",
   carteira: "account",
   observacoes: "notes",
+  saida: "amount",
+  entrada: "amount",
 };
 
 function yearFromName(filename: string) {
@@ -101,10 +108,14 @@ async function loadTables(buffer: ArrayBuffer, filename: string) {
   const lower = filename.toLowerCase();
   const tables: string[][][] = [];
   if (lower.endsWith(".csv") || lower.endsWith(".txt")) {
-    const text = new TextDecoder("utf-8").decode(buffer);
+    let text = new TextDecoder("utf-8").decode(buffer);
+    if (text.includes("\uFFFD")) text = new TextDecoder("iso-8859-1").decode(buffer);
     const lines = text.split(/\r?\n/).filter((line) => line.trim().length);
     const delimiter = lines[0]?.includes(";") && !lines[0].includes(",") ? ";" : ",";
     tables.push(lines.map((line) => splitCsv(line, delimiter)));
+    return tables;
+  }
+  if (lower.endsWith(".xls") && !lower.endsWith(".xlsx")) {
     return tables;
   }
   const workbook = new ExcelJS.Workbook();
@@ -145,11 +156,12 @@ function parseLaunchTable(rows: string[][]): MappedRow[] {
     const amountRaw = parseMoneyToCents(raw[amountIdx] ?? "");
     if (amountRaw == null) issues.push("Valor inválido");
     const date = dateIdx >= 0 ? parseDateCell(raw[dateIdx]) : null;
-    if (dateIdx >= 0 && !date) issues.push("Data inválida");
     const signed = amountRaw ?? 0;
     const type = inferType(idx("type") >= 0 ? raw[idx("type")] : "", signed);
     const amount = Math.abs(signed);
-    const isoDate = date ?? "";
+    const today = new Date();
+    const fallback = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const isoDate = date ?? fallback;
     out.push({
       date: isoDate,
       description,
@@ -246,7 +258,19 @@ export function explainOrganized(result: OrganizeResult) {
 
 export async function organizeWorkbook(buffer: ArrayBuffer, filename: string): Promise<OrganizeResult> {
   const tables = await loadTables(buffer, filename);
-  if (!tables.length) return { error: "Planilha vazia.", filename, rows: [], budgets: [], months: [], categories: [], notes: [] };
+  if (!tables.length) {
+    return {
+      error: filename.toLowerCase().endsWith(".xls")
+        ? "Esse .xls antigo o app não lê. Salva de novo como Excel .xlsx ou CSV e manda outra vez."
+        : "Planilha vazia.",
+      filename,
+      rows: [],
+      budgets: [],
+      months: [],
+      categories: [],
+      notes: [],
+    };
+  }
   const year = yearFromName(filename);
   const rows: MappedRow[] = [];
   const budgets: BudgetCell[] = [];

@@ -10,9 +10,11 @@ import { saveChatBudgetAction } from "@/app/actions/budgets";
 import { applyOrganizeAction } from "@/app/actions/import";
 import { organizeWorkbook } from "@/lib/organize";
 import { listAccounts, listCategories, requireSession } from "@/lib/store";
-import { planHasAi } from "@/lib/plans";
+import { planHasAi, planHasSimulators } from "@/lib/plans";
 import { useLive } from "@/lib/live";
 import { TransactionForm } from "@/components/transaction-form";
+import { MoneySheet } from "@/components/money-sheet";
+import { buildMoneySheet } from "@/lib/coach";
 
 type Msg = { from: "user" | "bot"; body: string };
 
@@ -34,6 +36,9 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
   const [pulse, setPulse] = useState<FinancePulse | null>(null);
   const [hand, setHand] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
+  const [paid, setPaid] = useState(false);
+  const [sheet, setSheet] = useState<ReturnType<typeof buildMoneySheet> | null>(null);
+  const [dragOver, setDragOver] = useState(false);
   const [accounts, setAccounts] = useState<{ id: string; name: string }[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string; kind: string }[]>([]);
   const logRef = useRef<HTMLDivElement>(null);
@@ -51,6 +56,9 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       setAccounts(listAccounts(id));
       setCategories(listCategories(id));
       setAiEnabled(planHasAi(session.user.plan));
+      const isPaid = planHasSimulators(session.user.plan);
+      setPaid(isPaid);
+      setSheet(buildMoneySheet(id, isPaid));
       setMessages((current) =>
         current.length
           ? current
@@ -105,6 +113,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       if (saved.error) return saved.error;
     }
     setPulse(financePulse(workspaceId));
+    setSheet(buildMoneySheet(workspaceId, paid));
     return reply.body;
   }
 
@@ -146,7 +155,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
         setBusy(false);
         return;
       }
-      const body = await answer("Analisa o que entrou, revisa os meses passados, diz se a situação está crítica média ou boa e planeja o próximo trimestre para baixar gasto.");
+      const body = await answer("Analisa o que entrou, monta a planilha dos meses, diz o que cortar, dá dica e planeja o próximo trimestre.");
       const saved = "ok" in applied ? applied.ok : "Planilha no controle.";
       setMessages((current) => [...current, { from: "bot", body: `${saved} ${body}` }]);
     } catch {
@@ -160,7 +169,22 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
   const empty = messages.length <= 1;
 
   return (
-    <section className={`acct-chat ${studio ? "studio" : "card"} ${compact ? "compact" : ""} ${hand ? "with-hand" : ""}`}>
+    <section
+      className={`acct-chat ${studio ? "studio" : "card"} ${compact ? "compact" : ""} ${hand ? "with-hand" : ""} ${dragOver ? "drop-on" : ""}`}
+      onDragOver={(e) => {
+        if (!studio) return;
+        e.preventDefault();
+        setDragOver(true);
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        if (!studio) return;
+        e.preventDefault();
+        setDragOver(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) void onFile(file);
+      }}
+    >
       {studio ? (
         <header className="claude-top">
           <div>
@@ -197,9 +221,17 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
               <h2>{company ? "Como está o caixa hoje?" : "Como posso olhar suas finanças hoje?"}</h2>
               <p>
                 {company
-                  ? "Manda a planilha, lança na mão ou pergunta de DRE e título. Jarvis (projeto e cliente) fica no site da CodeCraft."
-                  : "Manda a tabela salva no computador, coloca o mês na mão se ainda não tem nada, ou pergunta. Eu reviso o passado, planejo o futuro e aviso se está crítica, média ou boa."}
+                  ? "Manda a planilha, solta o arquivo aqui, lança na mão ou pergunta de DRE e título."
+                  : "Solta o Excel aqui, clica em Mandar planilha, ou coloca o mês na mão. Eu monto a folha, olho o futuro e digo o que cortar."}
               </p>
+              <div className="flex flex-wrap gap-2 justify-center mt-4">
+                <button type="button" className="btn btn-primary" onClick={() => fileRef.current?.click()}>
+                  Mandar planilha
+                </button>
+                <button type="button" className="btn btn-ghost" onClick={() => setHand(true)}>
+                  Colocar na mão
+                </button>
+              </div>
             </div>
           ) : null}
           {messages.map((msg, i) => {
@@ -213,6 +245,19 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
           {busy ? (
             <div className="acct-row bot">
               <div className="acct-bubble thinking">Pensando…</div>
+            </div>
+          ) : null}
+          {studio && sheet && !sheet.empty ? (
+            <div className="chat-sheet">
+              <MoneySheet sheet={sheet} />
+              {!paid ? (
+                <p className="text-sm text-muted px-1 pt-2">
+                  No Grátis a folha mostra o mês. No Pessoal (R$ 29) eu monto o ano, o que cortar e o próximo trimestre.{" "}
+                  <Link href="/app/planos" className="underline">
+                    Ver planos
+                  </Link>
+                </p>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -260,7 +305,10 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
                 if (file) void onFile(file);
               }}
             />
-            <button type="button" className="acct-icon" title="Mandar planilha" disabled={busy} onClick={() => fileRef.current?.click()}>
+            <button type="button" className="btn btn-ink" title="Mandar planilha" disabled={busy} onClick={() => fileRef.current?.click()}>
+              Mandar planilha
+            </button>
+            <button type="button" className="acct-icon" title="Anexar arquivo" disabled={busy} onClick={() => fileRef.current?.click()}>
               <Paperclip size={18} />
             </button>
             <button type="button" className="acct-chip" disabled={busy} onClick={() => setHand((v) => !v)}>
@@ -273,7 +321,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
           placeholder={
             company
               ? "Pergunta de caixa, DRE, ou fala um gasto"
-              : "Pergunta, fala um gasto, ou manda a planilha no clipe"
+              : "Pergunta, fala um gasto, ou solta o Excel aqui"
           }
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {

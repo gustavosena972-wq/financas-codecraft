@@ -31,7 +31,7 @@ function normalize(value: string) {
     .toLowerCase();
 }
 
-export function buildMoneySheet(workspaceId: string) {
+export function buildMoneySheet(workspaceId: string, paid = false) {
   const now = monthKey();
   const history = [shiftMonth(now, -2), shiftMonth(now, -1), now].map((month) => ({
     month,
@@ -65,9 +65,10 @@ export function buildMoneySheet(workspaceId: string) {
     kind: "now",
   };
 
+  const futureCount = paid ? 11 : 1;
   const future: SheetRow[] = [];
   let running = currentBalance;
-  for (let i = 1; i <= 3; i += 1) {
+  for (let i = 1; i <= futureCount; i += 1) {
     const month = shiftMonth(now, i);
     const net = incomeAvg - expenseAvg;
     running += net;
@@ -134,7 +135,8 @@ export function buildMoneySheet(workspaceId: string) {
     expenseAvg,
     saveMonth,
     yearSave: saveMonth * 12,
-    tips: tips.slice(0, 4),
+    tips: paid ? tips.slice(0, 4) : tips.slice(0, 1),
     empty: history.every((row) => !row.txs.length),
+    paid,
   };
 }

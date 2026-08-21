@@ -516,6 +516,20 @@ export async function addAccount(account: Account) {
   bumpStore();
 }
 
+export async function addCategory(category: Category) {
+  const supabase = getSupabase();
+  const { error } = await supabase.from("fc_categories").insert({
+    id: category.id,
+    workspace_id: category.workspaceId,
+    name: category.name,
+    kind: category.kind,
+    color: category.color,
+  });
+  if (error) throw error;
+  snapshot?.categories.push(category);
+  bumpStore();
+}
+
 export async function archiveAccount(id: string, workspaceId: string) {
   const supabase = getSupabase();
   const { error } = await supabase.from("fc_accounts").update({ archived: true }).eq("id", id).eq("workspace_id", workspaceId);

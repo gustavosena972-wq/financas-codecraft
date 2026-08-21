@@ -30,9 +30,9 @@ export const PLANS: Plan[] = [
     forWho: "Só para pessoa. Coloca os gastos, lê o alerta e estuda o básico.",
     includes: [
       "Chat do contador: planilha, na mão ou pergunta",
-      "Alerta se está crítica, média ou boa",
+      "Folha do mês, alerta crítica/média/boa",
       "Educação financeira",
-      "Reserva e histórico dos meses",
+      "Reserva e histórico",
       "Até 3 contas que se repetem e 1 meta",
     ],
     news: [],
@@ -48,9 +48,9 @@ export const PLANS: Plan[] = [
     forWho: "Só para pessoa. Simula corte, dívida e teto em cima do mês real.",
     includes: ["Tudo do Grátis"],
     news: [
+      "Planilha do ano no chat, o que cortar e o próximo trimestre",
       "Simulador de corte, 50-30-20, moradia e dívida",
-      "IA sugere categoria e o que cortar",
-      "Contas do mês, teto e metas sem limite",
+      "IA sugere categoria. Contas do mês, teto e metas sem limite",
     ],
     cta: "Assinar Pessoal",
     highlight: true,

@@ -376,7 +376,12 @@ html[data-theme="dark"] .btn-ghost {
   place-items: center;
   cursor: pointer;
 }
-.acct-icon:hover { border-color: var(--gold); }
+.acct-chat.drop-on {
+  outline: 2px dashed var(--gold);
+  outline-offset: -8px;
+}
+.chat-sheet { padding: 8px 0 16px; }
+.chat-sheet .card { box-shadow: none; }
 .acct-bubble.thinking { opacity: 0.65; }
 .hand-panel {
   overflow-y: auto;
