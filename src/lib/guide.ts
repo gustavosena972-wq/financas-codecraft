@@ -79,7 +79,7 @@ export const VIDEO_SCENES = [
   {
     image: "/guide/scene-4.png",
     title: "Planos",
-    voice: "Seis pacotes. Pessoa grátis, R$ 100 e R$ 200. Empresa grátis, R$ 100 e R$ 200. O chat é o mesmo. O que muda são as ferramentas. Pagamento só no PIX da CodeCraft.",
+    voice: "Seis pacotes. Pessoa grátis, R$ 100 e R$ 200. Empresa grátis, R$ 100 e R$ 200. Você assina, abre o QR, paga no PIX da CodeCraft. O chat não pede senha.",
   },
 ];
 
