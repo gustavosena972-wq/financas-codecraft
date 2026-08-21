@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PlansGrid } from "@/components/plans-grid";
 import { PixPay } from "@/components/pix-pay";
 import { planById, type PlanId } from "@/lib/plans";
@@ -15,6 +15,7 @@ export default function PlanosPage() {
   const [checkout, setCheckout] = useState<PlanId | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const payRef = useRef<HTMLDivElement>(null);
   const txid = useMemo(() => `FC${newId().replace(/-/g, "").slice(0, 18).toUpperCase()}`, [checkout]);
   const chosen = checkout ? planById(checkout) : null;
 
@@ -28,6 +29,11 @@ export default function PlanosPage() {
       setPlan(session.user.plan);
     })();
   }, [live]);
+
+  useEffect(() => {
+    if (!checkout) return;
+    payRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [checkout]);
 
   async function onSelect(next: PlanId) {
     if (next === "FREE") {
@@ -69,25 +75,25 @@ export default function PlanosPage() {
           Pessoa: grátis, R$ 100 e R$ 200. Empresa: grátis, R$ 100 e R$ 200. O chat é igual; as ferramentas é que mudam.
         </p>
       </div>
-      <div className={busy ? "pointer-events-none opacity-70" : ""}>
-        <PlansGrid mode="account" current={plan} onSelect={(id) => void onSelect(id)} />
-      </div>
       {chosen && chosen.priceValue ? (
-        <div className="space-y-4">
+        <div ref={payRef} className="space-y-4">
           <PixPay amount={chosen.priceValue} txid={txid} label={`Plano ${chosen.name} · mensal`} />
           <div className="flex flex-wrap gap-2">
-            <button className="btn btn-primary" disabled={busy} onClick={() => void confirmPaid()}>
+            <button className="btn btn-primary" type="button" disabled={busy} onClick={() => void confirmPaid()}>
               Já paguei este PIX
             </button>
             <a className="btn btn-ghost" href={whatsappLink(`Olá! Paguei o plano ${chosen.name} no PIX 31999758385.`)}>
               Mandar comprovante no WhatsApp
             </a>
-            <button className="btn btn-ghost" onClick={() => setCheckout(null)}>
+            <button className="btn btn-ghost" type="button" onClick={() => setCheckout(null)}>
               Cancelar
             </button>
           </div>
         </div>
       ) : null}
+      <div className={busy ? "pointer-events-none opacity-70" : ""}>
+        <PlansGrid mode="account" current={plan} onSelect={(id) => void onSelect(id)} />
+      </div>
       {message ? <p className="text-sm text-muted">{message}</p> : null}
     </div>
   );

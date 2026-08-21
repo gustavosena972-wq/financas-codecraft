@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { PIX_KEY, buildPixPayload, whatsappLink } from "@/lib/pix";
+import { PIX_KEY, buildPixPayload, copyText, whatsappLink } from "@/lib/pix";
 
 export function PixPay({
   amount,
@@ -22,9 +22,9 @@ export function PixPay({
   }, [payload]);
 
   async function copy(text: string, which: string) {
-    await navigator.clipboard.writeText(text);
-    setCopied(which);
-    setTimeout(() => setCopied(null), 2000);
+    const ok = await copyText(text);
+    setCopied(ok ? which : "erro");
+    setTimeout(() => setCopied(null), 2500);
   }
 
   return (
@@ -44,17 +44,22 @@ export function PixPay({
         <p className="text-sm text-muted">
           Chave PIX (celular): <strong className="text-ink">{PIX_KEY}</strong>
         </p>
+        <label className="field">
+          <span>PIX copia e cola</span>
+          <textarea readOnly rows={3} value={payload} className="font-mono text-[11px] leading-snug" onFocus={(e) => e.currentTarget.select()} />
+        </label>
         <div className="flex flex-wrap gap-2">
           <button className="btn btn-primary" type="button" onClick={() => void copy(PIX_KEY, "chave")}>
             {copied === "chave" ? "Chave copiada" : "Copiar chave"}
           </button>
-          <button className="btn btn-ghost" type="button" onClick={() => void copy(payload, "pix")}>
+          <button className="btn btn-ink" type="button" onClick={() => void copy(payload, "pix")}>
             {copied === "pix" ? "PIX copiado" : "Copiar copia e cola"}
           </button>
           <a className="btn btn-ghost" href={whatsappLink(`Olá! Paguei o PIX ${label ?? ""} no valor de R$ ${amount?.toFixed(2) ?? ""}. Chave ${PIX_KEY}.`)}>
             Enviar comprovante
           </a>
         </div>
+        {copied === "erro" ? <p className="text-sm text-negative">Não copiou sozinho. Selecione o código acima e copie no celular.</p> : null}
         <p className="text-xs text-muted">
           Abra o app do banco, pague o QR ou cole o código. A chave é {PIX_KEY}. Não pedimos senha e o chat não libera pagamento sozinho.
         </p>
