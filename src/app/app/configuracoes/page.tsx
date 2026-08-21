@@ -1,38 +1,36 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { currentUser, listLogs, listWorkspaces, requireSession, setSessionWorkspaceId, loadDb, saveDb } from "@/lib/store";
+import { listLogs, listWorkspaces, requireSession, setLastWorkspace } from "@/lib/store";
 import { provisionWorkspace } from "@/lib/workspace";
 import { go } from "@/lib/types";
 
 export default function SettingsPage() {
-  const [user, setUser] = useState(currentUser());
-  const [workspaces, setWorkspaces] = useState(user ? listWorkspaces(user.id) : []);
-  const [logs, setLogs] = useState(user ? listLogs(user.id) : []);
+  const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [workspaces, setWorkspaces] = useState<{ id: string; name: string; type: "PERSONAL" | "BUSINESS" }[]>([]);
+  const [logs, setLogs] = useState<ReturnType<typeof listLogs>>([]);
 
   useEffect(() => {
-    const session = requireSession();
-    if (!session) {
-      go("/login");
-      return;
-    }
-    setUser(session.user);
-    setWorkspaces(listWorkspaces(session.user.id));
-    setLogs(listLogs(session.user.id));
+    void (async () => {
+      const session = await requireSession();
+      if (!session) {
+        go("/login");
+        return;
+      }
+      setUser(session.user);
+      setWorkspaces(listWorkspaces(session.user.id));
+      setLogs(listLogs(session.user.id));
+    })();
   }, []);
 
   if (!user) return null;
   const hasPersonal = workspaces.some((w) => w.type === "PERSONAL");
   const hasBusiness = workspaces.some((w) => w.type === "BUSINESS");
 
-  function addProfile(type: "PERSONAL" | "BUSINESS") {
+  async function addProfile(type: "PERSONAL" | "BUSINESS") {
     if (!user) return;
-    const ws = provisionWorkspace(user.id, type === "PERSONAL" ? "Pessoal" : "Empresa", type);
-    const db = loadDb();
-    const me = db.users.find((u) => u.id === user.id);
-    if (me) me.lastWorkspaceId = ws.id;
-    saveDb(db);
-    setSessionWorkspaceId(ws.id);
+    const ws = await provisionWorkspace(user.id, type === "PERSONAL" ? "Pessoal" : "Empresa", type);
+    await setLastWorkspace(user.id, ws.id);
     go("/app");
   }
 
@@ -50,8 +48,8 @@ export default function SettingsPage() {
           ))}
         </ul>
         <div className="flex gap-2 flex-wrap pt-2">
-          {!hasPersonal ? <button className="btn btn-ghost" onClick={() => addProfile("PERSONAL")}>Criar perfil pessoal</button> : null}
-          {!hasBusiness ? <button className="btn btn-ghost" onClick={() => addProfile("BUSINESS")}>Criar perfil empresarial</button> : null}
+          {!hasPersonal ? <button className="btn btn-ghost" onClick={() => void addProfile("PERSONAL")}>Criar perfil pessoal</button> : null}
+          {!hasBusiness ? <button className="btn btn-ghost" onClick={() => void addProfile("BUSINESS")}>Criar perfil empresarial</button> : null}
         </div>
       </div>
       <div className="card p-6">

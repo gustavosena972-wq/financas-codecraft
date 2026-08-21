@@ -1,4 +1,4 @@
-import { addTransaction, listAccounts, listCategories, listTransactions, loadDb, pushAudit, requireSession, saveDb } from "@/lib/store";
+import { addTransaction, listAccounts, listCategories, listTransactions, pushAudit, requireSession } from "@/lib/store";
 import { parseWorkbook, type MappedRow } from "@/lib/excel";
 import { newId, nowIso } from "@/lib/types";
 
@@ -10,7 +10,7 @@ export type ImportPreview = {
 };
 
 export async function previewImportAction(formData: FormData): Promise<ImportPreview> {
-  const session = requireSession();
+  const session = await requireSession();
   if (!session) return { error: "Sessão expirada." };
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
@@ -34,7 +34,7 @@ export async function previewImportAction(formData: FormData): Promise<ImportPre
 }
 
 export async function confirmImportAction(rowsJson: string) {
-  const session = requireSession();
+  const session = await requireSession();
   if (!session) return { error: "Sessão expirada." };
   const rows = JSON.parse(rowsJson) as MappedRow[];
   const valid = rows.filter((row) => row.issues.length === 0 && row.amount > 0 && row.date);
@@ -53,7 +53,7 @@ export async function confirmImportAction(rowsJson: string) {
   const existing = new Set(listTransactions(session.workspace.id).map((t) => t.importHash).filter(Boolean));
   for (const row of valid) {
     if (existing.has(row.hash)) continue;
-    addTransaction({
+    await addTransaction({
       id: newId(),
       workspaceId: session.workspace.id,
       accountId: findAccount(row.account).id,
@@ -70,11 +70,9 @@ export async function confirmImportAction(rowsJson: string) {
     existing.add(row.hash);
     created += 1;
   }
-  const db = loadDb();
-  pushAudit(db, session.user.id, "import", "transaction", {
+  await pushAudit(session.user.id, "import", "transaction", {
     workspaceId: session.workspace.id,
     detail: `${created} lançamentos`,
   });
-  saveDb(db);
   return { ok: `${created} lançamentos importados.`, created };
 }

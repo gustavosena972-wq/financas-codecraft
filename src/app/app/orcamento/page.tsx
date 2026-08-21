@@ -18,26 +18,28 @@ export default function BudgetPage() {
     const params = new URLSearchParams(window.location.search);
     const m = params.get("month") ?? monthKey();
     setMonth(m);
-    const session = requireSession();
-    if (!session) {
-      go("/login");
-      return;
-    }
-    const categories = listCategories(session.workspace.id).filter((c) => c.kind === "EXPENSE");
-    const budgets = listBudgets(session.workspace.id, m);
-    const summary = monthSummary(session.workspace.id, m);
-    const spent = new Map<string, number>();
-    for (const tx of summary.txs.filter((t) => t.type === "EXPENSE" && t.categoryId)) {
-      spent.set(tx.categoryId!, (spent.get(tx.categoryId!) ?? 0) + tx.amount);
-    }
-    setRows(
-      categories.map((category) => ({
-        id: category.id,
-        name: category.name,
-        planned: budgets.find((b) => b.categoryId === category.id)?.amount ?? 0,
-        actual: spent.get(category.id) ?? 0,
-      })),
-    );
+    void (async () => {
+      const session = await requireSession();
+      if (!session) {
+        go("/login");
+        return;
+      }
+      const categories = listCategories(session.workspace.id).filter((c) => c.kind === "EXPENSE");
+      const budgets = listBudgets(session.workspace.id, m);
+      const summary = monthSummary(session.workspace.id, m);
+      const spent = new Map<string, number>();
+      for (const tx of summary.txs.filter((t) => t.type === "EXPENSE" && t.categoryId)) {
+        spent.set(tx.categoryId!, (spent.get(tx.categoryId!) ?? 0) + tx.amount);
+      }
+      setRows(
+        categories.map((category) => ({
+          id: category.id,
+          name: category.name,
+          planned: budgets.find((b) => b.categoryId === category.id)?.amount ?? 0,
+          actual: spent.get(category.id) ?? 0,
+        })),
+      );
+    })();
   }, []);
 
   const chartRows = rows.filter((r) => r.planned > 0 || r.actual > 0);

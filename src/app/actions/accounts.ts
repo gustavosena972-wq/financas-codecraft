@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { addAccount, archiveAccount, loadDb, pushAudit, requireSession, saveDb } from "@/lib/store";
+import { addAccount, archiveAccount, pushAudit, requireSession } from "@/lib/store";
 import { parseMoneyToCents } from "@/lib/money";
 import { newId, nowIso } from "@/lib/types";
 import type { AccountType } from "@/lib/types";
@@ -7,7 +7,7 @@ import type { AccountType } from "@/lib/types";
 export type FormState = { error?: string; ok?: string } | null;
 
 export async function createAccountAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const session = requireSession();
+  const session = await requireSession();
   if (!session) return { error: "Sessão expirada." };
   const parsed = z
     .object({
@@ -23,7 +23,7 @@ export async function createAccountAction(_prev: FormState, formData: FormData):
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   const cents = parsed.data.initialBalance ? parseMoneyToCents(parsed.data.initialBalance) : 0;
   if (cents == null) return { error: "Saldo inicial inválido" };
-  addAccount({
+  await addAccount({
     id: newId(),
     workspaceId: session.workspace.id,
     name: parsed.data.name,
@@ -32,17 +32,15 @@ export async function createAccountAction(_prev: FormState, formData: FormData):
     archived: false,
     createdAt: nowIso(),
   });
-  const db = loadDb();
-  pushAudit(db, session.user.id, "create", "account", {
+  await pushAudit(session.user.id, "create", "account", {
     workspaceId: session.workspace.id,
     detail: parsed.data.name,
   });
-  saveDb(db);
   return { ok: "Conta criada." };
 }
 
 export async function archiveAccountAction(accountId: string) {
-  const session = requireSession();
+  const session = await requireSession();
   if (!session) return;
-  archiveAccount(accountId, session.workspace.id);
+  await archiveAccount(accountId, session.workspace.id);
 }

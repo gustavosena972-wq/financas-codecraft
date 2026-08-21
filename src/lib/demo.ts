@@ -1,49 +1,41 @@
-import { findUserByEmail, loadDb, saveDb, setSessionUserId, setSessionWorkspaceId } from "./store";
+import { getSupabase } from "./supabase";
+import { addTransaction, ensureProfile, refreshSession, setLastWorkspace } from "./store";
 import { provisionWorkspace } from "./workspace";
 import { monthKey } from "./money";
 import { newId, nowIso } from "./types";
 
-const DEMO_EMAIL = "demo@codecraft.local";
-const DEMO_PASSWORD = "demo1234";
-
-export async function hashPassword(password: string) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`ccs:${password}`));
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-export async function verifyPassword(password: string, hash: string) {
-  return (await hashPassword(password)) === hash;
-}
+export const demoCredentials = { email: "demo@codecraft.local", password: "demo1234" };
 
 export async function ensureDemoUser() {
-  const existing = findUserByEmail(DEMO_EMAIL);
-  if (existing) return existing;
+  const supabase = getSupabase();
+  const existing = await supabase.auth.signInWithPassword({
+    email: demoCredentials.email,
+    password: demoCredentials.password,
+  });
+  if (!existing.error && existing.data.user) {
+    await refreshSession();
+    return existing.data.user;
+  }
 
-  const user = {
-    id: newId(),
-    name: "Conta demonstração",
-    email: DEMO_EMAIL,
-    passwordHash: await hashPassword(DEMO_PASSWORD),
-    lastWorkspaceId: null as string | null,
-    createdAt: nowIso(),
-  };
-  const db = loadDb();
-  db.users.push(user);
-  saveDb(db);
-
-  const personal = provisionWorkspace(user.id, "Pessoal", "PERSONAL");
-  provisionWorkspace(user.id, "Empresa Demo", "BUSINESS");
-  const next = loadDb();
-  const me = next.users.find((u) => u.id === user.id)!;
-  me.lastWorkspaceId = personal.id;
-  saveDb(next);
-
-  const accounts = next.accounts.filter((a) => a.workspaceId === personal.id);
-  const categories = next.categories.filter((c) => c.workspaceId === personal.id);
+  const created = await supabase.auth.signUp({
+    email: demoCredentials.email,
+    password: demoCredentials.password,
+    options: { data: { name: "Conta demonstração" } },
+  });
+  if (created.error || !created.data.user) {
+    throw new Error(created.error?.message ?? "Não foi possível abrir a demonstração.");
+  }
+  const userId = created.data.user.id;
+  await ensureProfile(userId, "Conta demonstração");
+  const personal = await provisionWorkspace(userId, "Pessoal", "PERSONAL");
+  await provisionWorkspace(userId, "Empresa Demo", "BUSINESS");
+  await setLastWorkspace(userId, personal.id);
+  const session = await refreshSession();
+  const accounts = session?.accounts.filter((a) => a.workspaceId === personal.id) ?? [];
+  const categories = session?.categories.filter((c) => c.workspaceId === personal.id) ?? [];
   const checking = accounts.find((a) => a.type === "CHECKING") ?? accounts[0];
   const wallet = accounts.find((a) => a.type === "WALLET") ?? accounts[0];
+  if (!checking || !wallet) return created.data.user;
   const byName = (name: string) => categories.find((c) => c.name === name);
   const month = monthKey();
   const [y, m] = month.split("-");
@@ -61,9 +53,8 @@ export async function ensureDemoUser() {
     { day: 18, description: "Mercado", amount: 31250, type: "EXPENSE" as const, category: "Alimentação", accountId: checking.id },
     { day: 20, description: "Plano de saúde", amount: 42000, type: "EXPENSE" as const, category: "Saúde", accountId: checking.id },
   ];
-  const db2 = loadDb();
   for (const row of rows) {
-    db2.transactions.push({
+    await addTransaction({
       id: newId(),
       workspaceId: personal.id,
       accountId: row.accountId,
@@ -77,28 +68,5 @@ export async function ensureDemoUser() {
       createdAt: nowIso(),
     });
   }
-  const food = byName("Alimentação");
-  const home = byName("Moradia");
-  const transport = byName("Transporte");
-  if (food && home && transport) {
-    db2.budgets.push(
-      { id: newId(), workspaceId: personal.id, categoryId: food.id, month, amount: 120000 },
-      { id: newId(), workspaceId: personal.id, categoryId: home.id, month, amount: 230000 },
-      { id: newId(), workspaceId: personal.id, categoryId: transport.id, month, amount: 50000 },
-    );
-  }
-  saveDb(db2);
-  return loadDb().users.find((u) => u.id === user.id)!;
+  return created.data.user;
 }
-
-export function loginSession(userId: string, workspaceId?: string | null) {
-  setSessionUserId(userId);
-  if (workspaceId) setSessionWorkspaceId(workspaceId);
-}
-
-export function logoutSession() {
-  setSessionUserId(null);
-  setSessionWorkspaceId(null);
-}
-
-export const demoCredentials = { email: DEMO_EMAIL, password: DEMO_PASSWORD };

@@ -15,13 +15,15 @@ export default function AccountsPage() {
   const [archived, setArchived] = useState(0);
 
   useEffect(() => {
-    const session = requireSession();
-    if (!session) {
-      go("/login");
-      return;
-    }
-    setData(accountBalances(session.workspace.id));
-    setArchived(listAccounts(session.workspace.id, true).filter((a) => a.archived).length);
+    void (async () => {
+      const session = await requireSession();
+      if (!session) {
+        go("/login");
+        return;
+      }
+      setData(accountBalances(session.workspace.id));
+      setArchived(listAccounts(session.workspace.id, true).filter((a) => a.archived).length);
+    })();
   }, []);
 
   return (

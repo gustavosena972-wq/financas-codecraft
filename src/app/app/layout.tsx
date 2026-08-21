@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell";
-import { currentUser, listWorkspaces, requireSession } from "@/lib/store";
+import { listWorkspaces, requireSession } from "@/lib/store";
 import { go } from "@/lib/types";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -12,16 +12,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [activeId, setActiveId] = useState("");
 
   useEffect(() => {
-    const session = requireSession();
-    const user = currentUser();
-    if (!user || !session) {
-      go("/login");
-      return;
-    }
-    setName(user.name);
-    setWorkspaces(listWorkspaces(user.id));
-    setActiveId(session.workspace.id);
-    setReady(true);
+    void (async () => {
+      const session = await requireSession();
+      const user = session?.user;
+      if (!user || !session) {
+        go("/login");
+        return;
+      }
+      setName(user.name);
+      setWorkspaces(listWorkspaces(user.id));
+      setActiveId(session.workspace.id);
+      setReady(true);
+    })();
   }, []);
 
   if (!ready) return <div className="p-10 text-muted">Carregando…</div>;

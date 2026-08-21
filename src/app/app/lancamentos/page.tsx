@@ -15,16 +15,18 @@ export default function TransactionsPage() {
   const [txs, setTxs] = useState<ReturnType<typeof monthSummary>["txs"]>([]);
 
   useEffect(() => {
-    const session = requireSession();
-    if (!session) {
-      go("/login");
-      return;
-    }
-    const month = monthKey();
-    setAccounts(listAccounts(session.workspace.id));
-    setCategories(listCategories(session.workspace.id));
-    setTxs(monthSummary(session.workspace.id, month).txs);
-    setReady(true);
+    void (async () => {
+      const session = await requireSession();
+      if (!session) {
+        go("/login");
+        return;
+      }
+      const month = monthKey();
+      setAccounts(listAccounts(session.workspace.id));
+      setCategories(listCategories(session.workspace.id));
+      setTxs(monthSummary(session.workspace.id, month).txs);
+      setReady(true);
+    })();
   }, []);
 
   if (!ready) return null;

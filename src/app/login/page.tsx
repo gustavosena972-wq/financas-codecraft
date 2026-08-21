@@ -7,6 +7,7 @@ import { AuthFrame } from "@/components/auth-frame";
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(loginAction, null);
+  const [demoState, demoAction, demoPending] = useActionState(demoLoginAction, null);
 
   return (
     <AuthFrame title="Entrar" subtitle="Acesse sua base financeira.">
@@ -24,8 +25,11 @@ export default function LoginPage() {
           {pending ? "Entrando…" : "Entrar"}
         </button>
       </form>
-      <form action={demoLoginAction} className="mt-3">
-        <button className="btn btn-ghost w-full">Ver demonstração</button>
+      <form action={demoAction} className="mt-3">
+        {demoState?.error ? <p className="text-sm text-negative mb-2">{demoState.error}</p> : null}
+        <button className="btn btn-ghost w-full" disabled={demoPending}>
+          {demoPending ? "Abrindo…" : "Ver demonstração"}
+        </button>
       </form>
       <p className="text-sm text-muted mt-6 text-center">
         Ainda não tem conta?{" "}

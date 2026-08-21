@@ -12,12 +12,14 @@ export default function DashboardPage() {
   const [view, setView] = useState<ReturnType<typeof build> | null>(null);
 
   useEffect(() => {
-    const session = requireSession();
-    if (!session) {
-      go("/login");
-      return;
-    }
-    setView(build(session.workspace.id, session.workspace.type === "BUSINESS" ? session.workspace.name : "Modo pessoal"));
+    void (async () => {
+      const session = await requireSession();
+      if (!session) {
+        go("/login");
+        return;
+      }
+      setView(build(session.workspace.id, session.workspace.type === "BUSINESS" ? session.workspace.name : "Modo pessoal"));
+    })();
   }, []);
 
   if (!view) return null;

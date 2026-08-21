@@ -15,16 +15,18 @@ export default function ExportPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setMonth(params.get("month") ?? monthKey());
-    const session = requireSession();
-    if (!session) {
-      go("/login");
-      return;
-    }
-    setName(session.workspace.name);
+    void (async () => {
+      const session = await requireSession();
+      if (!session) {
+        go("/login");
+        return;
+      }
+      setName(session.workspace.name);
+    })();
   }, []);
 
   async function download() {
-    const session = requireSession();
+    const session = await requireSession();
     if (!session) return;
     const { txs } = monthSummary(session.workspace.id, month);
     const buffer = await buildExportBuffer(

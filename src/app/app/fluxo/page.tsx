@@ -13,13 +13,15 @@ export default function CashflowPage() {
   const [projection, setProjection] = useState<ReturnType<typeof projectedCashflow> | null>(null);
 
   useEffect(() => {
-    const session = requireSession();
-    if (!session) {
-      go("/login");
-      return;
-    }
-    setSeries(cashflowSeries(session.workspace.id, 6));
-    setProjection(projectedCashflow(session.workspace.id, month));
+    void (async () => {
+      const session = await requireSession();
+      if (!session) {
+        go("/login");
+        return;
+      }
+      setSeries(cashflowSeries(session.workspace.id, 6));
+      setProjection(projectedCashflow(session.workspace.id, month));
+    })();
   }, [month]);
 
   if (!projection) return null;

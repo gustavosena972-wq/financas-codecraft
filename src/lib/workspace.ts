@@ -3,7 +3,7 @@ import { defaultsFor } from "./defaults";
 import { addWorkspace } from "./store";
 import { newId, nowIso } from "./types";
 
-export function provisionWorkspace(ownerId: string, name: string, type: WorkspaceType): Workspace {
+export async function provisionWorkspace(ownerId: string, name: string, type: WorkspaceType): Promise<Workspace> {
   const defaults = defaultsFor(type);
   const ws: Workspace = { id: newId(), name, type, ownerId, createdAt: nowIso() };
   const accounts: Account[] = defaults.accounts.map((account) => ({
@@ -22,6 +22,6 @@ export function provisionWorkspace(ownerId: string, name: string, type: Workspac
     kind: category.kind,
     color: category.color,
   }));
-  addWorkspace(ws, accounts, categories);
+  await addWorkspace(ws, accounts, categories);
   return ws;
 }

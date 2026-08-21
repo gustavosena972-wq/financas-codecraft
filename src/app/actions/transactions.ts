@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { addTransaction, deleteTransaction, loadDb, pushAudit, requireSession, saveDb } from "@/lib/store";
+import { addTransaction, deleteTransaction, pushAudit, requireSession } from "@/lib/store";
 import { parseMoneyToCents } from "@/lib/money";
 import { newId, nowIso } from "@/lib/types";
 import type { TransactionType } from "@/lib/types";
@@ -7,7 +7,7 @@ import type { TransactionType } from "@/lib/types";
 export type TxState = { error?: string; ok?: string } | null;
 
 export async function createTransactionAction(_prev: TxState, formData: FormData): Promise<TxState> {
-  const session = requireSession();
+  const session = await requireSession();
   if (!session) return { error: "Sessão expirada." };
   const parsed = z
     .object({
@@ -36,7 +36,7 @@ export async function createTransactionAction(_prev: TxState, formData: FormData
   if (parsed.data.type === "TRANSFER" && !parsed.data.transferToAccountId) {
     return { error: "Escolha a conta de destino." };
   }
-  addTransaction({
+  await addTransaction({
     id: newId(),
     workspaceId: session.workspace.id,
     accountId: parsed.data.accountId,
@@ -50,17 +50,15 @@ export async function createTransactionAction(_prev: TxState, formData: FormData
     importHash: null,
     createdAt: nowIso(),
   });
-  const db = loadDb();
-  pushAudit(db, session.user.id, "create", "transaction", {
+  await pushAudit(session.user.id, "create", "transaction", {
     workspaceId: session.workspace.id,
     detail: parsed.data.description,
   });
-  saveDb(db);
   return { ok: "Lançamento salvo." };
 }
 
 export async function deleteTransactionAction(id: string) {
-  const session = requireSession();
+  const session = await requireSession();
   if (!session) return;
-  deleteTransaction(id, session.workspace.id);
+  await deleteTransaction(id, session.workspace.id);
 }
