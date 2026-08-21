@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { logoutAction, switchWorkspaceAction } from "@/app/actions/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { HelpFab } from "@/components/help-fab";
 import { WelcomeGuide } from "@/components/welcome-guide";
 import { ScreenTip } from "@/components/screen-tip";
 import { isCompanyPath, isPersonPath, type WorkspaceKind } from "@/lib/nav";
@@ -84,6 +85,7 @@ export function AppShell({
           children
         )}
       </main>
+      {studio ? null : <HelpFab />}
       {studio ? null : <WelcomeGuide />}
     </div>
   );

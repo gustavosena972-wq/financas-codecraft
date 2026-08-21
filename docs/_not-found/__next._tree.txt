@@ -1,2 +1,2 @@
-:HL["/financas-codecraft/docs/_next/static/chunks/0jj9pwd-7fq-t.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"/_not-found","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"gItJBLH5SBeY6gh3KEvcN"}
+:HL["/financas-codecraft/docs/_next/static/chunks/1fv6yuk_qu019.css","style"]
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"/_not-found","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"mTb8mkUuLDEcJjKfg4B7l"}
