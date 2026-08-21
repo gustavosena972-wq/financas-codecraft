@@ -23,6 +23,11 @@ const HEADER_ALIASES: Record<string, string> = {
   histórico: "description",
   description: "description",
   memo: "description",
+  previsto: "amount",
+  orcado: "amount",
+  orçado: "amount",
+  planejado: "amount",
+  realizado: "amount",
   valor: "amount",
   value: "amount",
   amount: "amount",
@@ -30,6 +35,9 @@ const HEADER_ALIASES: Record<string, string> = {
   type: "type",
   categoria: "category",
   category: "category",
+  item: "description",
+  lancamento: "description",
+  lançamento: "description",
   conta: "account",
   account: "account",
   carteira: "account",
@@ -38,7 +46,7 @@ const HEADER_ALIASES: Record<string, string> = {
   notes: "notes",
 };
 
-function normalizeHeader(value: string) {
+export function normalizeHeader(value: string) {
   return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -54,7 +62,7 @@ function excelSerialToISO(serial: number) {
   return `${y}-${m}-${d}`;
 }
 
-function cellToString(value: unknown): string {
+export function cellToString(value: unknown): string {
   if (value == null || value === "") return "";
   if (value instanceof Date) return value.toISOString().slice(0, 10);
   if (typeof value === "object" && value && "text" in (value as object)) {
@@ -66,7 +74,7 @@ function cellToString(value: unknown): string {
   return String(value).trim();
 }
 
-function parseDateCell(raw: unknown): string | null {
+export function parseDateCell(raw: unknown): string | null {
   if (raw instanceof Date && !Number.isNaN(raw.getTime())) {
     const y = raw.getFullYear();
     const m = String(raw.getMonth() + 1).padStart(2, "0");
@@ -90,7 +98,7 @@ function parseDateCell(raw: unknown): string | null {
   return null;
 }
 
-function inferType(raw: string, amount: number): "INCOME" | "EXPENSE" {
+export function inferType(raw: string, amount: number): "INCOME" | "EXPENSE" {
   const t = normalizeHeader(raw);
   if (["receita", "entrada", "income", "credito", "crédito", "c"].includes(t)) return "INCOME";
   if (["despesa", "saida", "saída", "expense", "debito", "débito", "d"].includes(t)) {
@@ -99,7 +107,7 @@ function inferType(raw: string, amount: number): "INCOME" | "EXPENSE" {
   return amount < 0 ? "EXPENSE" : "INCOME";
 }
 
-function hashRow(date: string, description: string, amount: number, type: string) {
+export function hashRow(date: string, description: string, amount: number, type: string) {
   const s = `${date}|${description.toLowerCase()}|${Math.abs(amount)}|${type}`;
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
@@ -181,7 +189,7 @@ export async function parseWorkbook(buffer: ArrayBuffer, filename: string) {
   return { error: null as string | null, rows: mapped, headers };
 }
 
-function splitCsv(line: string, delimiter: string) {
+export function splitCsv(line: string, delimiter: string) {
   const out: string[] = [];
   let current = "";
   let quoted = false;
@@ -206,8 +214,58 @@ function splitCsv(line: string, delimiter: string) {
 }
 
 export async function buildTemplateBuffer() {
+  return buildSheetBuffer("Lancamentos", [
+    ["2026-08-01", "Salário", 8500, "Receita", "Salário", "Conta corrente", ""],
+    ["2026-08-03", "Supermercado", 420.5, "Despesa", "Alimentação", "Carteira", ""],
+  ]);
+}
+
+export async function buildPersonalSampleBuffer() {
+  return buildSheetBuffer("Pessoal", [
+    ["2026-08-01", "Salário", 6200, "Receita", "Salário", "Conta corrente", ""],
+    ["2026-08-02", "Aluguel", 1800, "Despesa", "Moradia", "Conta corrente", ""],
+    ["2026-08-03", "Supermercado", 387.9, "Despesa", "Alimentação", "Carteira", ""],
+    ["2026-08-05", "Combustível", 220, "Despesa", "Transporte", "Cartão", ""],
+    ["2026-08-08", "Freelance site", 1500, "Receita", "Freelance", "Conta corrente", ""],
+    ["2026-08-10", "Farmácia", 64.5, "Despesa", "Saúde", "Carteira", ""],
+    ["2026-08-12", "Internet", 119.9, "Despesa", "Assinaturas", "Conta corrente", ""],
+    ["2026-08-15", "Lanche", 32, "Despesa", "Alimentação", "Carteira", ""],
+  ]);
+}
+
+export async function buildBusinessSampleBuffer() {
+  return buildSheetBuffer("Empresa", [
+    ["2026-08-01", "Cliente site institucional", 2800, "Receita", "Serviços", "Conta PJ", ""],
+    ["2026-08-04", "Domínio e hospedagem", 89.9, "Despesa", "Infra", "Conta PJ", ""],
+    ["2026-08-06", "Cliente loja", 4500, "Receita", "Serviços", "Conta PJ", ""],
+    ["2026-08-07", "Imposto DAS", 210.4, "Despesa", "Impostos", "Conta PJ", ""],
+    ["2026-08-09", "Canva Pro", 55, "Despesa", "Ferramentas", "Cartão PJ", ""],
+    ["2026-08-14", "Freelancer texto", 400, "Despesa", "Terceiros", "Conta PJ", ""],
+    ["2026-08-18", "Manutenção site", 900, "Receita", "Serviços", "Conta PJ", ""],
+  ]);
+}
+
+export async function buildYearBudgetSampleBuffer() {
   const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet("Lancamentos");
+  const sheet = workbook.addWorksheet("Orcamento 2026");
+  sheet.addRow(["Orçamento do ano — exemplo bagunçado"]);
+  sheet.addRow([]);
+  sheet.addRow(["Categoria", "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]);
+  sheet.addRow(["Salário", 6200, 6200, 6200, 6200, 6200, 6200, 6200, 6200, 6200, 6200, 6200, 6200]);
+  sheet.addRow(["Aluguel", 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800]);
+  sheet.addRow(["Alimentação", 900, 900, 950, 900, 900, 1000, 900, 900, 900, 1100, 1200, 900]);
+  sheet.addRow(["Internet", 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120]);
+  sheet.addRow(["Transporte", 350, 350, 350, 350, 400, 350, 350, 350, 350, 350, 400, 350]);
+  sheet.getRow(3).font = { bold: true };
+  return workbook.xlsx.writeBuffer();
+}
+
+async function buildSheetBuffer(
+  sheetName: string,
+  rows: Array<[string, string, number, string, string, string, string]>,
+) {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet(sheetName);
   sheet.columns = [
     { header: "Data", key: "date", width: 14 },
     { header: "Descrição", key: "description", width: 36 },
@@ -217,24 +275,9 @@ export async function buildTemplateBuffer() {
     { header: "Conta", key: "account", width: 18 },
     { header: "Observações", key: "notes", width: 28 },
   ];
-  sheet.addRow({
-    date: "2026-08-01",
-    description: "Salário",
-    amount: 8500,
-    type: "Receita",
-    category: "Salário",
-    account: "Conta corrente",
-    notes: "",
-  });
-  sheet.addRow({
-    date: "2026-08-03",
-    description: "Supermercado",
-    amount: 420.5,
-    type: "Despesa",
-    category: "Alimentação",
-    account: "Carteira",
-    notes: "",
-  });
+  for (const [date, description, amount, type, category, account, notes] of rows) {
+    sheet.addRow({ date, description, amount, type, category, account, notes });
+  }
   sheet.getRow(1).font = { bold: true };
   return workbook.xlsx.writeBuffer();
 }

@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { listLogs, listWorkspaces, requireSession, setLastWorkspace } from "@/lib/store";
 import { provisionWorkspace } from "@/lib/workspace";
 import { go } from "@/lib/types";
+import { planById } from "@/lib/plans";
 
 export default function SettingsPage() {
-  const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ id: string; name: string; email: string; plan: "FREE" | "PRO" | "BUSINESS" | "ENTERPRISE" } | null>(null);
   const [workspaces, setWorkspaces] = useState<{ id: string; name: string; type: "PERSONAL" | "BUSINESS" }[]>([]);
   const [logs, setLogs] = useState<ReturnType<typeof listLogs>>([]);
 
@@ -41,7 +43,7 @@ export default function SettingsPage() {
         <p className="text-sm text-muted">Perfis separados. Pessoal e empresa não misturam lançamentos.</p>
       </div>
       <div className="card p-6 space-y-3">
-        <div className="text-sm">Conta: {user.name} · {user.email}</div>
+        <div className="text-sm">Conta: {user.name} · {user.email} · plano {planById(user.plan).name}</div>
         <ul className="text-sm text-muted space-y-1">
           {workspaces.map((ws) => (
             <li key={ws.id}>{ws.type === "BUSINESS" ? "Empresa" : "Pessoal"} — {ws.name}</li>
@@ -50,6 +52,7 @@ export default function SettingsPage() {
         <div className="flex gap-2 flex-wrap pt-2">
           {!hasPersonal ? <button className="btn btn-ghost" onClick={() => void addProfile("PERSONAL")}>Criar perfil pessoal</button> : null}
           {!hasBusiness ? <button className="btn btn-ghost" onClick={() => void addProfile("BUSINESS")}>Criar perfil empresarial</button> : null}
+          <Link className="btn btn-primary" href="/app/planos">Atualizar plano</Link>
         </div>
       </div>
       <div className="card p-6">

@@ -4,11 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArrowLeftRight,
+  CalendarDays,
+  Flag,
   LayoutDashboard,
   LogOut,
   PiggyBank,
   Receipt,
   Settings,
+  Sparkles,
   Upload,
   Wallet,
   Download,
@@ -22,9 +25,12 @@ const NAV = [
   { href: "/app/lancamentos", label: "Lançamentos", icon: Receipt },
   { href: "/app/contas", label: "Contas", icon: Wallet },
   { href: "/app/orcamento", label: "Orçamento", icon: PiggyBank },
+  { href: "/app/agenda", label: "Agenda", icon: CalendarDays },
+  { href: "/app/metas", label: "Metas", icon: Flag },
   { href: "/app/fluxo", label: "Fluxo de caixa", icon: ArrowLeftRight },
-  { href: "/app/importar", label: "Importar", icon: Upload },
+  { href: "/app/importar", label: "Planilha", icon: Upload },
   { href: "/app/exportar", label: "Exportar", icon: Download },
+  { href: "/app/planos", label: "Planos", icon: Sparkles },
   { href: "/app/configuracoes", label: "Configurações", icon: Settings },
 ];
 

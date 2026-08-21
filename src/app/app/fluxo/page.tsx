@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { requireSession } from "@/lib/store";
-import { brl, formatMonthLabel, monthKey } from "@/lib/money";
+import { brl, monthKey } from "@/lib/money";
 import { cashflowSeries, projectedCashflow } from "@/lib/queries";
 import { CashflowChart } from "@/components/charts";
 import { go } from "@/lib/types";
@@ -30,7 +30,7 @@ export default function CashflowPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Fluxo de caixa</h1>
-        <p className="text-sm text-muted">Realizado neste mês e uma projeção simples com o ritmo atual.</p>
+        <p className="text-sm text-muted">O realizado deste mês e o que ainda entra ou sai pelas contas recorrentes.</p>
       </div>
       <div className="grid sm:grid-cols-3 gap-4">
         <div className="card p-5">
@@ -46,7 +46,9 @@ export default function CashflowPage() {
         <div className="card p-5">
           <div className="text-xs text-muted uppercase font-semibold">Saldo projetado</div>
           <div className="text-2xl font-semibold mt-2">{brl(projection.projectedBalance)}</div>
-          <div className="text-xs text-muted mt-1">Se o ritmo de {formatMonthLabel(month)} continuar</div>
+          <div className="text-xs text-muted mt-1">
+            {projection.remainingRecurring ? "Inclui recorrentes ainda não lançados" : "Sem recorrentes pendentes neste mês"}
+          </div>
         </div>
       </div>
       <div className="card p-5">

@@ -7,9 +7,11 @@ import { TransactionForm } from "@/components/transaction-form";
 import { deleteTransactionAction } from "@/app/actions/transactions";
 import { go } from "@/lib/types";
 import { monthSummary } from "@/lib/queries";
+import { planHasAi } from "@/lib/plans";
 
 export default function TransactionsPage() {
   const [ready, setReady] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false);
   const [accounts, setAccounts] = useState<{ id: string; name: string }[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string; kind: string }[]>([]);
   const [txs, setTxs] = useState<ReturnType<typeof monthSummary>["txs"]>([]);
@@ -25,6 +27,7 @@ export default function TransactionsPage() {
       setAccounts(listAccounts(session.workspace.id));
       setCategories(listCategories(session.workspace.id));
       setTxs(monthSummary(session.workspace.id, month).txs);
+      setAiEnabled(planHasAi(session.user.plan));
       setReady(true);
     })();
   }, []);
@@ -39,7 +42,7 @@ export default function TransactionsPage() {
       </div>
       <div className="card p-6">
         <h2 className="font-semibold mb-4">Novo lançamento</h2>
-        <TransactionForm accounts={accounts} categories={categories} />
+        <TransactionForm accounts={accounts} categories={categories} aiEnabled={aiEnabled} />
       </div>
       <div className="card overflow-x-auto">
         <table className="table">

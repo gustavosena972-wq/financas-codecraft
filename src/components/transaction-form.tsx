@@ -3,29 +3,61 @@
 import { useState } from "react";
 import { ActionForm } from "@/components/action-form";
 import { createTransactionAction } from "@/app/actions/transactions";
+import { suggestCategory } from "@/lib/ai";
 
 type Option = { id: string; name: string; kind?: string };
 
 export function TransactionForm({
   accounts,
   categories,
+  aiEnabled = false,
 }: {
   accounts: Option[];
   categories: Option[];
+  aiEnabled?: boolean;
 }) {
   const [type, setType] = useState("EXPENSE");
+  const [categoryId, setCategoryId] = useState("");
+  const [pickedManually, setPickedManually] = useState(false);
+  const [hint, setHint] = useState<string | null>(null);
   const filtered = categories.filter((c) => {
     if (type === "TRANSFER") return false;
     if (type === "INCOME") return c.kind === "INCOME";
     return c.kind === "EXPENSE";
   });
 
+  function applySuggestion(description: string, nextType = type) {
+    if (!aiEnabled || nextType === "TRANSFER" || pickedManually) {
+      setHint(null);
+      return;
+    }
+    const pool = nextType === "INCOME"
+      ? categories.filter((c) => c.kind === "INCOME")
+      : categories.filter((c) => c.kind === "EXPENSE");
+    const suggested = suggestCategory(description, nextType, pool);
+    if (suggested) {
+      setCategoryId(suggested.id);
+      setHint(`IA sugeriu ${suggested.name}`);
+    } else {
+      setHint(null);
+    }
+  }
+
   return (
     <ActionForm action={createTransactionAction} className="space-y-4" submitLabel="Lançar">
       <div className="grid sm:grid-cols-3 gap-3">
         <label className="field">
           <span>Tipo</span>
-          <select name="type" value={type} onChange={(e) => setType(e.target.value)}>
+          <select
+            name="type"
+            value={type}
+            onChange={(e) => {
+              setType(e.target.value);
+              setCategoryId("");
+              setPickedManually(false);
+              setHint(null);
+            }}
+          >
             <option value="EXPENSE">Despesa</option>
             <option value="INCOME">Receita</option>
             <option value="TRANSFER">Transferência</option>
@@ -42,8 +74,14 @@ export function TransactionForm({
       </div>
       <label className="field">
         <span>Descrição</span>
-        <input name="description" required placeholder="Ex: Supermercado" />
+        <input
+          name="description"
+          required
+          placeholder="Ex: Supermercado"
+          onChange={(e) => applySuggestion(e.target.value)}
+        />
       </label>
+      {hint ? <p className="text-xs text-gold -mt-2">{hint}</p> : null}
       <div className="grid sm:grid-cols-2 gap-3">
         <label className="field">
           <span>{type === "TRANSFER" ? "Saiu de" : "Conta"}</span>
@@ -69,7 +107,15 @@ export function TransactionForm({
         ) : (
           <label className="field">
             <span>Categoria</span>
-            <select name="categoryId">
+            <select
+              name="categoryId"
+              value={categoryId}
+              onChange={(e) => {
+                setCategoryId(e.target.value);
+                setPickedManually(true);
+                setHint(null);
+              }}
+            >
               <option value="">Sem categoria</option>
               {filtered.map((c) => (
                 <option key={c.id} value={c.id}>

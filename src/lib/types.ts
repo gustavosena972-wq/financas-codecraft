@@ -9,6 +9,7 @@ export type User = {
   passwordHash: string;
   lastWorkspaceId: string | null;
   createdAt: string;
+  plan: "FREE" | "PRO" | "BUSINESS" | "ENTERPRISE";
 };
 
 export type Workspace = {
@@ -60,6 +61,30 @@ export type Budget = {
   amount: number;
 };
 
+export type Recurring = {
+  id: string;
+  workspaceId: string;
+  description: string;
+  amount: number;
+  type: "INCOME" | "EXPENSE";
+  categoryId: string | null;
+  accountId: string;
+  day: number;
+};
+
+export type Goal = {
+  id: string;
+  workspaceId: string;
+  name: string;
+  target: number;
+  deadline: string;
+};
+
+export type WorkspaceExtras = {
+  recurring: Recurring[];
+  goals: Goal[];
+};
+
 export type AuditLog = {
   id: string;
   workspaceId?: string;
@@ -78,6 +103,7 @@ export type DB = {
   categories: Category[];
   transactions: Transaction[];
   budgets: Budget[];
+  extras: Record<string, WorkspaceExtras>;
   auditLogs: AuditLog[];
 };
 

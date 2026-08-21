@@ -1,4 +1,4 @@
-import type { Account, AuditLog, Budget, Category, Transaction, User, Workspace } from "./types";
+import type { Account, AuditLog, Budget, Category, Goal, Recurring, Transaction, User, Workspace, WorkspaceExtras } from "./types";
 import { newId, nowIso } from "./types";
 import { getSupabase } from "./supabase";
 
@@ -11,6 +11,7 @@ type Snapshot = {
   categories: Category[];
   transactions: Transaction[];
   budgets: Budget[];
+  extras: Record<string, WorkspaceExtras>;
   auditLogs: AuditLog[];
 };
 
@@ -28,8 +29,44 @@ export function setSessionWorkspaceId(id: string | null) {
   else localStorage.removeItem(WS_KEY);
 }
 
-function mapUser(id: string, email: string, name: string, lastWorkspaceId: string | null, createdAt: string): User {
-  return { id, email, name, lastWorkspaceId, createdAt, passwordHash: "" };
+function parsePlan(value: unknown): User["plan"] {
+  if (value === "PRO" || value === "BUSINESS" || value === "ENTERPRISE") return value;
+  return "FREE";
+}
+
+function parseExtras(raw: unknown): Record<string, WorkspaceExtras> {
+  let value = raw;
+  if (typeof value === "string") {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      return {};
+    }
+  }
+  if (!value || typeof value !== "object") return {};
+  const out: Record<string, WorkspaceExtras> = {};
+  for (const [key, item] of Object.entries(value as Record<string, WorkspaceExtras>)) {
+    out[key] = {
+      recurring: Array.isArray(item?.recurring) ? item.recurring : [],
+      goals: Array.isArray(item?.goals) ? item.goals : [],
+    };
+  }
+  return out;
+}
+
+function emptyExtras(): WorkspaceExtras {
+  return { recurring: [], goals: [] };
+}
+
+function mapUser(
+  id: string,
+  email: string,
+  name: string,
+  lastWorkspaceId: string | null,
+  createdAt: string,
+  plan: User["plan"] = "FREE",
+): User {
+  return { id, email, name, lastWorkspaceId, createdAt, passwordHash: "", plan };
 }
 
 function mapWorkspace(row: Record<string, unknown>): Workspace {
@@ -152,12 +189,14 @@ async function loadSnapshot() {
       (profile?.name as string) || (authUser.user_metadata?.name as string) || "Usuário",
       (profile?.last_workspace_id as string) ?? null,
       authUser.created_at,
+      parsePlan(authUser.user_metadata?.plan),
     ),
     workspaces: wsRows.map((row) => mapWorkspace(row as Record<string, unknown>)),
     accounts,
     categories,
     transactions,
     budgets,
+    extras: parseExtras(authUser.user_metadata?.extras),
     auditLogs: (logs ?? []).map((row) => mapLog(row as Record<string, unknown>)),
   };
   return snapshot;
@@ -199,6 +238,35 @@ export function listTransactions(workspaceId: string) {
 
 export function listBudgets(workspaceId: string, month: string) {
   return (snapshot?.budgets ?? []).filter((b) => b.workspaceId === workspaceId && b.month === month);
+}
+
+export function listRecurring(workspaceId: string) {
+  return snapshot?.extras[workspaceId]?.recurring ?? [];
+}
+
+export function listGoals(workspaceId: string) {
+  return snapshot?.extras[workspaceId]?.goals ?? [];
+}
+
+async function persistExtras() {
+  if (!snapshot) return;
+  const supabase = getSupabase();
+  const { error } = await supabase.auth.updateUser({
+    data: { plan: snapshot.user.plan, extras: snapshot.extras },
+  });
+  if (error) throw error;
+}
+
+export async function saveRecurring(workspaceId: string, items: Recurring[]) {
+  if (!snapshot) throw new Error("Sessão expirada.");
+  snapshot.extras[workspaceId] = { ...(snapshot.extras[workspaceId] ?? emptyExtras()), recurring: items };
+  await persistExtras();
+}
+
+export async function saveGoals(workspaceId: string, items: Goal[]) {
+  if (!snapshot) throw new Error("Sessão expirada.");
+  snapshot.extras[workspaceId] = { ...(snapshot.extras[workspaceId] ?? emptyExtras()), goals: items };
+  await persistExtras();
 }
 
 export function listWorkspaces(userId: string) {
@@ -358,6 +426,13 @@ export async function pushAudit(userId: string, action: string, entity: string, 
   });
   if (error) throw error;
   snapshot?.auditLogs.unshift(row);
+}
+
+export async function setUserPlan(plan: User["plan"]) {
+  const supabase = getSupabase();
+  const { error } = await supabase.auth.updateUser({ data: { plan, extras: snapshot?.extras ?? {} } });
+  if (error) throw error;
+  if (snapshot) snapshot.user.plan = plan;
 }
 
 export async function setLastWorkspace(userId: string, workspaceId: string) {

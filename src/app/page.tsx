@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PlansGrid } from "@/components/plans-grid";
 
 export default function HomePage() {
   return (
@@ -70,9 +71,9 @@ export default function HomePage() {
           <h2 className="text-3xl font-semibold max-w-xl">Três camadas. Um produto estável primeiro.</h2>
           <div className="grid md:grid-cols-3 gap-5 mt-10">
             {[
-              ["Base confiável", "Contas, categorias, receitas, despesas, orçamento e histórico — o chão firme do produto."],
-              ["Camada inteligente", "Importação com validação, duplicatas, fluxo projetado e previsto × realizado."],
-              ["Camada premium", "IA operacional depois: categorizar, alertar desvios e explicar os números. Sem chat no centro."],
+              ["Base confiável", "Contas, lançamentos, agenda, meta e a planilha do computador organizada."],
+              ["Camada inteligente", "Importação com validação, orçamento do ano/mês, fluxo com recorrentes."],
+              ["Camada premium", "No Pro: IA operacional, recorrentes e metas sem limite. Sem chat no centro."],
             ].map(([title, body], i) => (
               <article key={title} className="card p-6">
                 <div className="text-gold font-mono text-xs mb-3">0{i + 1}</div>
@@ -87,20 +88,16 @@ export default function HomePage() {
       <section id="planos" className="bg-bg-2 text-ink py-20 px-8">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-semibold">Planos</h2>
-          <p className="text-muted mt-2">A versão gratuita precisa resolver o problema principal.</p>
-          <div className="grid md:grid-cols-4 gap-4 mt-10">
-            {[
-              ["Free", "Contas, lançamentos, dashboard e exportação básica."],
-              ["Pro", "Automação, previsões, alertas e relatórios mais completos."],
-              ["Business", "Multiusuário, centros de custo e contas a pagar/receber."],
-              ["Enterprise", "Governança, integrações e operação ampliada."],
-            ].map(([title, body]) => (
-              <article key={title} className="card p-5">
-                <h3 className="font-semibold">{title}</h3>
-                <p className="text-sm text-muted mt-2">{body}</p>
-              </article>
-            ))}
+          <p className="text-muted mt-2 max-w-2xl">
+            O Free resolve o básico. O preço só sobe quando o plano entrega ferramenta a mais de verdade —
+            não para cobrar o mesmo de outro jeito.
+          </p>
+          <div className="mt-10">
+            <PlansGrid mode="public" />
           </div>
+          <p className="text-sm text-muted mt-8">
+            Depois de entrar, em Planos você atualiza o que está usando e vê o que chega de novo em cada um.
+          </p>
         </div>
       </section>
 
