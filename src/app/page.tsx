@@ -5,7 +5,7 @@ import { HeroPreview } from "@/components/hero-preview";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-panel text-[#e8edf2]">
+    <div className="land min-h-screen text-[#e8edf2]">
       <header className="flex items-center justify-between px-8 py-5 border-b border-[#2c4458] sticky top-0 z-20 bg-panel/90 backdrop-blur">
         <div className="flex items-center gap-2">
           <span className="mark">FC</span>
@@ -42,7 +42,7 @@ export default function HomePage() {
         <HeroPreview />
       </section>
 
-      <section id="pessoa" className="bg-bg text-ink py-20 px-8">
+      <section id="pessoa" className="bg-bg/80 backdrop-blur-[2px] text-ink py-20 px-8">
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 items-start">
           <div>
             <p className="page-kicker">Para pessoa</p>
@@ -66,7 +66,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="empresa" className="bg-bg-2 text-ink py-20 px-8">
+      <section id="empresa" className="bg-bg-2/80 backdrop-blur-[2px] text-ink py-20 px-8">
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 items-start">
           <div>
             <p className="page-kicker">Para empresa</p>
@@ -90,7 +90,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="ferramentas" className="bg-bg text-ink py-20 px-8">
+      <section id="ferramentas" className="bg-bg/75 backdrop-blur-[2px] text-ink py-20 px-8">
         <div className="max-w-6xl mx-auto">
           <p className="page-kicker">Ferramentas</p>
           <h2 className="text-3xl font-semibold mt-2">Não é só conversa. É conta.</h2>
@@ -112,7 +112,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="planos" className="bg-bg text-ink py-20 px-8">
+      <section id="planos" className="bg-bg/80 backdrop-blur-[2px] text-ink py-20 px-8">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-semibold">Planos</h2>
           <p className="text-muted mt-2 max-w-2xl">
@@ -124,7 +124,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="px-8 py-8 text-sm text-[#9aabba] flex justify-between border-t border-[#2c4458] bg-panel">
+      <footer className="px-8 py-8 text-sm text-[#9aabba] flex justify-between border-t border-[#2c4458] bg-panel/80 backdrop-blur">
         <span>Finanças CodeCraft · CodeCraft Solutions</span>
         <span>PIX {PIX_PLAN_KEY}</span>
       </footer>

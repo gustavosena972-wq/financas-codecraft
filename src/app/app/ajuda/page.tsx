@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { HelpChat } from "@/components/help-chat";
 import { PixPay } from "@/components/pix-pay";
 import { PIX_KEY, whatsappLink } from "@/lib/pix";
 
@@ -19,7 +18,6 @@ export default function AjudaPage() {
         <p className="text-sm text-muted mt-1">Vídeo de um minuto, com voz, ou o texto curto das telas.</p>
       </Link>
       <PixPay label="PIX da CodeCraft · chave 31999758385" />
-      <HelpChat />
       <div className="card p-5 text-sm space-y-2">
         <p>Chave PIX da CodeCraft: <strong>{PIX_KEY}</strong></p>
         <a className="btn btn-primary" href={whatsappLink("Olá, preciso de ajuda no Finanças CodeCraft.")}>

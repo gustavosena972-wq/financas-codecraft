@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Paperclip } from "lucide-react";
 import { accountantReply, financePulse, type FinancePulse } from "@/lib/accountant";
-import { jarvisCompanyReply } from "@/lib/jarvis";
 import { addChatSpendsAction } from "@/app/actions/transactions";
 import { saveChatBudgetAction } from "@/app/actions/budgets";
 import { applyOrganizeAction } from "@/app/actions/import";
@@ -182,31 +181,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       return runChatTool(tool.id, workspaceId, company);
     }
 
-    let reply: { body: string; spends?: { type: "INCOME" | "EXPENSE"; description: string; amount: number }[]; budget?: { categoryName: string; amount: number } };
-    if (company) {
-      const spendTry = accountantReply(raw, workspaceId);
-      if (spendTry.spends?.length || spendTry.budget) {
-        reply = spendTry;
-      } else {
-        let market: { usd?: number; usdPct?: string; selic?: string } | undefined;
-        try {
-          const [fx, selic] = await Promise.all([
-            fetch("https://economia.awesomeapi.com.br/json/last/USD-BRL").then((r) => r.json()),
-            fetch("https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados/ultimos/1?formato=json").then((r) => r.json()),
-          ]);
-          market = {
-            usd: fx?.USDBRL ? Number(fx.USDBRL.bid) : undefined,
-            usdPct: fx?.USDBRL?.pctChange,
-            selic: selic?.[0]?.valor,
-          };
-        } catch {
-          market = undefined;
-        }
-        reply = jarvisCompanyReply(raw, workspaceId, market);
-      }
-    } else {
-      reply = accountantReply(raw, workspaceId);
-    }
+    let reply = accountantReply(raw, workspaceId);
     if (reply.spends?.length) {
       const saved = await addChatSpendsAction(JSON.stringify(reply.spends));
       if (saved.error) return saved.error;
@@ -298,19 +273,14 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     >
       {studio ? (
         <header className="claude-top">
-          <div className="chat-abas">
-            <div className="chat-aba on">{company ? "Chat do caixa" : "Chat da pessoa"}</div>
-            <button type="button" className="chat-aba-btn" onClick={startNewChat}>
+          <div className="chat-title">{company ? "Chat do caixa" : "Chat da pessoa"}</div>
+          <div className="claude-actions">
+            <button type="button" className="btn btn-ghost" onClick={startNewChat}>
               Nova conversa
             </button>
-            <button type="button" className="chat-aba-btn danger" onClick={deleteChat}>
+            <button type="button" className="btn btn-danger" onClick={deleteChat}>
               Excluir
             </button>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap justify-end claude-actions">
-            <Link href="/app/planos" className="text-sm text-muted">
-              Planos
-            </Link>
             {pulse ? (
               <span className={`health-pill ${pulse.level}`} title={pulse.hint}>
                 {pulse.label}

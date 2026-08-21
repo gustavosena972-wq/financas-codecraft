@@ -41,6 +41,118 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+.bg-motion {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+body > *:not(script):not(.bg-motion) {
+  position: relative;
+  z-index: 1;
+}
+.bg-aurora,
+.bg-orb,
+.bg-grid {
+  position: absolute;
+  display: block;
+}
+.bg-aurora {
+  width: 160%;
+  height: 160%;
+  left: -30%;
+  top: -30%;
+  background: conic-gradient(
+    from 200deg at 50% 50%,
+    color-mix(in srgb, var(--gold) 32%, transparent),
+    transparent 18%,
+    color-mix(in srgb, #6aa3c7 22%, transparent),
+    transparent 48%,
+    color-mix(in srgb, var(--gold) 24%, transparent),
+    transparent 78%
+  );
+  filter: blur(72px);
+  opacity: 0.5;
+  animation: auroraSpin 42s linear infinite;
+}
+.bg-orb {
+  border-radius: 50%;
+  filter: blur(64px);
+  animation: orbFloat 18s ease-in-out infinite;
+}
+.bg-orb.a {
+  width: min(52vw, 560px);
+  height: min(52vw, 560px);
+  background: var(--gold);
+  top: -12%;
+  left: -10%;
+  opacity: 0.32;
+}
+.bg-orb.b {
+  width: min(46vw, 480px);
+  height: min(46vw, 480px);
+  background: #7eb8d4;
+  top: 38%;
+  right: -14%;
+  opacity: 0.22;
+  animation-duration: 24s;
+  animation-delay: -6s;
+}
+.bg-orb.c {
+  width: min(38vw, 420px);
+  height: min(38vw, 420px);
+  background: var(--gold);
+  bottom: -16%;
+  left: 32%;
+  opacity: 0.2;
+  animation-duration: 21s;
+  animation-delay: -11s;
+}
+.bg-grid {
+  inset: -20%;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--ink) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--ink) 7%, transparent) 1px, transparent 1px);
+  background-size: 52px 52px;
+  animation: gridDrift 48s linear infinite;
+  opacity: 0.55;
+}
+body:has(.land) {
+  background: #0c161e;
+  color: #e8edf2;
+}
+body:has(.land) .bg-aurora { opacity: 0.42; }
+body:has(.land) .bg-orb.a { opacity: 0.38; }
+body:has(.land) .bg-orb.b { opacity: 0.18; background: #3d6f8c; }
+body:has(.land) .bg-orb.c { opacity: 0.28; }
+body:has(.land) .bg-grid {
+  opacity: 0.28;
+  background-image:
+    linear-gradient(#2c4458 1px, transparent 1px),
+    linear-gradient(90deg, #2c4458 1px, transparent 1px);
+}
+html[data-theme="dark"] .bg-orb.a { opacity: 0.28; }
+html[data-theme="dark"] .bg-orb.b { opacity: 0.16; }
+html[data-theme="dark"] .bg-grid {
+  background-image:
+    linear-gradient(#2c4458 1px, transparent 1px),
+    linear-gradient(90deg, #2c4458 1px, transparent 1px);
+}
+@keyframes auroraSpin {
+  to { transform: rotate(360deg); }
+}
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(7%, 8%) scale(1.12); }
+  66% { transform: translate(-8%, 5%) scale(0.9); }
+}
+@keyframes gridDrift {
+  from { transform: translate(0, 0); }
+  to { transform: translate(52px, 52px); }
 }
 
 a { color: inherit; }
@@ -315,54 +427,28 @@ html[data-theme="dark"] .btn-ghost {
 }
 .claude-top {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 24px 0;
+  padding: 10px 24px;
   border-bottom: 1px solid var(--line);
-  background: var(--paper);
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: blur(10px);
   position: relative;
   z-index: 8;
 }
-.chat-abas {
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  min-width: 0;
-}
-.chat-aba {
-  padding: 8px 14px;
-  border: 1px solid var(--line);
-  border-bottom: none;
-  border-radius: 10px 10px 0 0;
-  background: var(--bg);
-  font-size: 13px;
+.chat-title {
+  font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
 }
-.chat-aba.on {
-  background: var(--paper);
-  position: relative;
-  z-index: 1;
+.claude-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }
-.chat-aba-btn {
-  margin-bottom: 4px;
-  padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--bg);
-  color: var(--ink);
-  font-size: 13px;
-  font-weight: 650;
-  cursor: pointer;
-}
-.chat-aba-btn.danger {
-  background: #f8e8e5;
-  color: var(--negative);
-  border-color: #e8cfc9;
-}
-.claude-actions { padding-bottom: 8px; }
-.claude-actions .btn { cursor: pointer; pointer-events: auto; }
 .claude-stage {
   flex: 1;
   min-height: 0;
@@ -766,10 +852,7 @@ html[data-theme="dark"] .btn-ghost {
   animation: rise 0.4s ease both;
 }
 .acct-chat.studio {
-  background:
-    radial-gradient(900px 280px at 8% -8%, color-mix(in srgb, var(--gold) 14%, transparent), transparent 55%),
-    radial-gradient(700px 240px at 100% 0%, color-mix(in srgb, var(--gold) 8%, transparent), transparent 50%),
-    var(--bg);
+  background: transparent;
 }
 .claude-empty { animation: emptyIn 0.55s ease both; }
 .claude-empty h2 {
@@ -809,10 +892,6 @@ html[data-theme="dark"] .claude-empty h2 {
 .think-dots i:nth-child(2) { animation-delay: 0.12s; }
 .think-dots i:nth-child(3) { animation-delay: 0.24s; }
 .chat-sheet .xls { animation: sheetIn 0.5s ease both; }
-.chat-aba, .chat-aba-btn {
-  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
-}
-.chat-aba-btn:hover { transform: translateY(-1px); border-color: var(--gold); }
 .acct-chip { transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease; }
 .acct-chip:hover { transform: translateY(-1px); }
 .acct-bar input { transition: border-color 0.18s ease, box-shadow 0.18s ease; }
@@ -865,11 +944,12 @@ html[data-theme="dark"] .claude-empty h2 {
 @media (prefers-reduced-motion: reduce) {
   .rise, .float-card, .live-dot .d, .pop-in, .help-fab,
   .acct-row, .chat-sheet .xls, .claude-empty, .app-top, .hero-title,
-  .think-dots i, .btn-primary, .health-pill.good, .hero-stage::before, .hero-stage::after {
+  .think-dots i, .btn-primary, .health-pill.good, .hero-stage::before, .hero-stage::after,
+  .bg-aurora, .bg-orb, .bg-grid {
     animation: none;
   }
   .hero-stage::before, .hero-stage::after { display: none; }
   .card, .btn, .progress > span, .table tbody tr, .tip-card, .nav-link,
-  .acct-chip, .acct-icon, .chat-aba-btn, .xls-tabs button { transition: none; }
+  .acct-chip, .acct-icon, .xls-tabs button { transition: none; }
   .card:hover, .btn:hover, .help-fab:hover, .nav-link:hover { transform: none; }
 }

@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { logoutAction, switchWorkspaceAction } from "@/app/actions/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { HelpFab } from "@/components/help-fab";
 import { WelcomeGuide } from "@/components/welcome-guide";
 import { ScreenTip } from "@/components/screen-tip";
 import { isCompanyPath, isPersonPath, type WorkspaceKind } from "@/lib/nav";
@@ -31,7 +30,7 @@ export function AppShell({
   const studio = pathname === "/app";
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="min-h-screen">
       <header className="h-14 border-b border-line bg-paper/90 backdrop-blur px-4 sm:px-6 flex items-center justify-between gap-3 app-top">
         <div className="flex items-center gap-3 min-w-0">
           <span className="mark">FC</span>
@@ -85,7 +84,6 @@ export function AppShell({
           children
         )}
       </main>
-      {studio ? null : <HelpFab />}
       {studio ? null : <WelcomeGuide />}
     </div>
   );

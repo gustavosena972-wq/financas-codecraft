@@ -10,7 +10,7 @@ export function AuthFrame({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-panel grid place-items-center px-4">
+    <div className="land min-h-screen grid place-items-center px-4">
       <div className="w-full max-w-md">
         <Link href="/" className="flex items-center gap-2 justify-center mb-8 text-white">
           <span className="mark">FC</span>

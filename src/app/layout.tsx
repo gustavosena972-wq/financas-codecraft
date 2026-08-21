@@ -30,6 +30,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             __html: `try{var t=localStorage.getItem("fc-theme");if(t==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}`,
           }}
         />
+        <div className="bg-motion" aria-hidden="true">
+          <i className="bg-aurora" />
+          <i className="bg-orb a" />
+          <i className="bg-orb b" />
+          <i className="bg-orb c" />
+          <i className="bg-grid" />
+        </div>
         {children}
       </body>
     </html>
