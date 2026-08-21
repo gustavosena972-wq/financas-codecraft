@@ -64,7 +64,7 @@ export default function DrePage() {
       <PlanGate
         allowed={ops}
         title="DRE entra no plano Empresa"
-        body="Só no espaço Empresa, no plano Empresa (R$ 199). Pague no PIX 31999758385."
+        body="Só no espaço Empresa, no plano Empresa (R$ 49) ou Completo (R$ 59)."
       />
       {ops ? (
         <div className="card overflow-hidden print-sheet">

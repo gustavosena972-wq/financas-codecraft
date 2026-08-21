@@ -55,7 +55,7 @@ export default function ConciliacaoPage() {
           </>
         }
       />
-      <PlanGate allowed={ops} title="Conciliação entra no plano Empresa" body="Bater livro com banco é da empresa. Plano Empresa R$ 199, PIX 31999758385." />
+      <PlanGate allowed={ops} title="Conciliação entra no plano Empresa" body="Bater livro com banco é da empresa. Plano Empresa R$ 49 ou Completo R$ 59." />
       {ops ? (
         <>
           <div className="grid sm:grid-cols-3 gap-3">

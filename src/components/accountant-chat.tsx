@@ -252,7 +252,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
               <MoneySheet sheet={sheet} />
               {!paid ? (
                 <p className="text-sm text-muted px-1 pt-2">
-                  No Grátis a folha mostra o mês. No Pessoal (R$ 29) eu monto o ano, o que cortar e o próximo trimestre.{" "}
+                  No grátis a folha mostra o mês. No Pessoal (R$ 19) eu monto o ano, o que cortar e o próximo trimestre.{" "}
                   <Link href="/app/planos" className="underline">
                     Ver planos
                   </Link>

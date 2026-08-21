@@ -39,8 +39,8 @@ export default function EquipePage() {
       />
       <PlanGate
         allowed={ok}
-        title="Equipe entra no plano Empresa"
-        body="No plano Empresa cabem 8 pessoas. No Empresa Plus, sem teto. PIX 31999758385."
+        title="Equipe entra no plano"
+        body="No plano Empresa cabem 8 pessoas. No Completo, sem teto."
       />
       {ok ? (
         <>

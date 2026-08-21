@@ -302,8 +302,8 @@ function Gate({ allowed, company, children }: { allowed: boolean; company?: bool
           <p className="font-semibold">{company ? "No plano Empresa" : "No plano Pessoal"}</p>
           <p className="text-sm text-muted">
             {company
-              ? "Giro, preço e o corte fino da operação entram no Empresa (R$ 199)."
-              : "50-30-20, corte, moradia e dívida no seu mês real entram no Pessoal (R$ 29)."}
+              ? "Giro, preço e o corte fino da operação entram no Empresa (R$ 49) ou Completo (R$ 59)."
+              : "50-30-20, corte, moradia e dívida no seu mês real entram no Pessoal (R$ 19)."}
           </p>
           <Link href="/app/planos" className="btn btn-primary">
             Ver planos

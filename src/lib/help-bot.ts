@@ -29,7 +29,7 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "Pessoa: Grátis (chat, alerta, educação) ou Pessoal R$ 29 (simuladoras). Empresa: R$ 199 ou Empresa Plus R$ 399. Só no PIX 31999758385. Em Planos você gera o QR.",
+      body: "Pessoal R$ 19, Empresa R$ 49, Completo R$ 59. Completo junta os dois e ainda sai mais barato. Só no PIX 31999758385. Em Planos você gera o QR.",
     };
   }
   if (/(planilha|excel|import|orcamento)/.test(text)) {
@@ -43,7 +43,7 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "Ferramentas testa o número (reserva, corte, dívida). Educação explica. O chat junta os dois com o seu mês. No Grátis a reserva e o alerta já abrem; o resto é Pessoal.",
+      body: "Ferramentas testa o número (reserva, corte, dívida). Educação explica. O chat junta os dois com o seu mês. No grátis a reserva e o alerta já abrem; o resto entra no Pessoal (R$ 19).",
     };
   }
   if (/(agenda|recorrente|aluguel)/.test(text)) {
@@ -78,7 +78,7 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "DRE, títulos e conciliação são da empresa, no plano Empresa (R$ 199). No pessoal isso nem aparece no menu. PIX 31999758385.",
+      body: "DRE, títulos e conciliação são da empresa, no plano Empresa (R$ 49) ou Completo (R$ 59). No pessoal isso nem aparece no menu.",
     };
   }
   if (/(ia|inteligencia)/.test(text)) {

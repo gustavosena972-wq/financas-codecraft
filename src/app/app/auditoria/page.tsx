@@ -31,7 +31,7 @@ export default function AuditoriaPage() {
         title="Auditoria"
         subtitle="Quem criou, baixou ou fechou o quê. Sem isso não dá para responder a sócio nem a contador."
       />
-      <PlanGate allowed={ok} title="Auditoria entra no plano Empresa" body="A trilha de quem fez o quê fica no plano Empresa (R$ 199). PIX 31999758385." />
+      <PlanGate allowed={ok} title="Auditoria entra no plano Empresa" body="A trilha de quem fez o quê fica no plano Empresa (R$ 49) ou Completo (R$ 59)." />
       {ok ? (
         <div className="card overflow-x-auto">
           <table className="table">

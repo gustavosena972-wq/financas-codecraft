@@ -72,7 +72,7 @@ export default function HomePage() {
             <p className="page-kicker">Para empresa</p>
             <h2 className="text-3xl font-semibold mt-2">Tesouraria de verdade.</h2>
             <p className="text-muted mt-3">
-              Títulos, DRE, conciliação, giro e preço. Só no espaço Empresa. Plano Empresa R$ 199, Empresa Plus R$ 399.
+              Títulos, DRE, conciliação, giro e preço. Só no espaço Empresa. Plano Empresa R$ 49 ou Completo R$ 59.
             </p>
           </div>
           <div className="grid gap-4">
@@ -116,7 +116,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-semibold">Planos</h2>
           <p className="text-muted mt-2 max-w-2xl">
-          Pessoa mais em conta. Empresa fecha tesouraria. Grátis já tem chat e educação; Pessoal libera as simuladoras. Pagamento só no PIX {PIX_PLAN_KEY}.
+            Três preços justos. Completo sai mais barato que Pessoa + Empresa. Pagamento só no PIX {PIX_PLAN_KEY}.
           </p>
           <div className="mt-10">
             <PlansGrid mode="public" />
