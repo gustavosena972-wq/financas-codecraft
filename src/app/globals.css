@@ -382,6 +382,122 @@ html[data-theme="dark"] .btn-ghost {
 }
 .chat-sheet { padding: 8px 0 16px; }
 .chat-sheet .card { box-shadow: none; }
+.xls {
+  border: 1px solid #c6c6c6;
+  background: #fff;
+  color: #1f1f1f;
+  font-family: Calibri, "Segoe UI", Arial, sans-serif;
+  overflow: hidden;
+}
+.xls-bar {
+  background: #217346;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 12px;
+}
+.xls-fx {
+  display: grid;
+  grid-template-columns: 28px 52px 1fr;
+  gap: 6px;
+  align-items: center;
+  background: #f3f3f3;
+  border-bottom: 1px solid #c6c6c6;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.xls-fx span {
+  font-style: italic;
+  font-family: "Times New Roman", serif;
+  font-size: 15px;
+  text-align: center;
+  color: #217346;
+}
+.xls-fx em {
+  font-style: normal;
+  border: 1px solid #c6c6c6;
+  background: #fff;
+  padding: 2px 6px;
+  text-align: center;
+}
+.xls-fx input {
+  border: 1px solid #c6c6c6;
+  background: #fff;
+  padding: 3px 8px;
+  font: inherit;
+  min-width: 0;
+}
+.xls-scroll { overflow: auto; max-height: min(52vh, 480px); }
+.xls-grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+}
+.xls-grid th,
+.xls-grid td {
+  border: 1px solid #d0d0d0;
+  padding: 3px 8px;
+  height: 22px;
+  white-space: nowrap;
+}
+.xls-grid thead th,
+.xls-grid tbody th {
+  background: #e6e6e6;
+  color: #5f5f5f;
+  font-weight: 600;
+  text-align: center;
+  width: 36px;
+}
+.xls-grid .xls-corner { width: 36px; background: #e6e6e6; }
+.xls-grid td { background: #fff; cursor: cell; }
+.xls-grid .xls-head { background: #f2f2f2; font-weight: 700; }
+.xls-grid .xls-num { text-align: right; font-variant-numeric: tabular-nums; }
+.xls-grid .xls-neg { color: #c00000; }
+.xls-grid .xls-now td { background: #fff2cc; }
+.xls-grid .xls-col-on,
+.xls-grid .xls-row-on { background: #c6efce; color: #1f1f1f; }
+.xls-grid .xls-cell-on {
+  outline: 2px solid #217346;
+  outline-offset: -2px;
+  background: #e2efda;
+}
+.xls-tabs {
+  display: flex;
+  gap: 0;
+  background: #f3f3f3;
+  border-top: 1px solid #c6c6c6;
+  padding: 0 8px;
+}
+.xls-tabs span {
+  font-size: 12px;
+  padding: 6px 14px;
+  border: 1px solid transparent;
+  color: #5f5f5f;
+}
+.xls-tabs .on {
+  background: #fff;
+  border-color: #c6c6c6;
+  border-bottom-color: #fff;
+  color: #217346;
+  font-weight: 700;
+}
+.xls-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  background: #fff;
+  border-top: 1px solid #e5e5e5;
+}
+.xls-notes button {
+  font-size: 12px;
+  border: 1px solid #c6c6c6;
+  background: #fff;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.xls-notes button.on { background: #c6efce; border-color: #217346; }
 .acct-bubble.thinking { opacity: 0.65; }
 .hand-panel {
   overflow-y: auto;

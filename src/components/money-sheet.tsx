@@ -1,17 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { brl } from "@/lib/money";
 import type { buildMoneySheet } from "@/lib/coach";
-import { CountMoney } from "@/components/count-up";
 
 const TIPS_KEY = "fc-cut-tips";
+const COLS = ["A", "B", "C", "D", "E"] as const;
+const HEADERS = ["Mês", "Entra", "Sai", "Sobra", "Saldo"] as const;
 
 export function MoneySheet({ sheet }: { sheet: ReturnType<typeof buildMoneySheet> }) {
   const [done, setDone] = useState<string[]>([]);
-  const [openTip, setOpenTip] = useState<string | null>(null);
-  const [picked, setPicked] = useState<string | null>(null);
+  const [picked, setPicked] = useState<{ row: number; col: number }>({ row: 0, col: 0 });
 
   useEffect(() => {
     try {
@@ -27,110 +26,140 @@ export function MoneySheet({ sheet }: { sheet: ReturnType<typeof buildMoneySheet
     localStorage.setItem(TIPS_KEY, JSON.stringify(next.slice(0, 20)));
   }
 
+  const headerPick = picked.row < 0;
+  const activeRow = headerPick ? undefined : sheet.rows[picked.row] ?? sheet.rows[0];
+  const cellText = headerPick ? HEADERS[picked.col] ?? "" : cellValue(activeRow, picked.col);
+  const cellName = `${COLS[picked.col] ?? "A"}${headerPick ? 1 : picked.row + 2}`;
+
   if (sheet.empty) {
     return (
-      <section className="card p-6 rise">
-        <p className="text-[11px] uppercase tracking-wide text-gold font-semibold">Sua planilha</p>
-        <h2 className="text-xl font-semibold mt-1">Coloca os gastos. A IA monta o controle.</h2>
-        <p className="text-sm text-muted mt-2 max-w-2xl">
-          Manda o Excel do computador ou lança na mão. Daí aparece o caixa, o que você deve gastar nos próximos meses
-          e o que dá para cortar.
-        </p>
-        <div className="flex flex-wrap gap-2 mt-4">
-          <Link href="/app/importar" className="btn btn-primary">
-            Mandar planilha
-          </Link>
-          <Link href="/app/lancamentos" className="btn btn-ghost">
-            Lançar na mão
-          </Link>
+      <section className="xls rise">
+        <div className="xls-bar">Livro1.xlsx</div>
+        <div className="xls-fx">
+          <span>fx</span>
+          <em>A1</em>
+          <input readOnly value="" placeholder="Manda o Excel ou pede para eu fazer uma planilha" />
+        </div>
+        <div className="xls-scroll">
+          <table className="xls-grid">
+            <thead>
+              <tr>
+                <th className="xls-corner" />
+                {COLS.map((col) => (
+                  <th key={col}>{col}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 12 }, (_, i) => (
+                <tr key={i}>
+                  <th>{i + 1}</th>
+                  {COLS.map((col) => (
+                    <td key={col} />
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="xls-tabs">
+          <span className="on">Plan1</span>
         </div>
       </section>
     );
   }
 
   return (
-    <section className="card overflow-hidden rise">
-      <div className="p-5 pb-3 flex items-end justify-between gap-4 flex-wrap">
-        <div>
-          <p className="text-[11px] uppercase tracking-wide text-gold font-semibold">Sua planilha</p>
-          <h2 className="font-semibold mt-1">Caixa, futuro e o que cortar</h2>
-          <p className="text-sm text-muted mt-1">Toque no mês para destacar. Toque na dica para marcar que vai cortar.</p>
-        </div>
-        {sheet.saveMonth ? (
-          <div className="text-right">
-            <div className="text-xs uppercase tracking-wide text-muted font-semibold">Se seguir as dicas</div>
-            <div className="text-xl font-semibold text-positive mt-1">
-              <CountMoney cents={sheet.saveMonth} /> / mês
-            </div>
-            <div className="text-xs text-muted">
-              <CountMoney cents={sheet.yearSave} /> no ano
-            </div>
-          </div>
-        ) : null}
+    <section className="xls rise">
+      <div className="xls-bar">Caixa.xlsx</div>
+      <div className="xls-fx">
+        <span>fx</span>
+        <em>{cellName}</em>
+        <input readOnly value={cellText} />
       </div>
-      <div className="overflow-x-auto">
-        <table className="table">
+      <div className="xls-scroll">
+        <table className="xls-grid">
           <thead>
             <tr>
-              <th>Mês</th>
-              <th>Entra</th>
-              <th>Sai</th>
-              <th>Sobra</th>
-              <th>Saldo</th>
+              <th className="xls-corner" />
+              {COLS.map((col, colIdx) => (
+                <th key={col} className={picked.col === colIdx ? "xls-col-on" : ""}>
+                  {col}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {sheet.rows.map((row) => {
-              const on = picked === row.month || (!picked && row.kind === "now");
-              return (
-                <tr
-                  key={row.month}
-                  className={`sheet-row ${row.kind === "now" ? "sheet-now" : ""} ${on ? "sheet-on" : ""}`}
-                  onClick={() => setPicked(row.month)}
+            <tr>
+              <th>1</th>
+              {HEADERS.map((header, colIdx) => (
+                <td
+                  key={header}
+                  className={`xls-head ${picked.row === -1 && picked.col === colIdx ? "xls-cell-on" : ""}`}
+                  onClick={() => setPicked({ row: -1, col: colIdx })}
                 >
-                  <td className="capitalize">
-                    {row.label}
-                    <div className="text-[11px] text-muted">
-                      {row.kind === "past" ? "realizado" : row.kind === "now" ? "este mês" : "previsão"}
-                    </div>
-                  </td>
-                  <td className="text-positive">{row.income ? brl(row.income) : "—"}</td>
-                  <td className="text-negative">{row.expense ? brl(row.expense) : "—"}</td>
-                  <td className={row.net >= 0 ? "text-positive" : "text-negative"}>{brl(row.net)}</td>
-                  <td>{row.kind === "past" ? "—" : brl(row.balance)}</td>
+                  {header}
+                </td>
+              ))}
+            </tr>
+            {sheet.rows.map((row, rowIdx) => {
+              const values = [row.label, money(row.income), money(row.expense), money(row.net), row.kind === "past" ? "" : money(row.balance)];
+              return (
+                <tr key={row.month} className={row.kind === "now" ? "xls-now" : ""}>
+                  <th className={picked.row === rowIdx ? "xls-row-on" : ""}>{rowIdx + 2}</th>
+                  {values.map((value, colIdx) => {
+                    const on = picked.row === rowIdx && picked.col === colIdx;
+                    const num = colIdx > 0;
+                    const negative = colIdx === 3 && row.net < 0;
+                    return (
+                      <td
+                        key={COLS[colIdx]}
+                        className={`${num ? "xls-num" : ""} ${negative ? "xls-neg" : ""} ${on ? "xls-cell-on" : ""}`}
+                        onClick={() => setPicked({ row: rowIdx, col: colIdx })}
+                      >
+                        {value}
+                      </td>
+                    );
+                  })}
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+      <div className="xls-tabs">
+        <span className="on">Caixa</span>
+        <span>Previsão</span>
+      </div>
       {sheet.tips.length ? (
-        <div className="p-5 pt-4 border-t border-line grid md:grid-cols-2 gap-3">
+        <div className="xls-notes">
           {sheet.tips.map((tip) => {
             const marked = done.includes(tip.title);
-            const open = openTip === tip.title;
             return (
-              <article
-                key={tip.title}
-                className={`rounded-lg bg-bg p-4 tip-card ${marked ? "tip-done" : ""} ${open ? "tip-open" : ""}`}
-              >
-                <button type="button" className="w-full text-left" onClick={() => setOpenTip(open ? null : tip.title)}>
-                  <h3 className="font-semibold text-sm">{tip.title}</h3>
-                  <p className="text-sm text-muted mt-1">{tip.body}</p>
-                  {tip.save ? <p className="text-xs text-positive font-semibold mt-2">Alívio {brl(tip.save)} / mês</p> : null}
-                </button>
-                <button
-                  type="button"
-                  className={`btn mt-3 ${marked ? "btn-ink" : "btn-ghost"}`}
-                  onClick={() => toggleTip(tip.title)}
-                >
-                  {marked ? "Vou cortar ✓" : "Vou cortar isso"}
-                </button>
-              </article>
+              <button key={tip.title} type="button" className={marked ? "on" : ""} onClick={() => toggleTip(tip.title)}>
+                {marked ? "✓ " : ""}
+                {tip.title}
+                {tip.save ? ` (${brl(tip.save)}/mês)` : ""}
+              </button>
             );
           })}
         </div>
       ) : null}
     </section>
   );
+}
+
+function money(cents: number) {
+  if (!cents) return "";
+  return brl(cents).replace("R$\u00a0", "R$ ").replace("R$ ", "");
+}
+
+function cellValue(row: ReturnType<typeof buildMoneySheet>["rows"][number] | undefined, col: number) {
+  if (!row) return "";
+  if (col === 0) return row.label;
+  if (col === 1) return money(row.income);
+  if (col === 2) return money(row.expense);
+  if (col === 3) return money(row.net);
+  if (col === 4) return row.kind === "past" ? "" : money(row.balance);
+  return "";
 }
