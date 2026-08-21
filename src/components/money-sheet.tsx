@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { brl } from "@/lib/money";
-import type { buildMoneySheet } from "@/lib/coach";
+import type { CutTip, SheetTab } from "@/lib/coach";
 
 const TIPS_KEY = "fc-cut-tips";
 
@@ -16,7 +16,17 @@ function colLetter(index: number) {
   return out;
 }
 
-export function MoneySheet({ sheet }: { sheet: ReturnType<typeof buildMoneySheet> }) {
+export function MoneySheet({
+  sheet,
+}: {
+  sheet: {
+    fileName?: string;
+    empty: boolean;
+    paid: boolean;
+    tips: CutTip[];
+    tabs: SheetTab[];
+  };
+}) {
   const [done, setDone] = useState<string[]>([]);
   const [picked, setPicked] = useState<{ row: number; col: number }>({ row: 0, col: 0 });
   const [tabId, setTabId] = useState(sheet.tabs[0]?.id ?? "caixa");
@@ -91,7 +101,7 @@ export function MoneySheet({ sheet }: { sheet: ReturnType<typeof buildMoneySheet
                 {values.map((value, colIdx) => {
                   const on = picked.row === rowIdx && picked.col === colIdx;
                   const headerName = tab.headers[colIdx] ?? "";
-                  const num = /valor|renda|gasto|entra|sai|sobra|saldo|receita|custo|folha|imposto|opex|resultado|orcado|real|alvo|teto|folga|base/i.test(headerName);
+                  const num = /valor|renda|gasto|entra|sai|sobra|saldo|receita|custo|folha|imposto|opex|resultado|orcado|real|alvo|teto|folga|base|pagar/i.test(headerName);
                   const formula = /fórmula|formula/i.test(headerName);
                   const negative = typeof value === "string" && value.startsWith("-") && num;
                   return (

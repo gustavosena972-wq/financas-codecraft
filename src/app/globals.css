@@ -592,7 +592,8 @@ html[data-theme="dark"] .btn-ghost {
   font: inherit;
   min-width: 0;
 }
-.xls-scroll { overflow: auto; max-height: min(52vh, 480px); }
+.xls-scroll { overflow: auto; max-height: min(68vh, 720px); min-height: 280px; }
+.chat-sheet .xls { min-height: 360px; }
 .xls-grid {
   width: 100%;
   border-collapse: collapse;

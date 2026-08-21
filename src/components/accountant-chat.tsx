@@ -9,6 +9,7 @@ import { addChatSpendsAction } from "@/app/actions/transactions";
 import { saveChatBudgetAction } from "@/app/actions/budgets";
 import { applyOrganizeAction } from "@/app/actions/import";
 import { organizeWorkbook, type OrganizeResult } from "@/lib/organize";
+import { analyzeImported, importedSheetView } from "@/lib/import-sheet";
 import { buildChatWorkbook } from "@/lib/workbooks";
 import { listAccounts, listCategories, requireSession } from "@/lib/store";
 import { planForecastMonths, planHasAi, type PlanId, workspaceToolsPaid } from "@/lib/plans";
@@ -51,6 +52,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
   const [aiEnabled, setAiEnabled] = useState(false);
   const [paid, setPaid] = useState(false);
   const [sheet, setSheet] = useState<ReturnType<typeof buildMoneySheet> | null>(null);
+  const [imported, setImported] = useState<ReturnType<typeof importedSheetView> | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [pending, setPending] = useState<OrganizeResult | null>(null);
   const [showSheet, setShowSheet] = useState(true);
@@ -123,7 +125,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     refreshSheet(workspaceId, plan, company);
     setPulse(financePulse(workspaceId));
     setShowSheet(true);
-    return ("ok" in applied ? applied.ok : "Apliquei a planilha.") + " Agora eu monto a previsão dos meses em cima do que entrou.";
+    return ("ok" in applied ? applied.ok : "Apliquei a planilha.") + " Os números já estão no controle. A planilha grande continua aberta.";
   }
 
   async function makeSheet() {
@@ -144,6 +146,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
   function startNewChat() {
     setMessages([{ from: "bot", body: welcomeBot(company) }]);
     setPending(null);
+    setImported(null);
     setInput("");
     setHand(false);
     setBusy(false);
@@ -167,7 +170,12 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     if (pending && wantsApply(n)) return applyPending();
     if (pending && wantsReject(n)) {
       setPending(null);
+      setImported(null);
       return "Deixei como estava. A planilha do computador não entrou no controle.";
+    }
+
+    if (pending && /(pagar|desapert|apert|orcamento|orçamento|analis|estrateg|estratég|quanto (vou|vai)|este mes|este mês|situacao|situação)/.test(n)) {
+      return analyzeImported(pending);
     }
 
     if (wantsSheetCreate(n)) return makeSheet();
@@ -254,15 +262,9 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
         return;
       }
       setPending(organized);
+      setImported(importedSheetView(organized));
       setShowSheet(true);
-      const notes = organized.notes.join(" ");
-      setMessages((current) => [
-        ...current,
-        {
-          from: "bot",
-          body: `${notes} Eu não mudei nada ainda. Se gostar, fala “pode aplicar”. Se não gostar, fala “não muda”.`,
-        },
-      ]);
+      setMessages((current) => [...current, { from: "bot", body: analyzeImported(organized) }]);
     } catch {
       setMessages((current) => [...current, { from: "bot", body: "Não consegui abrir esse arquivo. Manda Excel ou CSV." }]);
     }
@@ -271,10 +273,11 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
   }
 
   const chips = [
+    "Quanto vou pagar este mês?",
+    "Como desapertar o orçamento?",
     "Como está minha situação?",
     "Faz uma planilha",
     company ? "Como está o caixa?" : "O que cortar?",
-    company ? "DRE do mês" : "Planeja o próximo trimestre",
     ...toolsForChat(plan, company).map((item) => item.label),
   ];
   const empty = messages.length <= 1;
@@ -377,10 +380,10 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
               </button>
             </div>
           ) : null}
-          {studio && sheet && showSheet ? (
+          {studio && (imported || sheet) && showSheet ? (
             <div className="chat-sheet">
-              <MoneySheet sheet={sheet} />
-              {!paid ? (
+              <MoneySheet sheet={imported ?? sheet!} />
+              {!paid && !imported ? (
                 <p className="text-sm text-muted px-1 pt-2">
                   No grátis eu mostro este mês. Nos planos de R$ 100 e R$ 200 o chat prevê os próximos meses e libera as ferramentas.{" "}
                   <Link href="/app/planos" className="underline">
