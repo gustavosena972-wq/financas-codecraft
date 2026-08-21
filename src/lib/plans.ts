@@ -62,10 +62,10 @@ export const PLANS: Plan[] = [
     price: "R$ 199",
     priceValue: 199,
     period: "por mês",
-    forWho: "Só para empresa. Jarvis, títulos, DRE e giro.",
+    forWho: "Só para empresa. Chat do caixa, títulos, DRE e giro.",
     includes: [
       "Espaço Empresa separado do pessoal",
-      "Chat Jarvis com planilha e lançamento",
+      "Chat do caixa com planilha e lançamento",
       "Contas a pagar e a receber",
       "DRE, fluxo e conciliação",
       "Giro e precificação de serviço",

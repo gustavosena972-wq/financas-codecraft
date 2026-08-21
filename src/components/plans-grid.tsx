@@ -107,7 +107,7 @@ export function PlansGrid({
       />
       <Group
         title="Planos para empresa"
-        body={`Jarvis, títulos, DRE e giro. Não mistura com o pessoal. PIX ${PIX_PLAN_KEY}.`}
+        body={`Chat do caixa, títulos, DRE e giro. Não mistura com o pessoal. PIX ${PIX_PLAN_KEY}.`}
         audience="company"
         current={current}
         onSelect={onSelect}

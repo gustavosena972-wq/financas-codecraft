@@ -28,7 +28,7 @@ export function jarvisCompanyReply(message: string, workspaceId: string, market?
   const balance = accountBalances(workspaceId).reduce((s, a) => s + a.balance, 0);
 
   if (/(senha|token|cvv|cartao)/.test(t)) {
-    return { body: "Jarvis não pede senha, código do banco nem cartão." };
+    return { body: "Eu não peço senha, código do banco nem cartão. Jarvis é no site da CodeCraft, não aqui." };
   }
 
   if (/(dre|resultado|margem|lucro)/.test(t)) {
@@ -48,17 +48,10 @@ export function jarvisCompanyReply(message: string, workspaceId: string, market?
     };
   }
 
-  if (/(ideia|melhorar|futuro|inovar)/.test(t)) {
+  if (/(ideia|melhorar|futuro|inovar|cliente|prospec|quem precisa|achar|instagram)/.test(t)) {
     return {
       body:
-        "Ideias da operação: 1) todo título que vencer vira lançamento no caixa no mesmo dia. 2) pacote site+Finanças para clínica e loja. 3) no Instagram @code.invention, reels de caixa e entrega. 4) não mistura pessoa e empresa neste app. 5) daqui 90 dias: uma oferta, um nicho, um post por dia na página.",
-    };
-  }
-
-  if (/(cliente|prospec|quem precisa|achar)/.test(t)) {
-    return {
-      body:
-        "Quem precisa da CodeCraft: clínica, loja e escritório em BH que ainda vende só no WhatsApp. Como achar: Google Maps do nicho + Instagram da empresa local sem site. Como falar: modelo de site com acompanhamento ao vivo, PIX na entrega. O Jarvis do site da empresa abre a busca; aqui eu cuido do caixa.",
+        "Isso é do Jarvis, no painel da CodeCraft — projeto, cliente e Instagram @code.invention. Aqui no Finanças eu cuido do caixa: DRE, título, planilha e o que entra ou sai.",
     };
   }
 
@@ -85,8 +78,8 @@ export function jarvisCompanyReply(message: string, workspaceId: string, market?
   const pulse = financePulse(workspaceId);
   return {
     body:
-      `Jarvis da empresa. Situação ${pulse.label.toLowerCase()}. Saldo ${brl(balance)}. Este mês entrou ${brl(summary.income)} e saiu ${brl(summary.expense)}. ` +
+      `Contador da empresa. Situação ${pulse.label.toLowerCase()}. Saldo ${brl(balance)}. Este mês entrou ${brl(summary.income)} e saiu ${brl(summary.expense)}. ` +
       `A pagar ${brl(bills.payables)}, a receber ${brl(bills.receivables)}. ` +
-      `Pede DRE, títulos, ideia, cliente, mercado, ou pergunta de caixa e imposto. Lança gasto aqui se quiser. Pessoa fica no outro espaço.`,
+      `Pede DRE, títulos ou lança gasto. Jarvis (projeto, cliente, Instagram) fica no site da CodeCraft. Pessoa fica no outro espaço.`,
   };
 }

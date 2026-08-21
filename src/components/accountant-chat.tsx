@@ -58,7 +58,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
               {
                 from: "bot",
                 body: isCompany
-                  ? "Jarvis da empresa. Manda a planilha, lança na mão ou pergunta de caixa, DRE, título e o que vier de dinheiro. Eu não peço senha."
+                  ? "Contador deste espaço Empresa. Manda a planilha, lança na mão ou pergunta de caixa, DRE e título. Jarvis é no site da CodeCraft. Eu não peço senha."
                   : "Pode mandar a planilha do computador, colocar o mês na mão se ainda não tem nada salvo, ou perguntar qualquer coisa de dinheiro. Eu olho o passado, o próximo trimestre e se a situação está crítica, média ou boa.",
               },
             ],
@@ -164,7 +164,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       {studio ? (
         <header className="claude-top">
           <div>
-            <p className="text-[11px] uppercase tracking-wide text-gold font-semibold">{company ? "Jarvis" : "Contador"}</p>
+            <p className="text-[11px] uppercase tracking-wide text-gold font-semibold">{company ? "Empresa" : "Contador"}</p>
             <h1 className="font-semibold text-lg mt-0.5">Finanças</h1>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -184,10 +184,10 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       ) : !compact ? (
         <header className="acct-head">
           <p className="text-[11px] uppercase tracking-wide text-gold font-semibold">Chat principal</p>
-          <h2 className="font-semibold mt-1">{company ? "Jarvis" : "Contador"}</h2>
+          <h2 className="font-semibold mt-1">{company ? "Contador da empresa" : "Contador"}</h2>
         </header>
       ) : (
-        <div className="font-semibold px-4 pt-4">{company ? "Jarvis" : "Contador"}</div>
+        <div className="font-semibold px-4 pt-4">{company ? "Contador da empresa" : "Contador"}</div>
       )}
 
       <div className="claude-stage">
@@ -197,7 +197,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
               <h2>{company ? "Como está o caixa hoje?" : "Como posso olhar suas finanças hoje?"}</h2>
               <p>
                 {company
-                  ? "Manda a planilha, lança na mão ou pergunta de DRE, título e o próximo trimestre."
+                  ? "Manda a planilha, lança na mão ou pergunta de DRE e título. Jarvis (projeto e cliente) fica no site da CodeCraft."
                   : "Manda a tabela salva no computador, coloca o mês na mão se ainda não tem nada, ou pergunta. Eu reviso o passado, planejo o futuro e aviso se está crítica, média ou boa."}
               </p>
             </div>

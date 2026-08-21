@@ -77,7 +77,7 @@ export default function HomePage() {
           </div>
           <div className="grid gap-4">
             {[
-              ["Jarvis e caixa", "Planilha, DRE, título e o próximo trimestre no chat."],
+              ["Chat e caixa", "Planilha, DRE, título e o próximo trimestre. Jarvis fica no site da CodeCraft."],
               ["Tesouraria", "Pagar, receber, conciliar com o banco."],
               ["Giro e preço", "Não gaste o que ainda não caiu. Precifique com imposto e margem."],
             ].map(([title, body]) => (
