@@ -19,7 +19,7 @@ const registerSchema = z.object({
   email: z.string().trim().email("E-mail inválido").toLowerCase(),
   password: z.string().min(8, "A senha precisa ter pelo menos 8 caracteres"),
   mode: z.enum(["PERSONAL", "BUSINESS", "BOTH"]),
-  company: z.string().trim().optional(),
+  company: z.string().trim().nullish(),
 });
 
 const loginSchema = z.object({
@@ -41,11 +41,11 @@ function authMessage(message?: string) {
 
 export async function registerAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const parsed = registerSchema.safeParse({
-    name: formData.get("name"),
-    email: formData.get("email"),
-    password: formData.get("password"),
-    mode: formData.get("mode"),
-    company: formData.get("company"),
+    name: String(formData.get("name") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    password: String(formData.get("password") ?? ""),
+    mode: String(formData.get("mode") ?? ""),
+    company: String(formData.get("company") ?? ""),
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   if (!supabaseConfigured()) return { error: "O banco do Finanças ainda não foi ligado no Supabase." };
@@ -78,8 +78,8 @@ export async function registerAction(_prev: AuthState, formData: FormData): Prom
 
 export async function loginAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const parsed = loginSchema.safeParse({
-    email: formData.get("email"),
-    password: formData.get("password"),
+    email: String(formData.get("email") ?? ""),
+    password: String(formData.get("password") ?? ""),
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
   if (!supabaseConfigured()) return { error: "O banco do Finanças ainda não foi ligado no Supabase." };
