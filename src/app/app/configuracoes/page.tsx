@@ -6,11 +6,12 @@ import { listLogs, listWorkspaces, requireSession, setLastWorkspace } from "@/li
 import { useLive } from "@/lib/live";
 import { provisionWorkspace } from "@/lib/workspace";
 import { go } from "@/lib/types";
+import type { User } from "@/lib/types";
 import { planById } from "@/lib/plans";
 
 export default function SettingsPage() {
   const live = useLive();
-  const [user, setUser] = useState<{ id: string; name: string; email: string; plan: "FREE" | "PRO" | "BUSINESS" | "ENTERPRISE" } | null>(null);
+  const [user, setUser] = useState<Pick<User, "id" | "name" | "email" | "plan"> | null>(null);
   const [workspaces, setWorkspaces] = useState<{ id: string; name: string; type: "PERSONAL" | "BUSINESS" }[]>([]);
   const [logs, setLogs] = useState<ReturnType<typeof listLogs>>([]);
 

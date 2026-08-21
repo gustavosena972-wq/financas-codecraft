@@ -9,7 +9,7 @@ export type User = {
   passwordHash: string;
   lastWorkspaceId: string | null;
   createdAt: string;
-  plan: "FREE" | "PRO" | "BUSINESS" | "ENTERPRISE";
+  plan: "FREE" | "PRO" | "PLUS" | "BUSINESS" | "ENTERPRISE";
 };
 
 export type Workspace = {

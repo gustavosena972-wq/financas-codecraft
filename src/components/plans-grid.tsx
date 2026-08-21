@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { PIX_PLAN_KEY, displayPlans, type Plan, type PlanId } from "@/lib/plans";
+import { PIX_PLAN_KEY, plansFor, type Plan, type PlanId } from "@/lib/plans";
 
 function Card({
   plan,
@@ -14,7 +14,8 @@ function Card({
   onSelect?: (id: PlanId) => void;
   mode: "public" | "account";
 }) {
-  const active = current === plan.id;
+  const active = current === plan.id && plan.id !== "FREE" ? true : current === "FREE" && plan.id === "FREE";
+  const isFree = plan.id === "FREE";
   return (
     <article className={`card p-5 flex flex-col ${plan.highlight ? "ring-2 ring-gold" : ""}`}>
       <div className="flex items-center justify-between gap-2 min-h-5">
@@ -45,11 +46,42 @@ function Card({
           {active ? "Este é o seu plano" : plan.cta}
         </button>
       ) : (
-        <Link href="/cadastro" className={`btn mt-5 w-full ${plan.highlight ? "btn-primary" : "btn-ghost"}`}>
+        <Link href={isFree ? "/cadastro" : "/cadastro"} className={`btn mt-5 w-full ${plan.highlight ? "btn-primary" : "btn-ghost"}`}>
           {plan.cta}
         </Link>
       )}
     </article>
+  );
+}
+
+function Group({
+  title,
+  body,
+  audience,
+  current,
+  onSelect,
+  mode,
+}: {
+  title: string;
+  body: string;
+  audience: "person" | "company";
+  current?: PlanId;
+  onSelect?: (id: PlanId) => void;
+  mode: "public" | "account";
+}) {
+  return (
+    <section className="space-y-4">
+      <div>
+        <p className="page-kicker">{audience === "person" ? "Pessoa" : "Empresa"}</p>
+        <h2 className="text-xl font-semibold mt-1">{title}</h2>
+        <p className="text-sm text-muted mt-1">{body}</p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        {plansFor(audience).map((plan) => (
+          <Card key={`${plan.audience}-${plan.id}`} plan={plan} current={current} onSelect={onSelect} mode={mode} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -63,12 +95,23 @@ export function PlansGrid({
   mode: "public" | "account";
 }) {
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        {displayPlans().map((plan) => (
-          <Card key={plan.id} plan={plan} current={current} onSelect={onSelect} mode={mode} />
-        ))}
-      </div>
+    <div className="space-y-12">
+      <Group
+        title="Três pacotes da pessoa"
+        body="O chat é o mesmo. O que muda são as ferramentas da vida pessoal."
+        audience="person"
+        current={current}
+        onSelect={onSelect}
+        mode={mode}
+      />
+      <Group
+        title="Três pacotes da empresa"
+        body="Espaço separado. Ferramentas de caixa, DRE e giro — pessoa não usa isso."
+        audience="company"
+        current={current}
+        onSelect={onSelect}
+        mode={mode}
+      />
       <p className="text-sm text-muted">
         PIX <strong>{PIX_PLAN_KEY}</strong>. Se mandarem outra chave, não pague.
       </p>

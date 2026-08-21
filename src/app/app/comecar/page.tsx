@@ -81,7 +81,7 @@ export default function ComecarPage() {
       </section>
 
       <p className="text-sm text-muted">
-        Planos: Pessoal R$ 19 · Empresa R$ 49 · Completo R$ 59. PIX 31999758385. O chat não pede senha e não mexe no PIX.
+        Planos: pessoa grátis, R$ 100 e R$ 200 · empresa grátis, R$ 100 e R$ 200. O chat não pede senha e não mexe no PIX.
       </p>
     </div>
   );

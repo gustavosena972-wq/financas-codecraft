@@ -115,7 +115,7 @@ export function setSessionWorkspaceId(id: string | null) {
 }
 
 function parsePlan(value: unknown): User["plan"] {
-  if (value === "PRO" || value === "BUSINESS" || value === "ENTERPRISE") return value;
+  if (value === "PRO" || value === "PLUS" || value === "BUSINESS" || value === "ENTERPRISE") return value;
   return "FREE";
 }
 

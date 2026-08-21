@@ -51,7 +51,7 @@ export default function TitulosPage() {
         title="Títulos"
         subtitle="Contas a pagar e a receber. Baixa gera lançamento no caixa. Isso é o que a tesouraria usa todo dia."
       />
-      <PlanGate allowed={ops} title="Títulos entram no plano Empresa" body="Contas a pagar e a receber ficam só na empresa. Plano Empresa R$ 49 ou Completo R$ 59." />
+      <PlanGate allowed={ops} title="Títulos entram no Empresa 100" body="Contas a pagar e a receber ficam só na empresa. Empresa 100 ou 200." />
       {ops ? (
         <>
           <section className="grid sm:grid-cols-4 gap-3">

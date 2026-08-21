@@ -31,7 +31,7 @@ function normalize(value: string) {
     .toLowerCase();
 }
 
-export function buildMoneySheet(workspaceId: string, paid = false) {
+export function buildMoneySheet(workspaceId: string, paid = false, futureCount = paid ? 11 : 1) {
   const now = monthKey();
   const history = [shiftMonth(now, -2), shiftMonth(now, -1), now].map((month) => ({
     month,
@@ -65,7 +65,6 @@ export function buildMoneySheet(workspaceId: string, paid = false) {
     kind: "now",
   };
 
-  const futureCount = paid ? 11 : 1;
   const future: SheetRow[] = [];
   let running = currentBalance;
   for (let i = 1; i <= futureCount; i += 1) {

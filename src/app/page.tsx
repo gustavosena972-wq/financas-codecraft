@@ -23,14 +23,14 @@ export default function HomePage() {
 
       <section className="px-8 py-24 max-w-6xl mx-auto grid lg:grid-cols-[1.1fr_.9fr] gap-14 items-center">
         <div className="rise">
-          <p className="text-gold text-xs tracking-[0.2em] uppercase mb-4">Dois espaços. Nada misturado.</p>
+          <p className="text-gold text-xs tracking-[0.2em] uppercase mb-4">Dois espaços. Um chat em cada.</p>
           <h1 className="text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.12] text-white max-w-3xl">
             Pessoa de um lado.
             <br />
             Empresa do outro.
           </h1>
           <p className="mt-5 text-[#b7c4cf] text-lg max-w-2xl">
-            Cada um tem o seu menu e o seu plano. Você troca no topo. O dinheiro da pessoa não entra no caixa da empresa.
+            Sem menu lateral. Você troca Pessoa e Empresa no topo. O chat abre a planilha, sugere, e só muda se você gostar.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/cadastro" className="btn btn-primary">Criar conta</Link>
@@ -72,7 +72,7 @@ export default function HomePage() {
             <p className="page-kicker">Para empresa</p>
             <h2 className="text-3xl font-semibold mt-2">Tesouraria de verdade.</h2>
             <p className="text-muted mt-3">
-              Títulos, DRE, conciliação, giro e preço. Só no espaço Empresa. Plano Empresa R$ 49 ou Completo R$ 59.
+              Títulos, DRE, giro e preço. Só no espaço Empresa. Pacotes Grátis, R$ 100 e R$ 200.
             </p>
           </div>
           <div className="grid gap-4">
@@ -116,7 +116,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-semibold">Planos</h2>
           <p className="text-muted mt-2 max-w-2xl">
-            Três preços justos. Completo sai mais barato que Pessoa + Empresa. Pagamento só no PIX {PIX_PLAN_KEY}.
+            Três pacotes para pessoa e três para empresa. Grátis, R$ 100 e R$ 200. O chat é o mesmo; o que muda são as ferramentas. PIX {PIX_PLAN_KEY}.
           </p>
           <div className="mt-10">
             <PlansGrid mode="public" />

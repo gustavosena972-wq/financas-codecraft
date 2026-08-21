@@ -9,7 +9,7 @@ import { brl, formatMonthLabel, monthKey, parseMoneyToCents } from "@/lib/money"
 import { accountBalances, cashflowSeries, categorySpend, monthSummary } from "@/lib/queries";
 import { billsOverview } from "@/lib/ops";
 import { financePulse } from "@/lib/accountant";
-import { planHasSimulators } from "@/lib/plans";
+import { workspaceToolsPaid } from "@/lib/plans";
 import {
   bucketSpend,
   cutSave,
@@ -56,7 +56,7 @@ export default function FerramentasPage() {
       const balance = accounts.reduce((s, a) => s + a.balance, 0);
       setView({
         company: session.workspace.type === "BUSINESS",
-        paid: planHasSimulators(session.user.plan),
+        paid: workspaceToolsPaid(session.user.plan, session.workspace.type === "BUSINESS"),
         pulse: financePulse(id),
         income: now.income,
         expense: now.expense,
@@ -302,8 +302,8 @@ function Gate({ allowed, company, children }: { allowed: boolean; company?: bool
           <p className="font-semibold">{company ? "No plano Empresa" : "No plano Pessoal"}</p>
           <p className="text-sm text-muted">
             {company
-              ? "Giro, preço e o corte fino da operação entram no Empresa (R$ 49) ou Completo (R$ 59)."
-              : "50-30-20, corte, moradia e dívida no seu mês real entram no Pessoal (R$ 19)."}
+              ? "Giro, preço e DRE entram no Empresa 100 (R$ 100) ou 200 (R$ 200)."
+              : "50-30-20, corte e moradia entram no Pessoa 100 (R$ 100) ou 200 (R$ 200)."}
           </p>
           <Link href="/app/planos" className="btn btn-primary">
             Ver planos

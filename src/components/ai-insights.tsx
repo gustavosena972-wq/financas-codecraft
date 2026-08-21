@@ -17,7 +17,7 @@ export function AiInsights({
     return (
       <section className="card p-5 border-dashed rise">
         <p className="text-[11px] uppercase tracking-wide text-gold font-semibold">IA operacional</p>
-        <h2 className="font-semibold mt-1">Explicar o mês, no plano Pessoal (R$ 19)</h2>
+        <h2 className="font-semibold mt-1">Explicar o mês, no plano pago</h2>
         <p className="text-sm text-muted mt-2">
           A IA lê os seus números, avisa desvio e aponta o que cortar. Sem chat no meio do caminho.
         </p>

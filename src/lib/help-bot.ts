@@ -29,7 +29,7 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "Pessoal R$ 19, Empresa R$ 49, Completo R$ 59. Completo junta os dois e ainda sai mais barato. Só no PIX 31999758385. Em Planos você gera o QR.",
+      body: "Pessoa: grátis, R$ 100 e R$ 200. Empresa: grátis, R$ 100 e R$ 200. O chat é o mesmo; o que muda são as ferramentas. Só no PIX 31999758385.",
     };
   }
   if (/(planilha|excel|import|orcamento)/.test(text)) {
@@ -43,7 +43,7 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "Ferramentas testa o número (reserva, corte, dívida). Educação explica. O chat junta os dois com o seu mês. No grátis a reserva e o alerta já abrem; o resto entra no Pessoal (R$ 19).",
+      body: "Ferramentas testa o número no chat pago. No grátis o chat lê a planilha e o mês de agora.",
     };
   }
   if (/(agenda|recorrente|aluguel)/.test(text)) {
@@ -78,7 +78,7 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "DRE, títulos e conciliação são da empresa, no plano Empresa (R$ 49) ou Completo (R$ 59). No pessoal isso nem aparece no menu.",
+      body: "DRE, títulos e conciliação são da empresa, no Empresa 100 ou 200. No espaço Pessoa isso nem aparece.",
     };
   }
   if (/(ia|inteligencia)/.test(text)) {

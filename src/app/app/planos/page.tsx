@@ -66,7 +66,7 @@ export default function PlanosPage() {
       <div>
         <h1 className="text-2xl font-semibold">Planos</h1>
         <p className="text-sm text-muted max-w-2xl">
-          Pessoal R$ 19. Empresa R$ 49. Completo R$ 59 — os dois espaços por menos que assinar separado. PIX 31999758385.
+          Pessoa: grátis, R$ 100 e R$ 200. Empresa: grátis, R$ 100 e R$ 200. O chat é igual; as ferramentas é que mudam.
         </p>
       </div>
       <div className={busy ? "pointer-events-none opacity-70" : ""}>
