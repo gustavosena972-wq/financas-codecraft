@@ -6,12 +6,12 @@ import { PIX_KEY, whatsappLink } from "@/lib/pix";
 
 type Msg = { from: "user" | "bot"; body: string; human?: boolean };
 
-export function HelpChat() {
+export function HelpChat({ compact = false }: { compact?: boolean }) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Msg[]>([
     {
       from: "bot",
-      body: "Oi. Eu respondo o básico: planilha, planos e PIX. Pagamento, comprovante e caso estranho vai para uma pessoa da CodeCraft.",
+      body: "Oi. Se não quiser ler, em Como usar tem um vídeo de um minuto. Aqui eu respondo plano, PIX e o básico. Comprovante e senha vão para uma pessoa.",
     },
   ]);
 
@@ -29,7 +29,8 @@ export function HelpChat() {
 
   return (
     <div className="card p-5 space-y-4">
-      <div className="space-y-3 max-h-[420px] overflow-y-auto">
+      {compact ? <div className="font-semibold">Ajuda CodeCraft</div> : null}
+      <div className={`space-y-3 overflow-y-auto ${compact ? "max-h-[280px]" : "max-h-[420px]"}`}>
         {messages.map((msg, i) => (
           <div key={`${msg.from}-${i}`} className={msg.from === "user" ? "text-right" : ""}>
             <div

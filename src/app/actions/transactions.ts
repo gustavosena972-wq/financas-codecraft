@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { addTransaction, deleteTransaction, pushAudit, requireSession } from "@/lib/store";
-import { parseMoneyToCents } from "@/lib/money";
+import { addTransaction, deleteTransaction, isMonthLocked, listTransactions, pushAudit, requireSession } from "@/lib/store";
+import { parseMoneyToCents, toInputDate } from "@/lib/money";
 import { newId, nowIso } from "@/lib/types";
 import type { TransactionType } from "@/lib/types";
 
@@ -36,6 +36,9 @@ export async function createTransactionAction(_prev: TxState, formData: FormData
   if (parsed.data.type === "TRANSFER" && !parsed.data.transferToAccountId) {
     return { error: "Escolha a conta de destino." };
   }
+  if (isMonthLocked(session.workspace.id, parsed.data.date)) {
+    return { error: "Este mês está fechado. No Enterprise, reabra o mês para lançar." };
+  }
   await addTransaction({
     id: newId(),
     workspaceId: session.workspace.id,
@@ -60,5 +63,30 @@ export async function createTransactionAction(_prev: TxState, formData: FormData
 export async function deleteTransactionAction(id: string) {
   const session = await requireSession();
   if (!session) return;
+  const tx = listTransactions(session.workspace.id).find((item) => item.id === id);
+  if (tx && isMonthLocked(session.workspace.id, tx.date)) return;
   await deleteTransaction(id, session.workspace.id);
+}
+
+export async function duplicateTransactionAction(id: string) {
+  const session = await requireSession();
+  if (!session) return { error: "Sessão expirada." };
+  const tx = listTransactions(session.workspace.id).find((item) => item.id === id);
+  if (!tx) return { error: "Lançamento não encontrado." };
+  if (isMonthLocked(session.workspace.id, toInputDate(new Date()))) {
+    return { error: "Este mês está fechado." };
+  }
+  await addTransaction({
+    ...tx,
+    id: newId(),
+    date: `${toInputDate(new Date())}T12:00:00`,
+    createdAt: nowIso(),
+    importHash: null,
+    description: `${tx.description} (cópia)`,
+  });
+  await pushAudit(session.user.id, "create", "transaction", {
+    workspaceId: session.workspace.id,
+    detail: `${tx.description} (cópia)`,
+  });
+  return { ok: "Cópia lançada hoje." };
 }

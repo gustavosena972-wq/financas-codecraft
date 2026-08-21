@@ -8,7 +8,9 @@ import { accountBalances, cashflowSeries, categorySpend, monthAgenda, monthSumma
 import { CashflowChart, CategoryChart } from "@/components/charts";
 import { AiInsights } from "@/components/ai-insights";
 import { buildInsights } from "@/lib/ai";
-import { planHasAi } from "@/lib/plans";
+import { planHasAi, planHasOps } from "@/lib/plans";
+import { billsOverview } from "@/lib/ops";
+import { START_STEPS } from "@/lib/guide";
 import { go } from "@/lib/types";
 
 export default function DashboardPage() {
@@ -21,24 +23,75 @@ export default function DashboardPage() {
         go("/login");
         return;
       }
-      setView(build(session.workspace.id, session.workspace.type === "BUSINESS" ? session.workspace.name : "Modo pessoal", session.user.plan));
+      setView(
+        build(
+          session.workspace.id,
+          session.workspace.type === "BUSINESS" ? session.workspace.name : "Modo pessoal",
+          session.user.plan,
+        ),
+      );
     })();
   }, []);
 
   if (!view) return null;
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-xs tracking-[0.14em] uppercase text-muted">Visão geral</p>
-        <h1 className="text-2xl font-semibold mt-1 capitalize">{formatMonthLabel(view.month)}</h1>
-        <p className="text-sm text-muted">{view.label} — saldo, tendência e o que mais pesou.</p>
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-xs tracking-[0.14em] uppercase text-muted">Visão geral</p>
+          <h1 className="text-2xl font-semibold mt-1 capitalize">{formatMonthLabel(view.month)}</h1>
+          <p className="text-sm text-muted">{view.label} — saldo, tendência e o que mais pesou.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/app/lancamentos" className="btn btn-primary">Novo lançamento</Link>
+          <Link href="/app/titulos" className="btn btn-ink">Títulos</Link>
+          <Link href="/app/dre" className="btn btn-ghost">DRE</Link>
+        </div>
       </div>
+      <Link href="/app/comecar" className="card p-4 flex items-center justify-between gap-4 hover:border-gold">
+        <div>
+          <div className="font-semibold">Não quer ler o guia?</div>
+          <p className="text-sm text-muted mt-1">Tem um vídeo de um minuto, com voz, explicando os três passos.</p>
+        </div>
+        <span className="btn btn-primary">Assistir</span>
+      </Link>
+      <section className="grid md:grid-cols-3 gap-3">
+        {START_STEPS.map((step) => (
+          <Link key={step.n} href={step.href} className="card p-4 hover:border-gold">
+            <div className="text-[11px] uppercase tracking-wide text-gold font-semibold">Passo {step.n}</div>
+            <div className="font-semibold mt-1">{step.title}</div>
+            <p className="text-sm text-muted mt-1">{step.body}</p>
+          </Link>
+        ))}
+      </section>
+      {view.overdue ? (
+        <div className="card p-4" style={{ background: "#f8e8e5" }}>
+          <div className="font-semibold">{view.overdue} item(ns) atrasado(s) na agenda</div>
+          <p className="text-sm text-muted mt-1">Abra a Agenda e lance o que já venceu para o saldo bater com a vida real.</p>
+          <Link href="/app/agenda" className="btn btn-ghost mt-3">Ir para a agenda</Link>
+        </div>
+      ) : null}
+      {view.ops && view.bills.openCount ? (
+        <div className="card p-4">
+          <div className="font-semibold">Tesouraria</div>
+          <p className="text-sm text-muted mt-1">
+            A pagar {brl(view.bills.payables)} · a receber {brl(view.bills.receivables)}
+            {view.bills.overduePay ? ` · atraso a pagar ${brl(view.bills.overduePay)}` : ""}
+          </p>
+          <Link href="/app/titulos" className="btn btn-ghost mt-3">Abrir títulos</Link>
+        </div>
+      ) : null}
       <AiInsights unlocked={view.ai} insights={view.insights} />
-      <section className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <Metric label="Saldo atual" value={brl(view.projection.currentBalance)} />
+      <section className="grid sm:grid-cols-2 xl:grid-cols-5 gap-4">
+        <Metric label="Saldo atual" value={brl(view.projection.currentBalance)} hint={view.deltaHint} />
         <Metric label="Receitas" value={brl(view.summary.income)} tone="positive" />
         <Metric label="Despesas" value={brl(view.summary.expense)} tone="negative" />
-        <Metric label="Projeção de saldo" value={brl(view.projection.projectedBalance)} hint={view.projection.remainingRecurring ? "Inclui recorrentes que ainda não lançaram" : "Com o que já está no mês"} />
+        <Metric label="Quanto sobrou" value={`${view.savings}%`} hint="Do que entrou neste mês" />
+        <Metric
+          label="Projeção de saldo"
+          value={brl(view.projection.projectedBalance)}
+          hint={view.projection.remainingRecurring ? "Inclui recorrentes que ainda não lançaram" : "Com o que já está no mês"}
+        />
       </section>
       <section className="grid lg:grid-cols-5 gap-4">
         <div className="card p-5 lg:col-span-3">
@@ -80,6 +133,10 @@ export default function DashboardPage() {
               <div className="text-sm text-muted mt-1">
                 {brl(view.projection.currentBalance)} de {brl(view.goal.target)}
               </div>
+              <div className="progress mt-3">
+                <span style={{ width: `${view.goalPct}%` }} />
+              </div>
+              <p className="text-xs text-muted mt-2">{view.goalPct}% do alvo, com o saldo de agora.</p>
             </div>
           ) : (
             <p className="text-sm text-muted">Nenhuma meta ainda. No Free cabe 1.</p>
@@ -129,19 +186,39 @@ export default function DashboardPage() {
 
 function build(workspaceId: string, label: string, plan: string) {
   const month = monthKey();
+  const series = cashflowSeries(workspaceId);
+  const agenda = monthAgenda(workspaceId, month);
+  const projection = projectedCashflow(workspaceId, month);
+  const summary = monthSummary(workspaceId, month);
+  const goal = listGoals(workspaceId)[0] ?? null;
   return {
     month,
     label,
     ai: planHasAi(plan),
+    ops: planHasOps(plan),
     insights: buildInsights(workspaceId, month),
     accounts: accountBalances(workspaceId),
-    summary: monthSummary(workspaceId, month),
-    series: cashflowSeries(workspaceId),
+    summary,
+    series,
     categories: categorySpend(workspaceId, month),
-    projection: projectedCashflow(workspaceId, month),
-    agenda: monthAgenda(workspaceId, month),
-    goal: listGoals(workspaceId)[0] ?? null,
+    projection,
+    agenda,
+    overdue: agenda.filter((item) => item.status === "overdue").length,
+    goal,
+    goalPct: goal ? Math.min(100, Math.round((projection.currentBalance / Math.max(goal.target, 1)) * 100)) : 0,
+    savings: summary.income > 0 ? Math.round((summary.net / summary.income) * 100) : 0,
+    deltaHint: deltaHint(series),
+    bills: billsOverview(workspaceId),
   };
+}
+
+function deltaHint(series: ReturnType<typeof cashflowSeries>) {
+  if (series.length < 2) return "Primeiro mês com dados";
+  const prev = series[series.length - 2];
+  const curr = series[series.length - 1];
+  const diff = curr.net - prev.net;
+  if (diff === 0) return "Mesmo resultado do mês passado";
+  return diff > 0 ? `Melhor que o mês passado em ${brl(diff)}` : `Pior que o mês passado em ${brl(Math.abs(diff))}`;
 }
 
 function Metric({ label, value, hint, tone }: { label: string; value: string; hint?: string; tone?: "positive" | "negative" }) {

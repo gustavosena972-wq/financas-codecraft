@@ -1,4 +1,4 @@
-import type { Account, AuditLog, Budget, Category, Goal, Recurring, Transaction, User, Workspace, WorkspaceExtras } from "./types";
+import type { Account, AuditLog, Bill, Budget, Category, CostCenter, Goal, Party, Recurring, TeamSeat, Transaction, User, Workspace, WorkspaceExtras } from "./types";
 import { newId, nowIso } from "./types";
 import { getSupabase } from "./supabase";
 
@@ -49,13 +49,28 @@ function parseExtras(raw: unknown): Record<string, WorkspaceExtras> {
     out[key] = {
       recurring: Array.isArray(item?.recurring) ? item.recurring : [],
       goals: Array.isArray(item?.goals) ? item.goals : [],
+      costCenters: Array.isArray(item?.costCenters) ? item.costCenters : [],
+      parties: Array.isArray(item?.parties) ? item.parties : [],
+      bills: Array.isArray(item?.bills) ? item.bills : [],
+      reconciledIds: Array.isArray(item?.reconciledIds) ? item.reconciledIds : [],
+      lockedMonths: Array.isArray(item?.lockedMonths) ? item.lockedMonths : [],
+      team: Array.isArray(item?.team) ? item.team : [],
     };
   }
   return out;
 }
 
 function emptyExtras(): WorkspaceExtras {
-  return { recurring: [], goals: [] };
+  return {
+    recurring: [],
+    goals: [],
+    costCenters: [],
+    parties: [],
+    bills: [],
+    reconciledIds: [],
+    lockedMonths: [],
+    team: [],
+  };
 }
 
 function mapUser(
@@ -248,6 +263,38 @@ export function listGoals(workspaceId: string) {
   return snapshot?.extras[workspaceId]?.goals ?? [];
 }
 
+export function extrasOf(workspaceId: string): WorkspaceExtras {
+  return { ...emptyExtras(), ...(snapshot?.extras[workspaceId] ?? {}) };
+}
+
+export function listCostCenters(workspaceId: string) {
+  return extrasOf(workspaceId).costCenters;
+}
+
+export function listParties(workspaceId: string) {
+  return extrasOf(workspaceId).parties;
+}
+
+export function listBills(workspaceId: string) {
+  return extrasOf(workspaceId).bills;
+}
+
+export function listReconciledIds(workspaceId: string) {
+  return extrasOf(workspaceId).reconciledIds;
+}
+
+export function listLockedMonths(workspaceId: string) {
+  return extrasOf(workspaceId).lockedMonths;
+}
+
+export function listTeam(workspaceId: string) {
+  return extrasOf(workspaceId).team;
+}
+
+export function isMonthLocked(workspaceId: string, date: string) {
+  return extrasOf(workspaceId).lockedMonths.includes(date.slice(0, 7));
+}
+
 async function persistExtras() {
   if (!snapshot) return;
   const supabase = getSupabase();
@@ -259,13 +306,49 @@ async function persistExtras() {
 
 export async function saveRecurring(workspaceId: string, items: Recurring[]) {
   if (!snapshot) throw new Error("Sessão expirada.");
-  snapshot.extras[workspaceId] = { ...(snapshot.extras[workspaceId] ?? emptyExtras()), recurring: items };
+  snapshot.extras[workspaceId] = { ...emptyExtras(), ...(snapshot.extras[workspaceId] ?? {}), recurring: items };
   await persistExtras();
 }
 
 export async function saveGoals(workspaceId: string, items: Goal[]) {
   if (!snapshot) throw new Error("Sessão expirada.");
-  snapshot.extras[workspaceId] = { ...(snapshot.extras[workspaceId] ?? emptyExtras()), goals: items };
+  snapshot.extras[workspaceId] = { ...emptyExtras(), ...(snapshot.extras[workspaceId] ?? {}), goals: items };
+  await persistExtras();
+}
+
+export async function saveCostCenters(workspaceId: string, items: CostCenter[]) {
+  if (!snapshot) throw new Error("Sessão expirada.");
+  snapshot.extras[workspaceId] = { ...emptyExtras(), ...(snapshot.extras[workspaceId] ?? {}), costCenters: items };
+  await persistExtras();
+}
+
+export async function saveParties(workspaceId: string, items: Party[]) {
+  if (!snapshot) throw new Error("Sessão expirada.");
+  snapshot.extras[workspaceId] = { ...emptyExtras(), ...(snapshot.extras[workspaceId] ?? {}), parties: items };
+  await persistExtras();
+}
+
+export async function saveBills(workspaceId: string, items: Bill[]) {
+  if (!snapshot) throw new Error("Sessão expirada.");
+  snapshot.extras[workspaceId] = { ...emptyExtras(), ...(snapshot.extras[workspaceId] ?? {}), bills: items };
+  await persistExtras();
+}
+
+export async function saveReconciledIds(workspaceId: string, items: string[]) {
+  if (!snapshot) throw new Error("Sessão expirada.");
+  snapshot.extras[workspaceId] = { ...emptyExtras(), ...(snapshot.extras[workspaceId] ?? {}), reconciledIds: items };
+  await persistExtras();
+}
+
+export async function saveLockedMonths(workspaceId: string, items: string[]) {
+  if (!snapshot) throw new Error("Sessão expirada.");
+  snapshot.extras[workspaceId] = { ...emptyExtras(), ...(snapshot.extras[workspaceId] ?? {}), lockedMonths: items };
+  await persistExtras();
+}
+
+export async function saveTeam(workspaceId: string, items: TeamSeat[]) {
+  if (!snapshot) throw new Error("Sessão expirada.");
+  snapshot.extras[workspaceId] = { ...emptyExtras(), ...(snapshot.extras[workspaceId] ?? {}), team: items };
   await persistExtras();
 }
 
@@ -276,7 +359,7 @@ export function listWorkspaces(userId: string) {
 }
 
 export function listLogs(userId: string) {
-  return (snapshot?.auditLogs ?? []).filter((l) => l.userId === userId).slice(0, 12);
+  return (snapshot?.auditLogs ?? []).filter((l) => l.userId === userId).slice(0, 80);
 }
 
 export async function ensureProfile(userId: string, name: string) {

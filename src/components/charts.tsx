@@ -43,7 +43,7 @@ export function CashflowChart({ data }: { data: Series[] }) {
     <div className="h-64">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={chart}>
-          <CartesianGrid stroke="#eee6d8" vertical={false} />
+          <CartesianGrid stroke="#d5dde4" vertical={false} />
           <XAxis dataKey="month" tickFormatter={(v) => formatMonthLabel(v).slice(0, 3)} tick={{ fontSize: 12 }} />
           <YAxis tick={{ fontSize: 12 }} />
           <Tooltip
@@ -62,18 +62,32 @@ export function CategoryChart({ data }: { data: Slice[] }) {
   if (!data.length) {
     return <p className="text-sm text-muted py-10 text-center">Sem despesas neste mês.</p>;
   }
+  const total = data.reduce((sum, item) => sum + item.amount, 0);
   return (
-    <div className="h-64">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie data={data} dataKey="amount" nameKey="name" innerRadius={52} outerRadius={84} paddingAngle={2}>
-            {data.map((entry) => (
-              <Cell key={entry.name} fill={entry.color} />
-            ))}
-          </Pie>
-          <Tooltip formatter={(value) => brl(Number(value))} />
-        </PieChart>
-      </ResponsiveContainer>
+    <div>
+      <div className="h-56">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={data} dataKey="amount" nameKey="name" innerRadius={52} outerRadius={84} paddingAngle={2}>
+              {data.map((entry) => (
+                <Cell key={entry.name} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip formatter={(value) => brl(Number(value))} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <ul className="space-y-1.5 mt-2">
+        {data.slice(0, 5).map((item) => (
+          <li key={item.name} className="flex items-center justify-between text-xs">
+            <span className="flex items-center gap-2 min-w-0">
+              <span className="size-2 rounded-full shrink-0" style={{ background: item.color }} />
+              <span className="truncate">{item.name}</span>
+            </span>
+            <span className="text-muted">{Math.round((item.amount / total) * 100)}%</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -87,7 +101,7 @@ export function BudgetBars({
     <div className="h-72">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data.map((d) => ({ ...d, Planejado: d.planned / 100, Realizado: d.actual / 100 }))}>
-          <CartesianGrid stroke="#eee6d8" vertical={false} />
+          <CartesianGrid stroke="#d5dde4" vertical={false} />
           <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} />
           <YAxis tick={{ fontSize: 12 }} />
           <Tooltip formatter={(value) => brl(Math.round(Number(value) * 100))} />

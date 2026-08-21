@@ -80,9 +80,50 @@ export type Goal = {
   deadline: string;
 };
 
+export type CostCenter = {
+  id: string;
+  workspaceId: string;
+  name: string;
+};
+
+export type Party = {
+  id: string;
+  workspaceId: string;
+  name: string;
+  kind: "CUSTOMER" | "SUPPLIER";
+  document?: string;
+};
+
+export type Bill = {
+  id: string;
+  workspaceId: string;
+  kind: "PAYABLE" | "RECEIVABLE";
+  partyName: string;
+  description: string;
+  amount: number;
+  due: string;
+  status: "OPEN" | "PAID";
+  costCenterId?: string | null;
+  paidAt?: string;
+  paidTxId?: string | null;
+};
+
+export type TeamSeat = {
+  id: string;
+  name: string;
+  email: string;
+  role: "ADMIN" | "FINANCE" | "VIEW";
+};
+
 export type WorkspaceExtras = {
   recurring: Recurring[];
   goals: Goal[];
+  costCenters: CostCenter[];
+  parties: Party[];
+  bills: Bill[];
+  reconciledIds: string[];
+  lockedMonths: string[];
+  team: TeamSeat[];
 };
 
 export type AuditLog = {

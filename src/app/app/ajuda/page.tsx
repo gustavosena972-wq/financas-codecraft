@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { HelpChat } from "@/components/help-chat";
 import { PIX_KEY, whatsappLink } from "@/lib/pix";
 
@@ -9,10 +10,13 @@ export default function AjudaPage() {
       <div>
         <h1 className="text-2xl font-semibold">Ajuda</h1>
         <p className="text-sm text-muted max-w-2xl">
-          Tem um chat no meio, mas ele só responde o que é seguro. Compra, comprovante e problema de conta
-          passam por uma pessoa. Ninguém da CodeCraft pede senha.
+          Primeiro o guia curto. O chat só tira dúvida simples. Compra, comprovante e senha passam por uma pessoa.
         </p>
       </div>
+      <Link href="/app/comecar" className="card p-5 block hover:border-gold">
+        <div className="font-semibold">Como usar a plataforma</div>
+        <p className="text-sm text-muted mt-1">Vídeo de um minuto, com voz, ou o texto curto das telas.</p>
+      </Link>
       <HelpChat />
       <div className="card p-5 text-sm space-y-2">
         <p>Chave PIX da CodeCraft: <strong>{PIX_KEY}</strong></p>

@@ -29,7 +29,7 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "Free é grátis. Pro R$ 29,90 e Business R$ 79,90, no PIX 31999758385. Em Planos você gera o QR. Enterprise combinamos no WhatsApp.",
+      body: "Free é grátis. Pro R$ 99, Business R$ 150 e Enterprise R$ 300, no PIX 31999758385. Em Planos você gera o QR.",
     };
   }
   if (/(planilha|excel|import|orcamento)/.test(text)) {
@@ -44,6 +44,27 @@ export function helpReply(message: string) {
       auto: true,
       human: false,
       body: "Na Agenda você cadastra o que se repete, tipo aluguel. O Free cabe 3. Depois é só lançar o mês.",
+    };
+  }
+  if (/(como usar|comecar|tutorial|o que faz|funcoes|ensina|guia|video)/.test(text)) {
+    return {
+      auto: true,
+      human: false,
+      body: "Em Como usar tem um vídeo de um minuto, com voz. Se preferir ler, são três passos: contas, lançamentos, visão geral.",
+    };
+  }
+  if (/(claro|escuro|tema|dark|light)/.test(text)) {
+    return {
+      auto: true,
+      human: false,
+      body: "No topo tem o botão Claro/Escuro. Ele guarda a escolha neste computador.",
+    };
+  }
+  if (/(dre|titulo|pagar|receber|concili)/.test(text)) {
+    return {
+      auto: true,
+      human: false,
+      body: "DRE, títulos e conciliação entram no Pro. Títulos são contas a pagar e a receber. Baixa vira lançamento. Fechar o mês é Enterprise.",
     };
   }
   if (/(ia|inteligencia)/.test(text)) {

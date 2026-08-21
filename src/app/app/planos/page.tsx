@@ -40,7 +40,6 @@ export default function PlanosPage() {
       }
       return;
     }
-    if (next === "ENTERPRISE") return;
     setCheckout(next);
     setMessage(null);
   }
@@ -65,8 +64,8 @@ export default function PlanosPage() {
       <div>
         <h1 className="text-2xl font-semibold">Planos</h1>
         <p className="text-sm text-muted max-w-2xl">
-          O Free já organiza a planilha. Para Pro ou Business o pagamento é PIX na chave 31999758385.
-          O dinheiro cai na conta da CodeCraft. O chat não confirma pagamento sozinho.
+          O Free organiza o caixa. Pro, Business e Enterprise pagam no PIX 31999758385:
+          Pro R$ 99, Business R$ 150, Enterprise R$ 300.
         </p>
       </div>
       <div className={busy ? "pointer-events-none opacity-70" : ""}>

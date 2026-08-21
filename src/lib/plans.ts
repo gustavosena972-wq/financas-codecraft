@@ -23,13 +23,12 @@ export const PLANS: Plan[] = [
     price: "R$ 0",
     priceValue: 0,
     period: "para sempre",
-    forWho: "Organizar o caixa e a planilha que você já usa.",
+    forWho: "Caixa do dia: lançar, ver saldo e organizar a planilha.",
     includes: [
-      "Contas, lançamentos e dashboard",
-      "Pegar a planilha do computador, organizar e baixar clara",
-      "Agenda do que vence no mês",
-      "Até 3 contas recorrentes",
-      "1 meta",
+      "Contas, lançamentos e visão geral",
+      "Planilha do computador organizada",
+      "Agenda com até 3 recorrentes",
+      "1 meta de caixa",
     ],
     news: [],
     cta: "Continuar no Free",
@@ -37,50 +36,67 @@ export const PLANS: Plan[] = [
   {
     id: "PRO",
     name: "Pro",
-    price: "R$ 29,90",
-    priceValue: 29.9,
+    price: "R$ 99",
+    priceValue: 99,
     period: "por mês",
-    forWho: "Quem já lança e quer o app pensando o mês à frente.",
+    forWho: "Operação que precisa de DRE, títulos e conciliação.",
     includes: ["Tudo do Free"],
     news: [
-      "IA operacional: explica o mês e alerta desvio",
-      "Recorrentes e metas sem limite",
-      "Sugestão de categoria ao lançar e importar",
-      "Importar, exportar, orçamento e fluxo projetado",
+      "DRE do período",
+      "Contas a pagar e a receber, com atraso",
+      "Centros de custo e parceiros",
+      "Conciliação de conta",
+      "IA operacional, recorrentes e metas sem limite",
     ],
     cta: "Atualizar para Pro",
-    highlight: true,
   },
   {
     id: "BUSINESS",
     name: "Business",
-    price: "R$ 79,90",
-    priceValue: 79.9,
+    price: "R$ 150",
+    priceValue: 150,
     period: "por mês",
-    forWho: "Quem precisa separar a vida pessoal da empresa.",
-    includes: ["Tudo do Pro, inclusive a IA"],
+    forWho: "Empresa com pessoal separado, auditoria e até 8 assentos.",
+    includes: ["Tudo do Pro"],
     news: [
       "Espaço empresa separado do pessoal",
-      "Auditoria das ações",
-      "Dois perfis no mesmo login",
+      "Trilha de auditoria completa",
+      "Até 8 pessoas na equipe",
     ],
     cta: "Atualizar para Business",
   },
   {
     id: "ENTERPRISE",
     name: "Enterprise",
-    price: "A partir de R$ 199",
-    priceValue: null,
-    period: "combinado com a operação",
-    forWho: "Operação maior, com gente e integração.",
+    price: "R$ 300",
+    priceValue: 300,
+    period: "por mês",
+    forWho: "Grupo, várias unidades e fechamento de competência.",
     includes: ["Tudo do Business"],
-    news: ["Vários usuários", "Integrações", "Suporte dedicado"],
-    cta: "Falar sobre Enterprise",
+    news: [
+      "Fechamento de mês (trava lançamento)",
+      "Equipe sem limite de assento",
+      "Suporte dedicado no WhatsApp",
+    ],
+    cta: "Atualizar para Enterprise",
+    highlight: true,
   },
 ];
 
 export function planHasAi(plan: PlanId | string | null | undefined) {
   return plan === "PRO" || plan === "BUSINESS" || plan === "ENTERPRISE";
+}
+
+export function planHasOps(plan: PlanId | string | null | undefined) {
+  return planHasAi(plan);
+}
+
+export function planHasGovernance(plan: PlanId | string | null | undefined) {
+  return plan === "BUSINESS" || plan === "ENTERPRISE";
+}
+
+export function planHasClose(plan: PlanId | string | null | undefined) {
+  return plan === "ENTERPRISE";
 }
 
 export function planIsPaid(plan: PlanId | string | null | undefined) {
@@ -93,6 +109,13 @@ export function recurringLimit(plan: PlanId | string | null | undefined) {
 
 export function goalLimit(plan: PlanId | string | null | undefined) {
   return planIsPaid(plan) ? Number.POSITIVE_INFINITY : FREE_GOAL_LIMIT;
+}
+
+export function teamLimit(plan: PlanId | string | null | undefined) {
+  if (plan === "ENTERPRISE") return Number.POSITIVE_INFINITY;
+  if (plan === "BUSINESS") return 8;
+  if (plan === "PRO") return 2;
+  return 0;
 }
 
 export function planById(id: string | null | undefined): Plan {

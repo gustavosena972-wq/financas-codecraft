@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { PLANS, type PlanId } from "@/lib/plans";
-import { whatsappLink } from "@/lib/pix";
 
 export function PlansGrid({
   current,
@@ -47,23 +46,13 @@ export function PlansGrid({
               ))}
             </ul>
             {mode === "account" && onSelect ? (
-              plan.id === "ENTERPRISE" ? (
-                <a className="btn btn-primary mt-5 w-full" href={whatsappLink("Olá! Quero o plano Enterprise do Finanças CodeCraft.")}>
-                  Falar no WhatsApp
-                </a>
-              ) : (
-                <button
-                  className={`btn mt-5 w-full ${active ? "btn-ghost" : "btn-primary"}`}
-                  disabled={active}
-                  onClick={() => onSelect(plan.id)}
-                >
-                  {active ? "Este é o seu plano" : plan.cta}
-                </button>
-              )
-            ) : plan.id === "ENTERPRISE" ? (
-              <a className="btn btn-ghost mt-5 w-full" href={whatsappLink("Olá! Quero o plano Enterprise do Finanças CodeCraft.")}>
-                Falar no WhatsApp
-              </a>
+              <button
+                className={`btn mt-5 w-full ${active ? "btn-ghost" : "btn-primary"}`}
+                disabled={active}
+                onClick={() => onSelect(plan.id)}
+              >
+                {active ? "Este é o seu plano" : plan.cta}
+              </button>
             ) : (
               <Link href="/cadastro" className={`btn mt-5 w-full ${plan.highlight ? "btn-primary" : "btn-ghost"}`}>
                 {plan.id === "FREE" ? "Começar grátis" : "Criar conta"}
