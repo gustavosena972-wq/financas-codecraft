@@ -81,7 +81,7 @@ export function TransactionForm({
           onChange={(e) => applySuggestion(e.target.value)}
         />
       </label>
-      {hint ? <p className="text-xs text-gold -mt-2">{hint}</p> : null}
+      {hint ? <p className="text-xs text-gold -mt-2 pop-in">{hint} — pode trocar se quiser.</p> : null}
       <div className="grid sm:grid-cols-2 gap-3">
         <label className="field">
           <span>{type === "TRANSFER" ? "Saiu de" : "Conta"}</span>

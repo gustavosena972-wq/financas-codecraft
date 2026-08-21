@@ -10,7 +10,7 @@ export default function RegisterPage() {
   const [mode, setMode] = useState("PERSONAL");
 
   return (
-    <AuthFrame title="Criar conta" subtitle="Pessoal, empresa, ou os dois — com dados separados.">
+    <AuthFrame title="Criar conta" subtitle="Pessoa ou empresa. Se quiser os dois, cada um fica no seu espaço — nada misturado.">
       <form action={action} className="space-y-4">
         <label className="field">
           <span>Nome</span>
@@ -27,9 +27,9 @@ export default function RegisterPage() {
         <label className="field">
           <span>Como vai usar</span>
           <select name="mode" value={mode} onChange={(e) => setMode(e.target.value)}>
-            <option value="PERSONAL">Pessoal</option>
-            <option value="BUSINESS">Empresa</option>
-            <option value="BOTH">Pessoal e empresa</option>
+            <option value="PERSONAL">Só pessoa</option>
+            <option value="BUSINESS">Só empresa</option>
+            <option value="BOTH">Os dois, separados</option>
           </select>
         </label>
         {mode !== "PERSONAL" ? (

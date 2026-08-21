@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Area,
   AreaChart,
@@ -50,8 +51,8 @@ export function CashflowChart({ data }: { data: Series[] }) {
             formatter={(value) => brl(Math.round(Number(value) * 100))}
             labelFormatter={(label) => formatMonthLabel(String(label))}
           />
-          <Area type="monotone" dataKey="Receitas" stroke="#2A9D6E" fill="#2A9D6E22" />
-          <Area type="monotone" dataKey="Despesas" stroke="#C45C4A" fill="#C45C4A18" />
+          <Area type="monotone" dataKey="Receitas" stroke="#2A9D6E" fill="#2A9D6E22" animationDuration={800} />
+          <Area type="monotone" dataKey="Despesas" stroke="#C45C4A" fill="#C45C4A18" animationDuration={800} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -59,6 +60,7 @@ export function CashflowChart({ data }: { data: Series[] }) {
 }
 
 export function CategoryChart({ data }: { data: Slice[] }) {
+  const [hot, setHot] = useState<string | null>(null);
   if (!data.length) {
     return <p className="text-sm text-muted py-10 text-center">Sem despesas neste mês.</p>;
   }
@@ -68,9 +70,25 @@ export function CategoryChart({ data }: { data: Slice[] }) {
       <div className="h-56">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie data={data} dataKey="amount" nameKey="name" innerRadius={52} outerRadius={84} paddingAngle={2}>
+            <Pie
+              data={data}
+              dataKey="amount"
+              nameKey="name"
+              innerRadius={52}
+              outerRadius={84}
+              paddingAngle={2}
+              animationDuration={700}
+              onMouseEnter={(_, i) => setHot(data[i]?.name ?? null)}
+              onMouseLeave={() => setHot(null)}
+            >
               {data.map((entry) => (
-                <Cell key={entry.name} fill={entry.color} />
+                <Cell
+                  key={entry.name}
+                  fill={entry.color}
+                  opacity={!hot || hot === entry.name ? 1 : 0.35}
+                  stroke={hot === entry.name ? "#fff" : "none"}
+                  strokeWidth={hot === entry.name ? 2 : 0}
+                />
               ))}
             </Pie>
             <Tooltip formatter={(value) => brl(Number(value))} />
@@ -79,7 +97,14 @@ export function CategoryChart({ data }: { data: Slice[] }) {
       </div>
       <ul className="space-y-1.5 mt-2">
         {data.slice(0, 5).map((item) => (
-          <li key={item.name} className="flex items-center justify-between text-xs">
+          <li
+            key={item.name}
+            className={`flex items-center justify-between text-xs rounded-md px-1 py-1 cursor-pointer transition-colors ${
+              hot === item.name ? "bg-bg-2" : ""
+            }`}
+            onMouseEnter={() => setHot(item.name)}
+            onMouseLeave={() => setHot(null)}
+          >
             <span className="flex items-center gap-2 min-w-0">
               <span className="size-2 rounded-full shrink-0" style={{ background: item.color }} />
               <span className="truncate">{item.name}</span>

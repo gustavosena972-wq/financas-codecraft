@@ -29,14 +29,14 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "Free é grátis. Pro R$ 99, Business R$ 150 e Enterprise R$ 300, no PIX 31999758385. Em Planos você gera o QR.",
+      body: "Pessoa: Grátis ou Pessoal R$ 29. Empresa: R$ 199 ou Empresa Plus R$ 399. Só no PIX 31999758385. Em Planos você gera o QR.",
     };
   }
   if (/(planilha|excel|import|orcamento)/.test(text)) {
     return {
       auto: true,
       human: false,
-      body: "Em Planilha você escolhe o arquivo do computador. O app organiza, mostra o resumo, deixa baixar claro e mandar para o app.",
+      body: "Em Planilha você manda o Excel. O app organiza, joga no caixa e na visão geral aparece a previsão do mês e o que dá para cortar.",
     };
   }
   if (/(agenda|recorrente|aluguel)/.test(text)) {
@@ -50,7 +50,14 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "Em Como usar tem um vídeo de um minuto, com voz. Se preferir ler, são três passos: contas, lançamentos, visão geral.",
+      body: "São três passos: coloca os gastos, olha a planilha na visão geral, segue o que a IA apontou para cortar. Em Como usar tem um vídeo de um minuto.",
+    };
+  }
+  if (/(cortar|previsao|futuro|o que vou gastar|baixar conta)/.test(text)) {
+    return {
+      auto: true,
+      human: false,
+      body: "Isso fica na visão geral, na planilha de cima. Tem o que sai em cada mês e dicas para baixar conta. Primeiro manda os gastos em Planilha.",
     };
   }
   if (/(claro|escuro|tema|dark|light)/.test(text)) {
@@ -64,14 +71,14 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "DRE, títulos e conciliação entram no Pro. Títulos são contas a pagar e a receber. Baixa vira lançamento. Fechar o mês é Enterprise.",
+      body: "DRE, títulos e conciliação são da empresa, no plano Empresa (R$ 199). No pessoal isso nem aparece no menu. PIX 31999758385.",
     };
   }
   if (/(ia|inteligencia)/.test(text)) {
     return {
       auto: true,
       human: false,
-      body: "A IA do Pro explica o mês e sugere categoria. Ela não é um chat livre e não mexe sozinha no seu dinheiro.",
+      body: "Na visão geral a IA monta a planilha e aponta o que cortar. No plano Pessoal (R$ 29) ela também explica desvio do teto. Não mexe no dinheiro. PIX 31999758385.",
     };
   }
 

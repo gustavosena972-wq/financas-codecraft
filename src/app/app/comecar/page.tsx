@@ -1,32 +1,59 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { GUIDE, START_STEPS } from "@/lib/guide";
+import { START_STEPS, guideForMode } from "@/lib/guide";
 import { PageHeader } from "@/components/page-header";
 import { GuideVideo } from "@/components/guide-video";
+import { requireSession } from "@/lib/store";
+import { useLive } from "@/lib/live";
+import { go } from "@/lib/types";
 
 export default function ComecarPage() {
+  const live = useLive();
+  const [mode, setMode] = useState<"PERSONAL" | "BUSINESS">("PERSONAL");
+
+  useEffect(() => {
+    void (async () => {
+      const session = await requireSession();
+      if (!session) {
+        go("/login");
+        return;
+      }
+      setMode(session.workspace.type === "BUSINESS" ? "BUSINESS" : "PERSONAL");
+    })();
+  }, [live]);
+
+  const list = guideForMode(mode).filter((item) => item.href !== "/app/comecar");
+  const company = mode === "BUSINESS";
+
   return (
     <div className="space-y-8">
       <PageHeader
-        kicker="Guia"
+        kicker={company ? "Empresa" : "Pessoa"}
         title="Como usar"
-        subtitle="Não quer ler? Aperte play. Quer ler? Três passos e uma frase por tela."
+        subtitle={
+          company
+            ? "Este espaço é da empresa. DRE, títulos e conciliação. O pessoal fica no seletor do topo."
+            : "Este espaço é seu. Gastos, caixa e o que cortar. DRE e títulos não aparecem aqui."
+        }
       />
-      <GuideVideo />
+      {!company ? <GuideVideo /> : null}
 
-      <section className="grid md:grid-cols-3 gap-3">
-        {START_STEPS.map((step) => (
-          <Link key={step.n} href={step.href} className="card p-5 hover:border-gold">
-            <div className="text-gold font-mono text-xs mb-2">{step.n}</div>
-            <h2 className="font-semibold">{step.title}</h2>
-            <p className="text-sm text-muted mt-2">{step.body}</p>
-          </Link>
-        ))}
-      </section>
+      {!company ? (
+        <section className="grid md:grid-cols-3 gap-3">
+          {START_STEPS.map((step) => (
+            <Link key={step.n} href={step.href} className="card p-5 hover:border-gold">
+              <div className="text-gold font-mono text-xs mb-2">{step.n}</div>
+              <h2 className="font-semibold">{step.title}</h2>
+              <p className="text-sm text-muted mt-2">{step.body}</p>
+            </Link>
+          ))}
+        </section>
+      ) : null}
 
       <section className="space-y-3">
-        <h2 className="font-semibold">O que cada tela faz</h2>
+        <h2 className="font-semibold">{company ? "Telas da empresa" : "Telas da pessoa"}</h2>
         <div className="card overflow-hidden">
           <table className="table">
             <thead>
@@ -37,7 +64,7 @@ export default function ComecarPage() {
               </tr>
             </thead>
             <tbody>
-              {GUIDE.filter((item) => item.href !== "/app/comecar").map((item) => (
+              {list.map((item) => (
                 <tr key={item.href}>
                   <td>
                     <Link href={item.href} className="font-medium underline-offset-2 hover:underline">
@@ -54,7 +81,7 @@ export default function ComecarPage() {
       </section>
 
       <p className="text-sm text-muted">
-        Dúvida de dinheiro, comprovante ou senha: fale com uma pessoa em Ajuda. O chat não pede senha e não mexe no PIX.
+        Planos: pessoa R$ 0 ou R$ 29 · empresa R$ 199 ou R$ 399. PIX 31999758385. O chat não pede senha e não mexe no PIX.
       </p>
     </div>
   );

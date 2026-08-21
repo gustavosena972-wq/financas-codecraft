@@ -13,6 +13,9 @@ import { planHasAi, planHasOps } from "@/lib/plans";
 import { billsOverview } from "@/lib/ops";
 import { START_STEPS } from "@/lib/guide";
 import { go } from "@/lib/types";
+import { buildMoneySheet } from "@/lib/coach";
+import { CountMoney } from "@/components/count-up";
+import { MoneySheet } from "@/components/money-sheet";
 
 export default function DashboardPage() {
   const live = useLive();
@@ -28,8 +31,9 @@ export default function DashboardPage() {
       setView(
         build(
           session.workspace.id,
-          session.workspace.type === "BUSINESS" ? session.workspace.name : "Modo pessoal",
+          session.workspace.type === "BUSINESS" ? session.workspace.name : "Seu dinheiro pessoal",
           session.user.plan,
+          session.workspace.type === "BUSINESS",
         ),
       );
     })();
@@ -42,30 +46,29 @@ export default function DashboardPage() {
         <div>
           <p className="text-xs tracking-[0.14em] uppercase text-muted">Visão geral</p>
           <h1 className="text-2xl font-semibold mt-1 capitalize">{formatMonthLabel(view.month)}</h1>
-          <p className="text-sm text-muted">{view.label} — saldo, tendência e o que mais pesou.</p>
+          <p className="text-sm text-muted">
+            {view.company
+              ? `${view.label} — caixa da empresa. Títulos e DRE ficam no menu ao lado.`
+              : `${view.label} — coloca os gastos e a planilha mostra o caixa e o que cortar.`}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/app/lancamentos" className="btn btn-primary">Novo lançamento</Link>
-          <Link href="/app/titulos" className="btn btn-ink">Títulos</Link>
-          <Link href="/app/dre" className="btn btn-ghost">DRE</Link>
+          <Link href="/app/importar" className="btn btn-primary">Colocar gastos</Link>
+          <Link href="/app/lancamentos" className="btn btn-ink">Lançar na mão</Link>
         </div>
       </div>
-      <Link href="/app/comecar" className="card p-4 flex items-center justify-between gap-4 hover:border-gold">
-        <div>
-          <div className="font-semibold">Não quer ler o guia?</div>
-          <p className="text-sm text-muted mt-1">Tem um vídeo de um minuto, com voz, explicando os três passos.</p>
-        </div>
-        <span className="btn btn-primary">Assistir</span>
-      </Link>
+      <MoneySheet sheet={view.sheet} />
+      {!view.company ? (
       <section className="grid md:grid-cols-3 gap-3">
-        {START_STEPS.map((step) => (
-          <Link key={step.n} href={step.href} className="card p-4 hover:border-gold">
+        {START_STEPS.map((step, index) => (
+          <Link key={step.n} href={step.href} className={`card p-4 hover:border-gold rise rise-d${index + 1}`}>
             <div className="text-[11px] uppercase tracking-wide text-gold font-semibold">Passo {step.n}</div>
             <div className="font-semibold mt-1">{step.title}</div>
             <p className="text-sm text-muted mt-1">{step.body}</p>
           </Link>
         ))}
       </section>
+      ) : null}
       {view.overdue ? (
         <div className="card p-4" style={{ background: "#f8e8e5" }}>
           <div className="font-semibold">{view.overdue} item(ns) atrasado(s) na agenda</div>
@@ -73,27 +76,21 @@ export default function DashboardPage() {
           <Link href="/app/agenda" className="btn btn-ghost mt-3">Ir para a agenda</Link>
         </div>
       ) : null}
-      {view.ops && view.bills.openCount ? (
-        <div className="card p-4">
-          <div className="font-semibold">Tesouraria</div>
-          <p className="text-sm text-muted mt-1">
-            A pagar {brl(view.bills.payables)} · a receber {brl(view.bills.receivables)}
-            {view.bills.overduePay ? ` · atraso a pagar ${brl(view.bills.overduePay)}` : ""}
-          </p>
-          <Link href="/app/titulos" className="btn btn-ghost mt-3">Abrir títulos</Link>
-        </div>
-      ) : null}
       <AiInsights unlocked={view.ai} insights={view.insights} />
-      <section className="grid sm:grid-cols-2 xl:grid-cols-5 gap-4">
-        <Metric label="Saldo atual" value={brl(view.projection.currentBalance)} hint={view.deltaHint} />
-        <Metric label="Receitas" value={brl(view.summary.income)} tone="positive" />
-        <Metric label="Despesas" value={brl(view.summary.expense)} tone="negative" />
-        <Metric label="Quanto sobrou" value={`${view.savings}%`} hint="Do que entrou neste mês" />
-        <Metric
-          label="Projeção de saldo"
-          value={brl(view.projection.projectedBalance)}
-          hint={view.projection.remainingRecurring ? "Inclui recorrentes que ainda não lançaram" : "Com o que já está no mês"}
-        />
+      <section className={`grid sm:grid-cols-2 ${view.company ? "xl:grid-cols-5" : "xl:grid-cols-3"} gap-4`}>
+        <Metric label="Saldo atual" cents={view.projection.currentBalance} hint={view.deltaHint} />
+        <Metric label={view.company ? "Receitas" : "Entrou"} cents={view.summary.income} tone="positive" />
+        <Metric label={view.company ? "Despesas" : "Saiu"} cents={view.summary.expense} tone="negative" />
+        {view.company ? (
+          <>
+            <Metric label="Quanto sobrou" value={`${view.savings}%`} hint="Do que entrou neste mês" />
+            <Metric
+              cents={view.projection.projectedBalance}
+              label="Projeção de saldo"
+              hint={view.projection.remainingRecurring ? "Inclui recorrentes que ainda não lançaram" : "Com o que já está no mês"}
+            />
+          </>
+        ) : null}
       </section>
       <section className="grid lg:grid-cols-5 gap-4">
         <div className="card p-5 lg:col-span-3">
@@ -124,6 +121,18 @@ export default function DashboardPage() {
             {!view.agenda.length ? <p className="text-sm text-muted">Nada a vencer. Cadastre um recorrente na Agenda.</p> : null}
           </ul>
         </div>
+        {view.company ? (
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold">Tesouraria</h2>
+              <Link href="/app/titulos" className="text-sm text-muted">Títulos</Link>
+            </div>
+            <p className="text-sm text-muted">
+              A pagar {brl(view.bills.payables)} · a receber {brl(view.bills.receivables)}
+              {view.bills.overduePay ? ` · atraso ${brl(view.bills.overduePay)}` : ""}
+            </p>
+          </div>
+        ) : (
         <div className="card p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">Meta</h2>
@@ -141,9 +150,10 @@ export default function DashboardPage() {
               <p className="text-xs text-muted mt-2">{view.goalPct}% do alvo, com o saldo de agora.</p>
             </div>
           ) : (
-            <p className="text-sm text-muted">Nenhuma meta ainda. No Free cabe 1.</p>
+            <p className="text-sm text-muted">Nenhuma meta ainda. No Grátis cabe 1.</p>
           )}
         </div>
+        )}
       </section>
       <section className="grid lg:grid-cols-2 gap-4">
         <div className="card p-5">
@@ -155,7 +165,7 @@ export default function DashboardPage() {
             {view.accounts.map((account) => (
               <li key={account.id} className="flex justify-between text-sm py-2 border-b border-line last:border-0">
                 <span>{account.name}</span>
-                <span className="font-mono">{brl(account.balance)}</span>
+                <span className="font-mono"><CountMoney cents={account.balance} /></span>
               </li>
             ))}
           </ul>
@@ -186,7 +196,7 @@ export default function DashboardPage() {
   );
 }
 
-function build(workspaceId: string, label: string, plan: string) {
+function build(workspaceId: string, label: string, plan: string, company: boolean) {
   const month = monthKey();
   const series = cashflowSeries(workspaceId);
   const agenda = monthAgenda(workspaceId, month);
@@ -196,6 +206,7 @@ function build(workspaceId: string, label: string, plan: string) {
   return {
     month,
     label,
+    company,
     ai: planHasAi(plan),
     ops: planHasOps(plan),
     insights: buildInsights(workspaceId, month),
@@ -211,6 +222,7 @@ function build(workspaceId: string, label: string, plan: string) {
     savings: summary.income > 0 ? Math.round((summary.net / summary.income) * 100) : 0,
     deltaHint: deltaHint(series),
     bills: billsOverview(workspaceId),
+    sheet: buildMoneySheet(workspaceId),
   };
 }
 
@@ -223,12 +235,24 @@ function deltaHint(series: ReturnType<typeof cashflowSeries>) {
   return diff > 0 ? `Melhor que o mês passado em ${brl(diff)}` : `Pior que o mês passado em ${brl(Math.abs(diff))}`;
 }
 
-function Metric({ label, value, hint, tone }: { label: string; value: string; hint?: string; tone?: "positive" | "negative" }) {
+function Metric({
+  label,
+  cents,
+  value,
+  hint,
+  tone,
+}: {
+  label: string;
+  cents?: number;
+  value?: string;
+  hint?: string;
+  tone?: "positive" | "negative";
+}) {
   return (
-    <div className="card p-5">
+    <div className="card p-5 rise">
       <div className="text-xs uppercase tracking-wide text-muted font-semibold">{label}</div>
       <div className={`text-2xl font-semibold mt-2 ${tone === "positive" ? "text-positive" : tone === "negative" ? "text-negative" : ""}`}>
-        {value}
+        {typeof cents === "number" ? <CountMoney cents={cents} /> : value}
       </div>
       {hint ? <div className="text-xs text-muted mt-1">{hint}</div> : null}
     </div>

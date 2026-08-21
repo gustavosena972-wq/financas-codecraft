@@ -2,72 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ArrowLeftRight,
-  BookOpen,
-  Building2,
-  CalendarDays,
-  CircleHelp,
-  FileSpreadsheet,
-  Flag,
-  LayoutDashboard,
-  ListChecks,
-  LogOut,
-  MessageCircle,
-  PiggyBank,
-  Receipt,
-  Scale,
-  Settings,
-  Shield,
-  Sparkles,
-  Upload,
-  Users,
-  Wallet,
-} from "lucide-react";
+import { LogOut } from "lucide-react";
 import { logoutAction, switchWorkspaceAction } from "@/app/actions/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { HelpFab } from "@/components/help-fab";
 import { WelcomeGuide } from "@/components/welcome-guide";
 import { ScreenTip } from "@/components/screen-tip";
+import { isCompanyPath, isPersonPath, navFor, type WorkspaceKind } from "@/lib/nav";
 
-type Workspace = { id: string; name: string; type: "PERSONAL" | "BUSINESS" };
-
-const GROUPS: { label: string; items: { href: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
-  {
-    label: "Operação",
-    items: [
-      { href: "/app", label: "Visão geral", icon: LayoutDashboard },
-      { href: "/app/comecar", label: "Como usar", icon: CircleHelp },
-      { href: "/app/lancamentos", label: "Lançamentos", icon: Receipt },
-      { href: "/app/titulos", label: "Títulos", icon: ListChecks },
-      { href: "/app/contas", label: "Contas", icon: Wallet },
-      { href: "/app/agenda", label: "Agenda", icon: CalendarDays },
-    ],
-  },
-  {
-    label: "Análise",
-    items: [
-      { href: "/app/dre", label: "DRE", icon: Scale },
-      { href: "/app/orcamento", label: "Orçamento", icon: PiggyBank },
-      { href: "/app/fluxo", label: "Fluxo de caixa", icon: ArrowLeftRight },
-      { href: "/app/conciliacao", label: "Conciliação", icon: BookOpen },
-    ],
-  },
-  {
-    label: "Empresa",
-    items: [
-      { href: "/app/centros", label: "Centros e parceiros", icon: Building2 },
-      { href: "/app/metas", label: "Metas", icon: Flag },
-      { href: "/app/importar", label: "Planilha", icon: Upload },
-      { href: "/app/exportar", label: "Exportar", icon: FileSpreadsheet },
-      { href: "/app/auditoria", label: "Auditoria", icon: Shield },
-      { href: "/app/equipe", label: "Equipe", icon: Users },
-      { href: "/app/planos", label: "Planos", icon: Sparkles },
-      { href: "/app/configuracoes", label: "Configurações", icon: Settings },
-      { href: "/app/ajuda", label: "Ajuda", icon: MessageCircle },
-    ],
-  },
-];
+type Workspace = { id: string; name: string; type: WorkspaceKind };
 
 export function AppShell({
   userName,
@@ -82,6 +25,10 @@ export function AppShell({
 }) {
   const pathname = (usePathname() || "").replace(/\/$/, "") || "/";
   const active = workspaces.find((w) => w.id === activeId);
+  const kind: WorkspaceKind = active?.type === "BUSINESS" ? "BUSINESS" : "PERSONAL";
+  const groups = navFor(kind);
+  const blockedCompany = isCompanyPath(pathname) && kind !== "BUSINESS";
+  const blockedPerson = isPersonPath(pathname) && kind !== "PERSONAL";
 
   return (
     <div className="min-h-screen grid lg:grid-cols-[248px_1fr] bg-bg">
@@ -90,13 +37,11 @@ export function AppShell({
           <span className="mark">FC</span>
           <div>
             <div className="font-semibold tracking-tight text-sm">Finanças CodeCraft</div>
-            <div className="text-[11px] text-[#9aabba]">
-              {active?.type === "BUSINESS" ? "Empresa" : "Pessoal"}
-            </div>
+            <div className="text-[11px] text-[#9aabba]">{kind === "BUSINESS" ? "Empresa" : "Pessoal"}</div>
           </div>
         </div>
         <nav className="flex-1 space-y-5 overflow-y-auto pr-1">
-          {GROUPS.map((group) => (
+          {groups.map((group) => (
             <div key={group.label}>
               <div className="nav-label">{group.label}</div>
               <div className="space-y-0.5">
@@ -107,8 +52,8 @@ export function AppShell({
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] ${
-                        on ? "bg-panel-2 text-white" : "text-[#b7c4cf] hover:bg-panel-2/70"
+                      className={`nav-link flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] ${
+                        on ? "on bg-panel-2 text-white" : "text-[#b7c4cf] hover:bg-panel-2/70"
                       }`}
                     >
                       <Icon size={15} />
@@ -157,8 +102,29 @@ export function AppShell({
             </form>
           </div>
         </header>
-        <ScreenTip />
-        <main className="p-6 lg:p-8 max-w-6xl">{children}</main>
+        <ScreenTip mode={kind} />
+        <main className="p-6 lg:p-8 max-w-6xl">
+          {blockedCompany ? (
+            <div className="card p-8 max-w-lg space-y-3">
+              <p className="page-kicker">Espaço pessoal</p>
+              <h1 className="text-xl font-semibold">Isso aqui é da empresa</h1>
+              <p className="text-sm text-muted">
+                No pessoal você só vê gastos, contas e o que cortar. DRE, títulos e conciliação ficam no espaço
+                Empresa. Troque no seletor do topo.
+              </p>
+            </div>
+          ) : blockedPerson ? (
+            <div className="card p-8 max-w-lg space-y-3">
+              <p className="page-kicker">Espaço empresa</p>
+              <h1 className="text-xl font-semibold">Isso aqui é da pessoa</h1>
+              <p className="text-sm text-muted">
+                Meta de caixa é do espaço Pessoal. Troque no seletor do topo. Aqui a empresa usa títulos e DRE.
+              </p>
+            </div>
+          ) : (
+            children
+          )}
+        </main>
         <HelpFab />
         <WelcomeGuide />
       </div>

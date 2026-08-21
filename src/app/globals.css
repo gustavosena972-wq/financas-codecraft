@@ -65,6 +65,12 @@ button, input, select, textarea { font: inherit; }
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+.card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--gold) 45%, var(--line));
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--ink) 8%, transparent);
 }
 
 .btn {
@@ -79,10 +85,12 @@ button, input, select, textarea { font: inherit; }
   cursor: pointer;
   text-decoration: none;
   font-size: 14px;
+  transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
 }
-
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: scale(0.97); }
 .btn-primary { background: var(--gold); color: var(--gold-ink); }
-.btn-primary:hover { filter: brightness(0.97); }
+.btn-primary:hover { filter: brightness(0.97); box-shadow: 0 8px 18px color-mix(in srgb, var(--gold) 35%, transparent); }
 .btn-ink { background: var(--ink); color: #fff; }
 .btn-ghost {
   background: transparent;
@@ -202,6 +210,46 @@ html[data-theme="dark"] .btn-ghost {
   display: block;
   height: 100%;
   background: var(--gold);
+  transition: width 0.8s ease;
+}
+
+.table tbody tr {
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.table tbody tr:hover {
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+}
+.sheet-row { cursor: pointer; }
+.sheet-now td:first-child { font-weight: 650; }
+.sheet-on {
+  background: color-mix(in srgb, var(--gold) 14%, transparent) !important;
+}
+.tip-card { transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; border: 1px solid transparent; }
+.tip-card:hover { transform: translateY(-2px); }
+.tip-open { border-color: color-mix(in srgb, var(--gold) 50%, var(--line)); }
+.tip-done { border-color: var(--positive); background: color-mix(in srgb, var(--positive) 8%, var(--bg)); }
+
+.nav-link {
+  position: relative;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+.nav-link:hover { transform: translateX(2px); }
+.nav-link.on::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 99px;
+  background: var(--gold);
+  animation: rise 0.25s ease both;
+}
+
+.pop-in { animation: popin 0.35s ease both; }
+@keyframes popin {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: none; }
 }
 
 .help-fab {
@@ -217,7 +265,19 @@ html[data-theme="dark"] .btn-ghost {
   color: var(--gold-ink);
   cursor: pointer;
   font-weight: 800;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--gold) 40%, transparent);
+  animation: fabpulse 2.8s ease-in-out infinite;
+  transition: transform 0.2s ease;
 }
+.help-fab:hover { transform: scale(1.06); animation: none; }
+.help-fab.open { animation: none; }
+@keyframes fabpulse {
+  0%, 100% { box-shadow: 0 10px 24px color-mix(in srgb, var(--gold) 35%, transparent); }
+  50% { box-shadow: 0 10px 28px color-mix(in srgb, var(--gold) 70%, transparent), 0 0 0 8px color-mix(in srgb, var(--gold) 18%, transparent); }
+}
+
+.insight-item { cursor: pointer; border-radius: 10px; padding: 8px; margin: -8px; transition: background 0.18s ease; }
+.insight-item:hover { background: var(--bg); }
 .help-panel {
   position: fixed;
   right: 22px;
@@ -305,4 +365,24 @@ html[data-theme="dark"] .btn-ghost {
 @keyframes livepulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.rise { animation: rise 0.55s ease both; }
+.rise-d1 { animation-delay: 0.07s; }
+.rise-d2 { animation-delay: 0.14s; }
+.rise-d3 { animation-delay: 0.21s; }
+.float-card { animation: rise 0.7s ease both, floaty 5.5s ease-in-out 0.7s infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rise, .float-card, .live-dot .d, .pop-in, .help-fab { animation: none; }
+  .card, .btn, .progress > span, .table tbody tr, .tip-card, .nav-link { transition: none; }
+  .card:hover, .btn:hover, .help-fab:hover, .nav-link:hover { transform: none; }
 }

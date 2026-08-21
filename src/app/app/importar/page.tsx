@@ -27,7 +27,7 @@ export default function ImportPage() {
       <div>
         <h1 className="text-2xl font-semibold">Planilha</h1>
         <p className="text-sm text-muted">
-          Pegue o arquivo salvo no computador — orçamento do ano ou do mês. Organizamos, você entende e pode mandar para o app.
+          Coloca todos os gastos aqui. O app organiza, manda para o caixa e a visão geral vira a planilha com previsão e o que cortar.
         </p>
       </div>
       <div className="card p-5 space-y-3">

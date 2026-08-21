@@ -55,7 +55,7 @@ export default function ConciliacaoPage() {
           </>
         }
       />
-      <PlanGate allowed={ops} title="Conciliação entra no Pro" body="Sem bater livro com banco, o saldo da tela mente. Aqui você marca o que já conferiu." />
+      <PlanGate allowed={ops} title="Conciliação entra no plano Empresa" body="Bater livro com banco é da empresa. Plano Empresa R$ 199, PIX 31999758385." />
       {ops ? (
         <>
           <div className="grid sm:grid-cols-3 gap-3">

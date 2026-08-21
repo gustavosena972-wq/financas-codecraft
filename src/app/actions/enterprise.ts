@@ -26,7 +26,7 @@ export type OpsState = { error?: string; ok?: string } | null;
 async function needOps() {
   const session = await requireSession();
   if (!session) return { error: "Sessão expirada." as const, session: null };
-  if (!planHasOps(session.user.plan)) return { error: "Isso entra no Pro." as const, session: null };
+  if (!planHasOps(session.user.plan)) return { error: "Isso entra no plano Empresa." as const, session: null };
   return { error: null, session };
 }
 
@@ -210,7 +210,7 @@ export async function createSeatAction(_prev: OpsState, formData: FormData): Pro
   const session = await requireSession();
   if (!session) return { error: "Sessão expirada." };
   const limit = teamLimit(session.user.plan);
-  if (limit === 0) return { error: "Equipe entra no Pro." };
+  if (limit === 0) return { error: "Equipe entra no plano Empresa." };
   const parsed = z
     .object({
       name: z.string().trim().min(2),

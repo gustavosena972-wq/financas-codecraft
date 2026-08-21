@@ -1,8 +1,10 @@
 export type PlanId = "FREE" | "PRO" | "BUSINESS" | "ENTERPRISE";
+export type PlanAudience = "person" | "company";
 
 export type Plan = {
   id: PlanId;
   name: string;
+  audience: PlanAudience;
   price: string;
   priceValue: number | null;
   period: string;
@@ -15,80 +17,89 @@ export type Plan = {
 
 export const FREE_RECURRING_LIMIT = 3;
 export const FREE_GOAL_LIMIT = 1;
+export const PIX_PLAN_KEY = "31999758385";
 
 export const PLANS: Plan[] = [
   {
     id: "FREE",
-    name: "Free",
+    name: "Grátis",
+    audience: "person",
     price: "R$ 0",
     priceValue: 0,
     period: "para sempre",
-    forWho: "Caixa do dia: lançar, ver saldo e organizar a planilha.",
+    forWho: "Só para pessoa. Coloca os gastos e vê o caixa.",
     includes: [
-      "Contas, lançamentos e visão geral",
-      "Planilha do computador organizada",
-      "Agenda com até 3 recorrentes",
-      "1 meta de caixa",
+      "Gastos, contas e visão geral",
+      "Planilha do computador",
+      "Até 3 contas que se repetem",
+      "1 meta",
     ],
     news: [],
-    cta: "Continuar no Free",
+    cta: "Continuar grátis",
   },
   {
     id: "PRO",
-    name: "Pro",
-    price: "R$ 99",
-    priceValue: 99,
+    name: "Pessoal",
+    audience: "person",
+    price: "R$ 29",
+    priceValue: 29,
     period: "por mês",
-    forWho: "Operação que precisa de DRE, títulos e conciliação.",
-    includes: ["Tudo do Free"],
+    forWho: "Só para pessoa. IA do mês e teto sem limite.",
+    includes: ["Tudo do Grátis"],
     news: [
-      "DRE do período",
-      "Contas a pagar e a receber, com atraso",
-      "Centros de custo e parceiros",
-      "Conciliação de conta",
-      "IA operacional, recorrentes e metas sem limite",
+      "IA mostra o que cortar",
+      "Contas do mês e metas sem limite",
+      "Teto do mês sem trava",
     ],
-    cta: "Atualizar para Pro",
+    cta: "Assinar Pessoal",
+    highlight: true,
   },
   {
     id: "BUSINESS",
-    name: "Business",
-    price: "R$ 150",
-    priceValue: 150,
+    name: "Empresa",
+    audience: "company",
+    price: "R$ 199",
+    priceValue: 199,
     period: "por mês",
-    forWho: "Empresa com pessoal separado, auditoria e até 8 assentos.",
-    includes: ["Tudo do Pro"],
-    news: [
-      "Espaço empresa separado do pessoal",
-      "Trilha de auditoria completa",
+    forWho: "Só para empresa. Títulos, DRE e conciliação.",
+    includes: [
+      "Espaço Empresa separado do pessoal",
+      "Contas a pagar e a receber",
+      "DRE, fluxo e conciliação",
+      "Centros, parceiros e auditoria",
       "Até 8 pessoas na equipe",
     ],
-    cta: "Atualizar para Business",
+    news: [],
+    cta: "Assinar Empresa",
   },
   {
     id: "ENTERPRISE",
-    name: "Enterprise",
-    price: "R$ 300",
-    priceValue: 300,
+    name: "Empresa Plus",
+    audience: "company",
+    price: "R$ 399",
+    priceValue: 399,
     period: "por mês",
-    forWho: "Grupo, várias unidades e fechamento de competência.",
-    includes: ["Tudo do Business"],
+    forWho: "Só para empresa grande. Fecha o mês e equipe sem teto.",
+    includes: ["Tudo do plano Empresa"],
     news: [
       "Fechamento de mês (trava lançamento)",
-      "Equipe sem limite de assento",
-      "Suporte dedicado no WhatsApp",
+      "Equipe sem limite",
+      "WhatsApp dedicado",
     ],
-    cta: "Atualizar para Enterprise",
-    highlight: true,
+    cta: "Assinar Empresa Plus",
   },
 ];
+
+export function plansFor(audience: PlanAudience) {
+  return PLANS.filter((p) => p.audience === audience);
+}
 
 export function planHasAi(plan: PlanId | string | null | undefined) {
   return plan === "PRO" || plan === "BUSINESS" || plan === "ENTERPRISE";
 }
 
 export function planHasOps(plan: PlanId | string | null | undefined) {
-  return planHasAi(plan);
+  return plan === "BUSINESS" || plan === "ENTERPRISE";
 }
 
 export function planHasGovernance(plan: PlanId | string | null | undefined) {
@@ -100,7 +111,7 @@ export function planHasClose(plan: PlanId | string | null | undefined) {
 }
 
 export function planIsPaid(plan: PlanId | string | null | undefined) {
-  return planHasAi(plan);
+  return plan === "PRO" || plan === "BUSINESS" || plan === "ENTERPRISE";
 }
 
 export function recurringLimit(plan: PlanId | string | null | undefined) {
@@ -114,7 +125,6 @@ export function goalLimit(plan: PlanId | string | null | undefined) {
 export function teamLimit(plan: PlanId | string | null | undefined) {
   if (plan === "ENTERPRISE") return Number.POSITIVE_INFINITY;
   if (plan === "BUSINESS") return 8;
-  if (plan === "PRO") return 2;
   return 0;
 }
 

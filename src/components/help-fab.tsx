@@ -12,7 +12,7 @@ export function HelpFab() {
           <HelpChat compact />
         </div>
       ) : null}
-      <button className="help-fab" type="button" onClick={() => setOpen((v) => !v)} aria-label="Ajuda">
+      <button className={`help-fab ${open ? "open" : ""}`} type="button" onClick={() => setOpen((v) => !v)} aria-label="Ajuda">
         {open ? "×" : "?"}
       </button>
     </>

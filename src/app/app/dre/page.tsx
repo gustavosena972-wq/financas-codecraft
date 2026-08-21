@@ -63,8 +63,8 @@ export default function DrePage() {
       />
       <PlanGate
         allowed={ops}
-        title="DRE entra no Pro"
-        body="O demonstrativo junta as categorias do mês em resultado e margem. No Free você lança. No Pro a diretoria lê."
+        title="DRE entra no plano Empresa"
+        body="Só no espaço Empresa, no plano Empresa (R$ 199). Pague no PIX 31999758385."
       />
       {ops ? (
         <div className="card overflow-hidden print-sheet">
