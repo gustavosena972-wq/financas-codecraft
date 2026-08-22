@@ -62,92 +62,90 @@ export default function BudgetPage() {
 
   if (!company) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-end justify-between gap-4 flex-wrap">
-          <div>
-            <p className="page-kicker">O que vai sair</p>
-            <h1 className="text-2xl font-semibold">Este mês da casa</h1>
-            <p className="text-sm text-muted max-w-2xl capitalize">
-              Quanto vai gastar, quanto sobra, e de onde sai. {formatMonthLabel(month)}.
-            </p>
-          </div>
-          <div className="flex gap-2">
+      <div className="space-y-5 max-w-2xl">
+        <div>
+          <p className="page-kicker">Um mês de cada vez</p>
+          <h1 className="text-2xl font-semibold capitalize">{formatMonthLabel(month)}</h1>
+          <p className="text-sm text-muted mt-1">Primeiro o resumo. Embaixo, de onde sai o dinheiro. Um grupo por vez, sem uma caixa em cima da outra.</p>
+          <div className="flex gap-2 mt-3">
             <Link className="btn btn-ghost" href={`/app/orcamento?month=${shiftMonth(month, -1)}`}>
-              Mês anterior
+              Mês de trás
             </Link>
             <Link className="btn btn-ghost" href={`/app/orcamento?month=${shiftMonth(month, 1)}`}>
-              Próximo
+              Mês da frente
             </Link>
           </div>
         </div>
 
         {!items.length ? (
           <article className="card p-6 space-y-3">
-            <h2 className="font-semibold">Ainda não tem este mês</h2>
-            <p className="text-sm text-muted max-w-2xl">
-              Manda o Excel da casa — uma aba por mês, com categoria, item, valor, parcela e status. O app monta as três caixas sozinho.
-            </p>
+            <h2 className="font-semibold">Este mês ainda está vazio</h2>
+            <p className="text-sm text-muted">Manda o Excel da casa. O app monta sozinho o que vai sair.</p>
             <Link href="/app/importar" className="btn btn-primary">
               Mandar a planilha
             </Link>
           </article>
         ) : (
           <>
-            <div className="grid md:grid-cols-3 gap-4">
-              {GROUPS.map((group) => {
-                const groupRows = items.filter((item) => item.group === group);
-                const total = groupRows.reduce((s, item) => s + item.amount, 0);
-                return (
-                  <article key={group} className={`card p-4 fam-block ${group}`}>
-                    <h2 className="font-semibold">{familyGroupLabel(group)}</h2>
-                    <p className="text-2xl font-semibold mt-1">{brl(total)}</p>
-                    <ul className="mt-3 space-y-2 text-sm">
-                      {groupRows.map((item) => (
-                        <li key={item.id} className="flex justify-between gap-3">
-                          <span>
-                            {item.description}
-                            {item.notes ? <span className="fam-sub block">{item.notes}</span> : null}
-                          </span>
-                          <strong>{brl(item.amount)}</strong>
-                        </li>
-                      ))}
-                      {!groupRows.length ? <li className="text-muted">Nada neste grupo.</li> : null}
-                    </ul>
-                  </article>
-                );
-              })}
-            </div>
-
-            <article className="card p-5 grid sm:grid-cols-3 gap-4">
+            <article className="card p-6 space-y-4">
               <div>
-                <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">Vai gastar</div>
-                <div className="text-xl font-semibold mt-1">{brl(expense)}</div>
+                <p className="text-sm text-muted">Este mês vai gastar</p>
+                <p className="text-3xl font-semibold">{brl(expense)}</p>
               </div>
               <div>
-                <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">{net >= 0 ? "Vai sobrar" : "Vai faltar"}</div>
-                <div className={`text-xl font-semibold mt-1 ${net < 0 ? "text-negative" : "text-positive"}`}>{brl(Math.abs(net))}</div>
+                <p className="text-sm text-muted">{net >= 0 ? "Vai sobrar" : "Vai faltar"}</p>
+                <p className={`text-4xl font-semibold ${net < 0 ? "text-negative" : "text-positive"}`}>{brl(Math.abs(net))}</p>
               </div>
-              <div>
-                <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">Receita do mês</div>
-                <div className="text-xl font-semibold mt-1">{income ? brl(income) : "—"}</div>
-              </div>
+              <p className="text-sm text-muted">Entra {income ? brl(income) : "sem receita neste mês"}.</p>
             </article>
+
+            {GROUPS.map((group) => {
+              const groupRows = items.filter((item) => item.group === group);
+              const total = groupRows.reduce((s, item) => s + item.amount, 0);
+              return (
+                <article key={group} className={`card p-5 fam-block ${group}`}>
+                  <div className="flex justify-between gap-4 items-baseline">
+                    <h2 className="font-semibold">{familyGroupLabel(group)}</h2>
+                    <p className="text-lg font-semibold">{brl(total)}</p>
+                  </div>
+                  <ul className="mt-2">
+                    {groupRows.map((item) => (
+                      <li key={item.id} className="fam-line text-sm">
+                        <span>
+                          {item.description}
+                          {item.notes ? <span className="fam-sub block">{item.notes}</span> : null}
+                        </span>
+                        <strong>{brl(item.amount)}</strong>
+                      </li>
+                    ))}
+                    {!groupRows.length ? <li className="text-sm text-muted pt-2">Nada neste grupo.</li> : null}
+                  </ul>
+                </article>
+              );
+            })}
+
             {outlook && !outlook.empty ? (
               <article className="card p-5">
                 <h2 className="font-semibold">Os meses que ainda vêm</h2>
                 <p className="text-sm text-muted mt-1">
-                  Daqui até dezembro ainda sai {brl(outlook.rest.expense)}. No ano {outlook.yearTotal.leftover >= 0 ? `sobra ${brl(outlook.yearTotal.leftover)}` : `falta ${brl(Math.abs(outlook.yearTotal.leftover))}`}.
+                  Daqui até dezembro ainda sai {brl(outlook.rest.expense)}. No ano{" "}
+                  {outlook.yearTotal.leftover >= 0
+                    ? `sobra ${brl(outlook.yearTotal.leftover)}`
+                    : `falta ${brl(Math.abs(outlook.yearTotal.leftover))}`}
+                  .
                 </p>
-                <ul className="mt-3 grid sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm">
+                <ul className="mt-3 space-y-2 text-sm">
                   {outlook.series
                     .filter((row) => row.kind !== "past" && (row.income || row.expense))
                     .map((row) => (
-                      <li key={row.month} className="rounded-lg bg-bg px-3 py-2">
-                        <div className="capitalize text-muted">{formatMonthLabel(row.month).split(" ")[0]}</div>
-                        <div>Sai {brl(row.expense)}</div>
-                        <div className={row.net < 0 ? "text-negative" : "text-positive"}>
-                          {row.net >= 0 ? `Sobra ${brl(row.net)}` : `Falta ${brl(Math.abs(row.net))}`}
-                        </div>
+                      <li key={row.month} className="fam-line">
+                        <span className="capitalize">{formatMonthLabel(row.month).split(" ")[0]}</span>
+                        <span>
+                          sai {brl(row.expense)} ·{" "}
+                          <span className={row.net < 0 ? "text-negative" : "text-positive"}>
+                            {row.net >= 0 ? `sobra ${brl(row.net)}` : `falta ${brl(Math.abs(row.net))}`}
+                          </span>
+                        </span>
                       </li>
                     ))}
                 </ul>

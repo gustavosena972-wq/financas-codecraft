@@ -11,10 +11,19 @@ import { ACCOUNT_LABEL } from "@/lib/defaults";
 import { go } from "@/lib/types";
 import { listAccounts } from "@/lib/store";
 
+const HOUSE_LABEL: Record<string, string> = {
+  CHECKING: "Banco",
+  SAVINGS: "Banco / poupança",
+  WALLET: "Dinheiro na mão",
+  CASH: "Dinheiro na mão",
+  CREDIT: "Cartão",
+};
+
 export default function AccountsPage() {
   const live = useLive();
   const [data, setData] = useState<ReturnType<typeof accountBalances>>([]);
   const [archived, setArchived] = useState(0);
+  const [company, setCompany] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -23,16 +32,77 @@ export default function AccountsPage() {
         go("/login");
         return;
       }
+      setCompany(session.workspace.type === "BUSINESS");
       setData(accountBalances(session.workspace.id));
       setArchived(listAccounts(session.workspace.id, true).filter((a) => a.archived).length);
     })();
   }, [live]);
 
+  if (!company) {
+    return (
+      <div className="space-y-5 max-w-2xl">
+        <div>
+          <p className="page-kicker">Lugares do dinheiro</p>
+          <h1 className="text-2xl font-semibold">Onde está</h1>
+          <p className="text-sm text-muted mt-1">Só três ideias: banco, dinheiro na mão e cartão. O número é quanto tem agora nesse lugar.</p>
+        </div>
+        <div className="space-y-3">
+          {data.map((account) => (
+            <article key={account.id} className="card p-5">
+              <p className="text-xs text-muted uppercase tracking-wide">{HOUSE_LABEL[account.type] ?? ACCOUNT_LABEL[account.type]}</p>
+              <div className="flex justify-between gap-4 items-baseline mt-1">
+                <h2 className="font-semibold">{account.name}</h2>
+                <p className={`text-2xl font-semibold ${account.type === "CREDIT" && account.balance < 0 ? "text-negative" : ""}`}>
+                  {brl(account.balance)}
+                </p>
+              </div>
+              <p className="text-sm text-muted mt-2">
+                {account.type === "CREDIT" ? "Quanto o cartão está devendo." : "Quanto tem nesse lugar agora."}
+              </p>
+              <button
+                className="text-xs text-muted mt-3"
+                onClick={async () => {
+                  await archiveAccountAction(account.id);
+                }}
+              >
+                Esconder
+              </button>
+            </article>
+          ))}
+          {!data.length ? <p className="text-sm text-muted">Ainda não tem nenhum lugar. Cria o primeiro embaixo.</p> : null}
+        </div>
+        <article className="card p-6">
+          <h2 className="font-semibold mb-1">Novo lugar</h2>
+          <p className="text-sm text-muted mb-4">Nome, o tipo, e quanto tem agora.</p>
+          <ActionForm action={createAccountAction} className="space-y-4" submitLabel="Guardar">
+            <label className="field">
+              <span>Nome</span>
+              <input name="name" required placeholder="Nubank, Inter, carteira..." />
+            </label>
+            <label className="field">
+              <span>Que tipo é</span>
+              <select name="type" defaultValue="CHECKING">
+                <option value="CHECKING">Banco</option>
+                <option value="WALLET">Dinheiro na mão</option>
+                <option value="CREDIT">Cartão</option>
+              </select>
+            </label>
+            <label className="field">
+              <span>Quanto tem agora</span>
+              <input name="initialBalance" placeholder="0,00" />
+            </label>
+          </ActionForm>
+          {archived ? <p className="text-xs text-muted mt-4">{archived} lugar(es) escondido(s).</p> : null}
+        </article>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Contas e carteiras</h1>
-        <p className="text-sm text-muted max-w-2xl">Onde o dinheiro mora: banco, carteira, poupança e cartão. O saldo inicial entra aqui — o gráfico parte desse número.</p>
+        <p className="text-sm text-muted max-w-2xl">Onde o caixa da empresa está.</p>
       </div>
       <div className="grid lg:grid-cols-3 gap-4">
         {data.map((account) => (

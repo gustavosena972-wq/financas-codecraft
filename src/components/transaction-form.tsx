@@ -11,10 +11,12 @@ export function TransactionForm({
   accounts,
   categories,
   aiEnabled = false,
+  simple = false,
 }: {
   accounts: Option[];
   categories: Option[];
   aiEnabled?: boolean;
+  simple?: boolean;
 }) {
   const [type, setType] = useState("EXPENSE");
   const [categoryId, setCategoryId] = useState("");
@@ -41,6 +43,58 @@ export function TransactionForm({
     } else {
       setHint(null);
     }
+  }
+
+  if (simple) {
+    const houseCats = categories.filter((c) =>
+      type === "INCOME"
+        ? c.kind === "INCOME"
+        : /cartoes|fixas|outras/i.test(c.name) && c.kind === "EXPENSE",
+    );
+    const cats = houseCats.length ? houseCats : filtered;
+    if (!accounts[0]) {
+      return <p className="text-sm text-muted">Cria um lugar do dinheiro em Onde está. Depois você anota aqui.</p>;
+    }
+    return (
+      <ActionForm action={createTransactionAction} className="space-y-4" submitLabel="Anotar">
+        <input type="hidden" name="accountId" value={accounts[0].id} />
+        <div>
+          <p className="text-sm text-muted mb-2">Isso saiu ou entrou?</p>
+          <input type="hidden" name="type" value={type} />
+          <div className="kind-pick">
+            <button type="button" className={type === "EXPENSE" ? "on-sai" : ""} onClick={() => { setType("EXPENSE"); setCategoryId(""); }}>
+              Saiu
+            </button>
+            <button type="button" className={type === "INCOME" ? "on-entra" : ""} onClick={() => { setType("INCOME"); setCategoryId(""); }}>
+              Entrou
+            </button>
+          </div>
+        </div>
+        <label className="field">
+          <span>Quanto</span>
+          <input name="amount" required placeholder="0,00" />
+        </label>
+        <label className="field">
+          <span>O que foi</span>
+          <input name="description" required placeholder="Ex.: mercado, luz, salário" />
+        </label>
+        <label className="field">
+          <span>Dia</span>
+          <input name="date" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} />
+        </label>
+        <label className="field">
+          <span>Onde encaixa</span>
+          <select name="categoryId" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+            <option value="">Não sei</option>
+            {cats.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </ActionForm>
+    );
   }
 
   return (

@@ -102,8 +102,8 @@ export function navFor(type: WorkspaceKind): NavGroup[] {
     {
       label: "Conta",
       items: [
-        { href: "/app/lancamentos", label: "Lançar na mão", icon: Receipt },
-        { href: "/app/contas", label: "Contas", icon: Wallet },
+        { href: "/app/lancamentos", label: "Anotar", icon: Receipt },
+        { href: "/app/contas", label: "Onde está", icon: Wallet },
         { href: "/app/planos", label: "Planos", icon: Sparkles },
         { href: "/app/configuracoes", label: "Ajustes", icon: Settings },
       ],

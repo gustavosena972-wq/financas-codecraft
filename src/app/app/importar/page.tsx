@@ -14,7 +14,7 @@ export default function ImportPage() {
       </div>
       <OrganizeWizard />
       <p className="text-sm text-muted">
-        Prefere digitar? <Link href="/app/lancamentos" className="underline">Lançar na mão</Link>
+        Prefere anotar na mão? <Link href="/app/lancamentos" className="underline">Anotar um valor</Link>
         {" · "}
         <Link href="/app" className="underline">Falar no chat</Link>
       </p>

@@ -14,6 +14,7 @@ export default function TransactionsPage() {
   const live = useLive();
   const [ready, setReady] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
+  const [company, setCompany] = useState(false);
   const [accounts, setAccounts] = useState<{ id: string; name: string }[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string; kind: string }[]>([]);
   const [txs, setTxs] = useState<ReturnType<typeof monthSummary>["txs"]>([]);
@@ -30,6 +31,7 @@ export default function TransactionsPage() {
         return;
       }
       setWorkspaceId(session.workspace.id);
+      setCompany(session.workspace.type === "BUSINESS");
       setAccounts(listAccounts(session.workspace.id));
       setCategories(listCategories(session.workspace.id));
       setAiEnabled(planHasAi(session.user.plan));
@@ -53,11 +55,72 @@ export default function TransactionsPage() {
 
   if (!ready) return null;
 
+  if (!company) {
+    return (
+      <div className="space-y-5 max-w-2xl">
+        <div>
+          <p className="page-kicker">Se faltou na planilha</p>
+          <h1 className="text-2xl font-semibold">Anotar um valor</h1>
+          <p className="text-sm text-muted mt-1">Um de cada vez: o que foi e quanto. Saiu ou entrou. Não precisa de conta, categoria difícil nem transferência.</p>
+        </div>
+        <article className="card p-6">
+          <TransactionForm accounts={accounts} categories={categories} simple />
+        </article>
+        <article className="card p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-semibold capitalize">{formatMonthLabel(month)}</h2>
+            <div className="flex gap-2">
+              <button className="btn btn-ghost" onClick={() => setMonth(shiftMonth(month, -1))}>
+                Mês de trás
+              </button>
+              <button className="btn btn-ghost" onClick={() => setMonth(shiftMonth(month, 1))}>
+                Mês da frente
+              </button>
+            </div>
+          </div>
+          <p className="text-sm text-muted mt-2">
+            Entrou {brl(filtered.filter((t) => t.type === "INCOME").reduce((s, t) => s + t.amount, 0))} · saiu{" "}
+            {brl(filtered.filter((t) => t.type === "EXPENSE").reduce((s, t) => s + t.amount, 0))}
+          </p>
+          <ul className="mt-3">
+            {filtered.map((tx) => (
+              <li key={tx.id} className="fam-line text-sm">
+                <span>
+                  {tx.description}
+                  <span className="fam-sub block">
+                    {new Date(tx.date).toLocaleDateString("pt-BR")}
+                    {tx.category?.name ? ` · ${tx.category.name}` : ""}
+                  </span>
+                </span>
+                <span className="flex items-center gap-3">
+                  <strong className={tx.type === "INCOME" ? "text-positive" : "text-negative"}>
+                    {tx.type === "INCOME" ? "+" : "−"}
+                    {brl(tx.amount)}
+                  </strong>
+                  <button
+                    className="text-xs text-muted"
+                    onClick={async () => {
+                      await deleteTransactionAction(tx.id);
+                      setTxs(monthSummary(workspaceId, month).txs);
+                    }}
+                  >
+                    Apagar
+                  </button>
+                </span>
+              </li>
+            ))}
+            {!filtered.length ? <li className="text-sm text-muted pt-2">Nada anotado neste mês.</li> : null}
+          </ul>
+        </article>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Lançar na mão</h1>
-        <p className="text-sm text-muted max-w-2xl">Uma linha por movimento: salário, aluguel, mercado. Sem limite no grátis. O chat só lança se você aceitar.</p>
+        <h1 className="text-2xl font-semibold">Lançamentos</h1>
+        <p className="text-sm text-muted max-w-2xl">Uma linha por movimento do caixa.</p>
       </div>
       <div className="flex flex-wrap gap-2 items-end">
         <label className="field">
@@ -74,8 +137,12 @@ export default function TransactionsPage() {
           </select>
         </label>
         <div className="flex gap-2">
-          <button className="btn btn-ghost" onClick={() => setMonth(shiftMonth(month, -1))}>Mês anterior</button>
-          <button className="btn btn-ghost" onClick={() => setMonth(shiftMonth(month, 1))}>Próximo</button>
+          <button className="btn btn-ghost" onClick={() => setMonth(shiftMonth(month, -1))}>
+            Mês anterior
+          </button>
+          <button className="btn btn-ghost" onClick={() => setMonth(shiftMonth(month, 1))}>
+            Próximo
+          </button>
         </div>
         <div className="text-sm text-muted pb-2 capitalize">{formatMonthLabel(month)}</div>
       </div>
@@ -85,8 +152,12 @@ export default function TransactionsPage() {
       </div>
       <div className="card overflow-x-auto">
         <div className="flex flex-wrap gap-4 px-4 pt-4 text-sm">
-          <span>Receitas <strong className="text-positive">{brl(filtered.filter((t) => t.type === "INCOME").reduce((s, t) => s + t.amount, 0))}</strong></span>
-          <span>Despesas <strong className="text-negative">{brl(filtered.filter((t) => t.type === "EXPENSE").reduce((s, t) => s + t.amount, 0))}</strong></span>
+          <span>
+            Receitas <strong className="text-positive">{brl(filtered.filter((t) => t.type === "INCOME").reduce((s, t) => s + t.amount, 0))}</strong>
+          </span>
+          <span>
+            Despesas <strong className="text-negative">{brl(filtered.filter((t) => t.type === "EXPENSE").reduce((s, t) => s + t.amount, 0))}</strong>
+          </span>
           <span className="text-muted">{filtered.length} lançamento(s)</span>
         </div>
         <table className="table">
@@ -137,7 +208,9 @@ export default function TransactionsPage() {
             ))}
             {!filtered.length ? (
               <tr>
-                <td colSpan={6} className="text-muted">Nenhum lançamento neste mês.</td>
+                <td colSpan={6} className="text-muted">
+                  Nenhum lançamento neste mês.
+                </td>
               </tr>
             ) : null}
           </tbody>
