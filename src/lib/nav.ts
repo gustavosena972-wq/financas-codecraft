@@ -5,7 +5,6 @@ import {
   Building2,
   CalendarDays,
   CreditCard,
-  Flag,
   LayoutDashboard,
   LineChart,
   ListChecks,
@@ -50,18 +49,16 @@ export function isPersonPath(pathname: string) {
 }
 
 export function navFor(type: WorkspaceKind): NavGroup[] {
-  const home: NavGroup = {
-    label: "Visão",
-    items: [
-      { href: "/app", label: "Patrimônio", icon: LayoutDashboard },
-      { href: "/app/chat", label: "IA", icon: MessageCircle },
-      { href: "/app/planos", label: "Planos", icon: Sparkles },
-    ],
-  };
-
   if (type === "BUSINESS") {
     return [
-      home,
+      {
+        label: "Visão",
+        items: [
+          { href: "/app", label: "Caixa", icon: LayoutDashboard },
+          { href: "/app/chat", label: "IA", icon: MessageCircle },
+          { href: "/app/planos", label: "Planos", icon: Sparkles },
+        ],
+      },
       {
         label: "Caixa",
         items: [
@@ -101,29 +98,22 @@ export function navFor(type: WorkspaceKind): NavGroup[] {
   }
 
   return [
-    home,
     {
-      label: "Dinheiro",
+      label: "A casa",
       items: [
-        { href: "/app/lancamentos", label: "Lançamentos", icon: Receipt },
-        { href: "/app/orcamento", label: "Orçamento", icon: PiggyBank },
-        { href: "/app/contas", label: "Contas", icon: Wallet },
-        { href: "/app/agenda", label: "Faturas", icon: CalendarDays },
-      ],
-    },
-    {
-      label: "Planejar",
-      items: [
-        { href: "/app/metas", label: "Metas", icon: Flag },
-        { href: "/app/investimentos", label: "Investimentos", icon: LineChart },
-        { href: "/app/dividas", label: "Dívidas", icon: CreditCard },
-        { href: "/app/ferramentas", label: "Ferramentas", icon: Wrench },
-        { href: "/app/importar", label: "Importar", icon: Upload },
+        { href: "/app", label: "Resumo do ano", icon: LayoutDashboard },
+        { href: "/app/orcamento", label: "Este mês", icon: PiggyBank },
+        { href: "/app/dividas", label: "Cartões", icon: CreditCard },
+        { href: "/app/importar", label: "Mandar planilha", icon: Upload },
+        { href: "/app/chat", label: "IA", icon: MessageCircle },
       ],
     },
     {
       label: "Conta",
       items: [
+        { href: "/app/lancamentos", label: "Lançar na mão", icon: Receipt },
+        { href: "/app/contas", label: "Contas", icon: Wallet },
+        { href: "/app/planos", label: "Planos", icon: Sparkles },
         { href: "/app/configuracoes", label: "Ajustes", icon: Settings },
       ],
     },

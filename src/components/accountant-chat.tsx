@@ -43,7 +43,7 @@ type Msg = { from: "user" | "bot"; body: string; evidence?: TxCite[] };
 function welcomeBot(isCompany: boolean) {
   return isCompany
     ? "Este chat é o caixa da empresa — do autônomo e do MEI até empresa grande. Diz o porte, manda a planilha ou preenche o orçamento. Eu analiso receita, imposto, folha e o que sobra. Só mudo se você gostar."
-    : "Este chat é só da pessoa. Manda a planilha, ou se ainda não tiver arquivo abre a aba Orçamento e preenche mês a mês. Eu sugiro; só aplico se você gostar.";
+    : "Este chat é da casa. Manda a planilha (uma aba por mês) ou pergunta quanto saiu no cartão. Eu mostro a linha. Só aplico se você gostar. Sem senha. Sem PIX.";
 }
 
 function welcomeMsgs(isCompany: boolean): Msg[] {

@@ -9,12 +9,18 @@ import { monthSummary } from "@/lib/queries";
 import { saveBudgetAction } from "@/app/actions/budgets";
 import { ActionForm } from "@/components/action-form";
 import { BudgetBars } from "@/components/charts";
+import { familyMonthItems, familyGroupLabel, type FamilyGroup } from "@/lib/family-budget";
 import { go } from "@/lib/types";
+
+const GROUPS: FamilyGroup[] = ["cards", "fixed", "other"];
 
 export default function BudgetPage() {
   const live = useLive();
   const [month, setMonth] = useState(monthKey());
   const [rows, setRows] = useState<{ id: string; name: string; planned: number; actual: number }[]>([]);
+  const [items, setItems] = useState<ReturnType<typeof familyMonthItems>>([]);
+  const [income, setIncome] = useState(0);
+  const [company, setCompany] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -33,6 +39,9 @@ export default function BudgetPage() {
       for (const tx of summary.txs.filter((t) => t.type === "EXPENSE" && t.categoryId)) {
         spent.set(tx.categoryId!, (spent.get(tx.categoryId!) ?? 0) + tx.amount);
       }
+      setCompany(session.workspace.type === "BUSINESS");
+      setItems(familyMonthItems(session.workspace.id, m));
+      setIncome(summary.income);
       setRows(
         categories.map((category) => ({
           id: category.id,
@@ -45,17 +54,103 @@ export default function BudgetPage() {
   }, [live]);
 
   const chartRows = rows.filter((r) => r.planned > 0 || r.actual > 0);
+  const expense = items.reduce((s, item) => s + item.amount, 0);
+  const net = income - expense;
+
+  if (!company) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-end justify-between gap-4 flex-wrap">
+          <div>
+            <p className="page-kicker">Aba do mês</p>
+            <h1 className="text-2xl font-semibold">Este mês da casa</h1>
+            <p className="text-sm text-muted max-w-2xl capitalize">
+              Igual à planilha: cartão, contas fixas e o que varia. {formatMonthLabel(month)}.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Link className="btn btn-ghost" href={`/app/orcamento?month=${shiftMonth(month, -1)}`}>
+              Mês anterior
+            </Link>
+            <Link className="btn btn-ghost" href={`/app/orcamento?month=${shiftMonth(month, 1)}`}>
+              Próximo
+            </Link>
+          </div>
+        </div>
+
+        {!items.length ? (
+          <article className="card p-6 space-y-3">
+            <h2 className="font-semibold">Ainda não tem este mês</h2>
+            <p className="text-sm text-muted max-w-2xl">
+              Manda o Excel da casa — uma aba por mês, com categoria, item, valor, parcela e status. O app monta as três caixas sozinho.
+            </p>
+            <Link href="/app/importar" className="btn btn-primary">
+              Mandar a planilha
+            </Link>
+          </article>
+        ) : (
+          <>
+            <div className="grid md:grid-cols-3 gap-4">
+              {GROUPS.map((group) => {
+                const groupRows = items.filter((item) => item.group === group);
+                const total = groupRows.reduce((s, item) => s + item.amount, 0);
+                return (
+                  <article key={group} className={`card p-4 fam-block ${group}`}>
+                    <h2 className="font-semibold">{familyGroupLabel(group)}</h2>
+                    <p className="text-2xl font-semibold mt-1">{brl(total)}</p>
+                    <ul className="mt-3 space-y-2 text-sm">
+                      {groupRows.map((item) => (
+                        <li key={item.id} className="flex justify-between gap-3">
+                          <span>
+                            {item.description}
+                            {item.notes ? <span className="fam-sub block">{item.notes}</span> : null}
+                          </span>
+                          <strong>{brl(item.amount)}</strong>
+                        </li>
+                      ))}
+                      {!groupRows.length ? <li className="text-muted">Nada neste grupo.</li> : null}
+                    </ul>
+                  </article>
+                );
+              })}
+            </div>
+
+            <article className="card p-5 grid sm:grid-cols-3 gap-4">
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">Receita prevista</div>
+                <div className="text-xl font-semibold mt-1">{income ? brl(income) : "—"}</div>
+              </div>
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">Total de despesas</div>
+                <div className="text-xl font-semibold mt-1">{brl(expense)}</div>
+              </div>
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">Saldo previsto</div>
+                <div className={`text-xl font-semibold mt-1 ${net < 0 ? "text-negative" : "text-positive"}`}>{brl(net)}</div>
+              </div>
+            </article>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold">Teto do mês</h1>
-          <p className="text-sm text-muted max-w-2xl capitalize">Você põe um limite por categoria. O app avisa se passou. {formatMonthLabel(month)}.</p>
+          <p className="text-sm text-muted max-w-2xl capitalize">
+            Você põe um limite por categoria. O app avisa se passou. {formatMonthLabel(month)}.
+          </p>
         </div>
         <div className="flex gap-2">
-          <Link className="btn btn-ghost" href={`/app/orcamento?month=${shiftMonth(month, -1)}`}>Mês anterior</Link>
-          <Link className="btn btn-ghost" href={`/app/orcamento?month=${shiftMonth(month, 1)}`}>Próximo</Link>
+          <Link className="btn btn-ghost" href={`/app/orcamento?month=${shiftMonth(month, -1)}`}>
+            Mês anterior
+          </Link>
+          <Link className="btn btn-ghost" href={`/app/orcamento?month=${shiftMonth(month, 1)}`}>
+            Próximo
+          </Link>
         </div>
       </div>
       <div className="card p-5">

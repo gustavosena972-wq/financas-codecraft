@@ -33,7 +33,7 @@ export const PLANS: Plan[] = [
       "Pessoa e empresa, espaços separados",
       "IA: 8 perguntas por dia, com o lançamento real",
       "Lançamentos ilimitados",
-      "Patrimônio, orçamento e o mês de agora",
+      "Resumo da casa: receita, fixas, cartão e saldo",
       "Só muda se você gostar",
     ],
     news: [],

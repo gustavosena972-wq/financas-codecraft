@@ -9,6 +9,7 @@ import {
   splitCsv,
   type MappedRow,
 } from "./excel";
+import { parseFamilyControl, type NamedSheet } from "./family-sheet";
 import { brl, parseMoneyToCents } from "./money";
 
 export type BudgetCell = {
@@ -162,9 +163,9 @@ function sheetToMatrix(sheet: ExcelJS.Worksheet) {
   return rows;
 }
 
-async function loadTables(buffer: ArrayBuffer, filename: string) {
+async function loadTables(buffer: ArrayBuffer, filename: string): Promise<NamedSheet[]> {
   const lower = filename.toLowerCase();
-  const tables: string[][][] = [];
+  const tables: NamedSheet[] = [];
   const asText = () => {
     let text = new TextDecoder("utf-8").decode(buffer);
     if (text.includes("\uFFFD") || (text.match(/Ã./g) ?? []).length > 8) {
@@ -174,7 +175,7 @@ async function loadTables(buffer: ArrayBuffer, filename: string) {
     const lines = text.split(/\r?\n/).filter((line) => line.trim().length);
     if (!lines.length) return;
     const delimiter = detectDelimiter(lines[0]);
-    tables.push(lines.map((line) => splitCsv(line, delimiter)));
+    tables.push({ name: filename, rows: lines.map((line) => splitCsv(line, delimiter)) });
   };
   if (lower.endsWith(".csv") || lower.endsWith(".txt")) {
     asText();
@@ -188,7 +189,7 @@ async function loadTables(buffer: ArrayBuffer, filename: string) {
     await workbook.xlsx.load(buffer);
     for (const sheet of workbook.worksheets) {
       const rows = sheetToMatrix(sheet);
-      if (rows.length) tables.push(rows);
+      if (rows.length) tables.push({ name: sheet.name || "Planilha", rows });
     }
   } catch {
     asText();
@@ -460,14 +461,25 @@ export async function organizeWorkbook(buffer: ArrayBuffer, filename: string): P
     };
   }
   const year = yearFromName(filename);
+  const familyRows = parseFamilyControl(tables, filename);
+  if (familyRows?.length) {
+    const result = summarize(familyRows, []);
+    result.filename = filename;
+    result.notes = [
+      "Li a planilha da casa: cada mês em uma aba, separado em cartão, contas fixas e o que varia.",
+      ...explainOrganized(result),
+      "O trabalho desta planilha é um só: ver se o mês fecha e ir baixando o cartão.",
+    ];
+    return result;
+  }
   const rows: MappedRow[] = [];
   const budgets: BudgetCell[] = [];
   for (const table of tables) {
-    const launches = parseLaunchTable(table);
-    const grid = parseBudgetGrid(table, year);
-    const transposed = grid.length ? [] : parseBudgetTransposed(table, year);
+    const launches = parseLaunchTable(table.rows);
+    const grid = parseBudgetGrid(table.rows, year);
+    const transposed = grid.length ? [] : parseBudgetTransposed(table.rows, year);
     const budget = grid.length >= transposed.length ? grid : transposed;
-    const found = launches.length ? launches : parseByShape(table);
+    const found = launches.length ? launches : parseByShape(table.rows);
     if (budget.length >= 3 && found.length < 3) budgets.push(...budget);
     else if (found.length) rows.push(...found);
     else if (budget.length) budgets.push(...budget);

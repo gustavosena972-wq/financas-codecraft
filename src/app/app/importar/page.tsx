@@ -9,7 +9,7 @@ export default function ImportPage() {
       <div>
         <h1 className="text-2xl font-semibold">Mandar planilha</h1>
         <p className="text-sm text-muted max-w-2xl">
-          Manda OFX, CSV ou Excel. O app lê, sugere categoria e só lança se você aceitar. Sem modelo para baixar.
+          Manda o Excel da casa: uma aba por mês (Jan, Fev, Mar…). O app lê cartão, contas fixas e o que varia. OFX e CSV também entram.
         </p>
       </div>
       <OrganizeWizard />

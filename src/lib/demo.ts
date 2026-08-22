@@ -1,7 +1,7 @@
 import { getSupabase } from "./supabase";
 import { addTransaction, ensureProfile, refreshSession, setLastWorkspace } from "./store";
 import { provisionWorkspace } from "./workspace";
-import { monthKey } from "./money";
+import { monthKey, shiftMonth } from "./money";
 import { newId, nowIso } from "./types";
 
 export const demoCredentials = { email: "demo@codecraft.local", password: "demo1234" };
@@ -34,39 +34,40 @@ export async function ensureDemoUser() {
   const accounts = session?.accounts.filter((a) => a.workspaceId === personal.id) ?? [];
   const categories = session?.categories.filter((c) => c.workspaceId === personal.id) ?? [];
   const checking = accounts.find((a) => a.type === "CHECKING") ?? accounts[0];
-  const wallet = accounts.find((a) => a.type === "WALLET") ?? accounts[0];
-  if (!checking || !wallet) return created.data.user;
+  const credit = accounts.find((a) => a.type === "CREDIT") ?? checking;
+  if (!checking || !credit) return created.data.user;
   const byName = (name: string) => categories.find((c) => c.name === name);
-  const month = monthKey();
-  const [y, m] = month.split("-");
-  const rows = [
-    { day: 1, description: "Salário", amount: 850000, type: "INCOME" as const, category: "Salário", accountId: checking.id },
-    { day: 2, description: "Aluguel", amount: 220000, type: "EXPENSE" as const, category: "Moradia", accountId: checking.id },
-    { day: 3, description: "Supermercado Extra", amount: 48730, type: "EXPENSE" as const, category: "Alimentação", accountId: checking.id },
-    { day: 5, description: "Combustível", amount: 28000, type: "EXPENSE" as const, category: "Transporte", accountId: checking.id },
-    { day: 6, description: "Farmácia", amount: 6720, type: "EXPENSE" as const, category: "Saúde", accountId: wallet.id },
-    { day: 8, description: "Netflix", amount: 5590, type: "EXPENSE" as const, category: "Assinaturas", accountId: checking.id },
-    { day: 10, description: "Freelance design", amount: 180000, type: "INCOME" as const, category: "Freelance", accountId: checking.id },
-    { day: 12, description: "Padaria", amount: 3840, type: "EXPENSE" as const, category: "Alimentação", accountId: wallet.id },
-    { day: 14, description: "Conta de luz", amount: 18990, type: "EXPENSE" as const, category: "Contas", accountId: checking.id },
-    { day: 16, description: "Cinema", amount: 7200, type: "EXPENSE" as const, category: "Lazer", accountId: wallet.id },
-    { day: 18, description: "Mercado", amount: 31250, type: "EXPENSE" as const, category: "Alimentação", accountId: checking.id },
-    { day: 20, description: "Plano de saúde", amount: 42000, type: "EXPENSE" as const, category: "Saúde", accountId: checking.id },
+  const months = [shiftMonth(monthKey(), -2), shiftMonth(monthKey(), -1), monthKey()];
+  const lines = [
+    { description: "Receita prevista", amount: 800000, type: "INCOME" as const, category: "Receita", notes: undefined as string | undefined, accountId: checking.id },
+    { description: "Nubank Sandra", amount: 158000, type: "EXPENSE" as const, category: "Cartões de crédito", notes: "PG", accountId: credit.id },
+    { description: "Inter Sandra", amount: 228300, type: "EXPENSE" as const, category: "Cartões de crédito", notes: "PG", accountId: credit.id },
+    { description: "Will", amount: 95400, type: "EXPENSE" as const, category: "Cartões de crédito", notes: "17 de 18", accountId: credit.id },
+    { description: "Casa", amount: 180000, type: "EXPENSE" as const, category: "Fixas / financiamentos", notes: "22 de 48", accountId: checking.id },
+    { description: "Luz", amount: 22000, type: "EXPENSE" as const, category: "Fixas / financiamentos", notes: undefined, accountId: checking.id },
+    { description: "Água", amount: 8500, type: "EXPENSE" as const, category: "Fixas / financiamentos", notes: undefined, accountId: checking.id },
+    { description: "Internet", amount: 12990, type: "EXPENSE" as const, category: "Fixas / financiamentos", notes: undefined, accountId: checking.id },
+    { description: "Celular", amount: 8900, type: "EXPENSE" as const, category: "Fixas / financiamentos", notes: undefined, accountId: checking.id },
+    { description: "Netflix", amount: 5590, type: "EXPENSE" as const, category: "Fixas / financiamentos", notes: undefined, accountId: checking.id },
+    { description: "Festa Heitor", amount: 50000, type: "EXPENSE" as const, category: "Outras / variáveis", notes: undefined, accountId: checking.id },
   ];
-  for (const row of rows) {
-    await addTransaction({
-      id: newId(),
-      workspaceId: personal.id,
-      accountId: row.accountId,
-      categoryId: byName(row.category)?.id ?? null,
-      type: row.type,
-      amount: row.amount,
-      date: `${y}-${m}-${String(row.day).padStart(2, "0")}T12:00:00`,
-      description: row.description,
-      transferToAccountId: null,
-      importHash: null,
-      createdAt: nowIso(),
-    });
+  for (const month of months) {
+    for (const row of lines) {
+      await addTransaction({
+        id: newId(),
+        workspaceId: personal.id,
+        accountId: row.accountId,
+        categoryId: byName(row.category)?.id ?? null,
+        type: row.type,
+        amount: row.amount,
+        date: `${month}-01T12:00:00`,
+        description: row.description,
+        notes: row.notes,
+        transferToAccountId: null,
+        importHash: null,
+        createdAt: nowIso(),
+      });
+    }
   }
   return created.data.user;
 }

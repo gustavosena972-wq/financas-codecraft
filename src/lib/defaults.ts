@@ -2,10 +2,14 @@ export type AccountType = "CHECKING" | "SAVINGS" | "WALLET" | "CASH" | "CREDIT";
 export type WorkspaceType = "PERSONAL" | "BUSINESS";
 
 export const PERSONAL_CATEGORIES = [
+  { name: "Receita", kind: "INCOME", color: "#2A9D6E" },
   { name: "Salário", kind: "INCOME", color: "#2A9D6E" },
   { name: "Freelance", kind: "INCOME", color: "#3D8B7A" },
   { name: "Rendimentos", kind: "INCOME", color: "#4C7A6A" },
   { name: "Outras receitas", kind: "INCOME", color: "#6B8F71" },
+  { name: "Cartões de crédito", kind: "EXPENSE", color: "#ED7D31" },
+  { name: "Fixas / financiamentos", kind: "EXPENSE", color: "#5B9BD5" },
+  { name: "Outras / variáveis", kind: "EXPENSE", color: "#70AD47" },
   { name: "Moradia", kind: "EXPENSE", color: "#8A6B4A" },
   { name: "Alimentação", kind: "EXPENSE", color: "#C45C4A" },
   { name: "Transporte", kind: "EXPENSE", color: "#3D6B8A" },

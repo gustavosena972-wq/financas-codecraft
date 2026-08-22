@@ -46,19 +46,19 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: "graficos",
-    name: "Gráficos entra e sai",
-    does: "Barras do que entrou e do que saiu. Mostra se o mês está no azul ou no vermelho.",
+    name: "Resumo do ano",
+    does: "Jan a dez: receita, fixas, cartões, outras e o saldo. Mostra se o mês fecha.",
     audience: "person",
     plan: "FREE",
     href: "/app",
   },
   {
     id: "cartao",
-    name: "Cartão e parcelas",
-    does: "Acompanha fatura e compra parcelada para o rotativo não virar surpresa no mês que vem.",
+    name: "Cartões",
+    does: "Cada cartão mês a mês. A meta é reduzir a fatura, sem parcela nova enquanto as atuais não acabam.",
     audience: "person",
-    plan: "PRO",
-    href: "/app/contas",
+    plan: "FREE",
+    href: "/app/dividas",
   },
   {
     id: "agenda",
@@ -70,10 +70,10 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: "orcamento",
-    name: "Teto do mês (envelope)",
-    does: "Você põe um limite por categoria. O app avisa se passou. Serve para desapertar o mês.",
+    name: "Este mês da casa",
+    does: "Três grupos, como na planilha: cartão, contas fixas e o que aparece uma vez.",
     audience: "person",
-    plan: "PRO",
+    plan: "FREE",
     href: "/app/orcamento",
   },
   {
@@ -86,10 +86,10 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: "importar",
-    name: "Importar extrato",
-    does: "Manda OFX, CSV ou Excel. O app lê, sugere categoria e só lança se você aceitar.",
+    name: "Mandar a planilha da casa",
+    does: "Manda o Excel da casa, uma aba por mês. O app lê cartão, fixas e o resto e só lança se você aceitar.",
     audience: "person",
-    plan: "PRO",
+    plan: "FREE",
     href: "/app/importar",
   },
   {

@@ -411,6 +411,17 @@ html[data-theme="dark"] .btn-ghost {
 .table tbody tr:hover {
   background: color-mix(in srgb, var(--gold) 8%, transparent);
 }
+.table tbody tr.xls-now td {
+  background: #fff8e1;
+}
+.fam-block.cards { border-top: 4px solid #ed7d31; }
+.fam-block.fixed { border-top: 4px solid #5b9bd5; }
+.fam-block.other { border-top: 4px solid #70ad47; }
+.fam-sub {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 400;
+}
 .sheet-row { cursor: pointer; }
 .sheet-now td:first-child { font-weight: 650; }
 .sheet-on {

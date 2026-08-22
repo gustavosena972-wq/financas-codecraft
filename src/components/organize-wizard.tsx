@@ -45,7 +45,7 @@ export function OrganizeWizard() {
           <input name="file" type="file" accept=".xlsx,.xls,.csv,.txt" required />
         </label>
         <p className="text-sm text-muted">
-          Pode ser o orçamento do ano, do mês, ou a planilha que você já usa. O app lê e manda para os seus gastos.
+          O arquivo da casa: abas Jan a Dez, ou Resumo anual. O app separa cartão, fixas e o resto.
         </p>
         <button className="btn btn-primary" disabled={busy}>
           {busy ? "Lendo…" : "Mandar planilha"}

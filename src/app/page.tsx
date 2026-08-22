@@ -22,14 +22,14 @@ export default function HomePage() {
 
       <section className="hero-stage px-8 py-24 max-w-6xl mx-auto grid lg:grid-cols-[1.1fr_.9fr] gap-14 items-center">
         <div className="rise">
-          <p className="text-gold text-xs tracking-[0.2em] uppercase mb-4">Finanças CodeCraft · pessoa e empresa · com IA</p>
+          <p className="text-gold text-xs tracking-[0.2em] uppercase mb-4">Finanças CodeCraft · o orçamento da casa</p>
           <h1 className="text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.12] text-white max-w-3xl hero-title">
-            Uma plataforma.
+            Receita, contas fixas e cartão.
             <br />
-            Pessoa e empresa, com IA.
+            O mês fecha ou não.
           </h1>
           <p className="mt-5 text-[#b7c4cf] text-lg max-w-2xl">
-            Orçamento, contas, metas, dívidas e investimentos numa tela. A IA responde com o lançamento real por trás do número. Controle ativo — não só relatório.
+            É a planilha da família no app: um mês por aba, cartão separado das contas da casa, e o saldo no fim. O trabalho é ir baixando a fatura sem furar a prestação.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/cadastro" className="btn btn-primary">Criar conta</Link>
@@ -44,18 +44,18 @@ export default function HomePage() {
       <section id="produto" className="bg-bg/80 backdrop-blur-[2px] text-ink py-20 px-8">
         <div className="max-w-6xl mx-auto">
           <p className="page-kicker">O que o app faz</p>
-          <h2 className="text-3xl font-semibold mt-2">O mesmo recorte dos apps que lideram o ranking. Com PF+PJ no núcleo.</h2>
+          <h2 className="text-3xl font-semibold mt-2">O controle financeiro da casa, mês a mês.</h2>
           <p className="text-muted mt-3 max-w-2xl">
-            Lá fora o padrão é patrimônio líquido, orçado × realizado e assistente que cita a transação. Aqui isso já nasce com pessoa e empresa separados — não como plano extra.
+            Não é um painel genérico. É receita prevista, contas que quase não mudam, fatura de cada cartão e o que sobrou. Empresa fica em outro espaço, se você tiver.
           </p>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-10">
             {[
-              ["Patrimônio líquido", "Ativos, dívidas e investimentos num número. Essa é a tela de entrada — não o chat."],
-              ["Orçamento de verdade", "Envelope por categoria. Orçado contra o que saiu. Se passou, o app avisa."],
-              ["Lançamentos e faturas", "O que saiu, o que se repete, o cartão. Assinatura não some no meio do mês."],
-              ["Metas e dívidas", "Reserva, viagem, entrada de imóvel. Simulador de quitação com parcela e juro."],
-              ["Investimentos", "Carteira no mesmo patrimônio. Conexão bancária depois, via agregador de Open Finance."],
-              ["Assistente com recibo", "“Quanto gastei com mercado?” — ele lista os lançamentos. Nível 1: sugere. Você confirma."],
+              ["Resumo anual", "Jan a dez numa tabela: receita, fixas, cartões, outras, saldo e quanto o cartão come do mês."],
+              ["Este mês", "Três caixas, como na planilha: cartão (laranja), contas da casa (fixas) e o que aparece uma vez."],
+              ["Cartões", "Nubank, Inter, loja — mês a mês. A meta é reduzir. Sem parcela nova enquanto as atuais não acabam."],
+              ["Contas fixas", "Prestação da casa, luz, água, internet, IPTU. Você confere o valor. Não mistura com fatura."],
+              ["Manda o Excel", "Uma aba por mês. O app lê sozinho. Não precisa lançar linha por linha."],
+              ["IA da casa", "Pergunta quanto saiu no cartão. Ela mostra a linha. Não pede senha e não move PIX."],
             ].map(([title, body]) => (
               <article key={title} className="card p-5">
                 <h3 className="font-semibold">{title}</h3>
@@ -70,8 +70,8 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10">
           <div>
             <p className="page-kicker">Pessoa</p>
-            <h2 className="text-2xl font-semibold mt-2">Família, autônomo, salário.</h2>
-            <p className="text-muted mt-3">Contas, teto do mês, metas e dívida. Um espaço só da casa. Empresa não mistura.</p>
+            <h2 className="text-2xl font-semibold mt-2">A planilha da família.</h2>
+            <p className="text-muted mt-3">Receita, prestação, luz e cartão. Pessoa e empresa não se misturam.</p>
           </div>
           <div>
             <p className="page-kicker">Empresa</p>

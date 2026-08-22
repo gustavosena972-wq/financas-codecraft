@@ -4,22 +4,22 @@ import { useEffect, useState } from "react";
 
 const SCENES = [
   [
-    ["Patrimônio líquido", "R$ 48.320"],
-    ["Ativos", "R$ 62.100"],
-    ["Dívidas", "R$ 13.780"],
-    ["Investido", "R$ 21.400"],
+    ["Receita jan", "R$ 8.000"],
+    ["Fixas", "R$ 4.198"],
+    ["Cartões", "R$ 4.817"],
+    ["Saldo", "− R$ 1.015"],
   ],
   [
-    ["Orçado mercado", "R$ 1.200"],
-    ["Realizado", "R$ 1.540"],
-    ["Passou", "R$ 340"],
-    ["Lançamentos", "12 deste mês"],
+    ["Nubank", "R$ 1.580"],
+    ["Inter", "R$ 2.283"],
+    ["% cartão", "53% do mês"],
+    ["Meta", "baixar a fatura"],
   ],
   [
-    ["Pessoa + empresa", "mesmo login"],
-    ["IA com recibo", "mostra o gasto"],
-    ["Controle ativo", "teto, não só relatório"],
-    ["Open Finance", "via agregador"],
+    ["Três grupos", "cartão, fixas, outras"],
+    ["Uma aba", "por mês"],
+    ["O trabalho", "o mês fechar"],
+    ["IA", "mostra a linha"],
   ],
 ];
 
@@ -36,7 +36,7 @@ export function HeroPreview() {
   return (
     <div className="rounded-xl border border-[#2c4458] bg-panel-2 p-6 text-sm space-y-4 float-card">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-[#9aabba] text-[11px] uppercase tracking-[0.16em]">Painel — patrimônio no centro</div>
+        <div className="text-[#9aabba] text-[11px] uppercase tracking-[0.16em]">Painel — o mês da casa</div>
         <div className="flex gap-1">
           {SCENES.map((_, i) => (
             <button
@@ -68,7 +68,7 @@ export function HeroPreview() {
           </button>
         ))}
       </div>
-      <p className="text-[11px] text-[#9aabba]">A tela de verdade abre no patrimônio líquido. A IA aponta o lançamento, não um número solto.</p>
+      <p className="text-[11px] text-[#9aabba]">Receita, contas da casa e cartão. O mês fecha ou não. A IA só aponta a linha.</p>
     </div>
   );
 }
