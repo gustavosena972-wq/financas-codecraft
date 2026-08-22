@@ -2,6 +2,7 @@ import { searchKnowledge } from "./finance-knowledge";
 import { brl, formatMonthLabel, monthKey, parseMoneyToCents } from "./money";
 import { accountBalances, categorySpend, cashflowSeries, monthSummary } from "./queries";
 import { listBudgets, listCategories } from "./store";
+import { familyOutlook, outlookSpeech } from "./family-forecast";
 
 export type ChatSpend = {
   type: "INCOME" | "EXPENSE";
@@ -353,6 +354,14 @@ export function accountantReply(message: string, workspaceId: string): Accountan
     };
   }
 
+  const house = familyOutlook(workspaceId);
+  if (
+    !house.empty &&
+    /(sobra|vai gastar|vai sair|ate dezembro|até dezembro|no ano|dica|avali|melhorar|baixar (o )?cartao|baixar (o )?cartão|o que fazer)/.test(t)
+  ) {
+    return { body: outlookSpeech(house) };
+  }
+
   if (/(quanto (gastei|gastamos|saiu)|gasto com|despesa com|onde foi|quais lanc|quais lanç|mostrar (os )?gasto)/.test(t)) {
     const evidence = citeTransactions(workspaceId, text);
     if (!evidence.length) {
@@ -377,6 +386,7 @@ export function accountantReply(message: string, workspaceId: string): Accountan
   }
 
   if (/(futuro|planej|proximo|trimestre|baixar (o )?gasto|melhorar (minha |a )?condic)/.test(t)) {
+    if (!house.empty) return { body: outlookSpeech(house) };
     return { body: [futurePlan(data), keepOrCut(data.spend, data.summary), know].filter(Boolean).join(" ") };
   }
 
@@ -430,6 +440,7 @@ export function accountantReply(message: string, workspaceId: string): Accountan
   }
 
   if (/(saldo|sobra|resumo|caixa)/.test(t)) {
+    if (!house.empty) return { body: outlookSpeech(house) };
     if (pulse.level === "empty") {
       return {
         body: "Ainda não tem movimento. Abre a aba Orçamento e preenche entra e teto de cada mês, anexa a planilha, ou lança na mão.",
@@ -451,7 +462,9 @@ export function accountantReply(message: string, workspaceId: string): Accountan
   return {
     body:
       pulse.level === "empty"
-        ? "Pergunta o que quiser sobre dinheiro, orçamento ou conta. Se ainda não tem arquivo salvo, abre a aba Orçamento e vai colocando mês a mês. Eu não peço senha."
-        : `${pulseLine(pulse)} Pode perguntar de reserva, dívida, cartão, imposto, o que cortar, os meses passados ou o próximo trimestre. Se for um gasto, fala o valor que eu lanço.`,
+        ? "Pergunta o que quiser sobre dinheiro. Se ainda não tem o ano da casa, manda a planilha uma vez. Eu avalio todo dia o que vai gastar e o que sobra. Não peço senha."
+        : house.empty
+          ? `${pulseLine(pulse)} Pode perguntar de reserva, dívida, cartão, o que cortar, os meses passados ou o próximo trimestre.`
+          : outlookSpeech(house),
   };
 }

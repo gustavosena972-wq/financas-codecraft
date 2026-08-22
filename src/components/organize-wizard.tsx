@@ -45,7 +45,7 @@ export function OrganizeWizard() {
           <input name="file" type="file" accept=".xlsx,.xls,.csv,.txt" required />
         </label>
         <p className="text-sm text-muted">
-          O arquivo da casa: abas Jan a Dez, ou Resumo anual. O app separa cartão, fixas e o resto.
+          O arquivo é o ponto de partida. Depois o app conta o que ainda vai sair e o que sobra.
         </p>
         <button className="btn btn-primary" disabled={busy}>
           {busy ? "Lendo…" : "Mandar planilha"}

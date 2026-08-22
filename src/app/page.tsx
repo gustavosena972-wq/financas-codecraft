@@ -22,14 +22,14 @@ export default function HomePage() {
 
       <section className="hero-stage px-8 py-24 max-w-6xl mx-auto grid lg:grid-cols-[1.1fr_.9fr] gap-14 items-center">
         <div className="rise">
-          <p className="text-gold text-xs tracking-[0.2em] uppercase mb-4">Finanças CodeCraft · o orçamento da casa</p>
+          <p className="text-gold text-xs tracking-[0.2em] uppercase mb-4">Finanças CodeCraft · o que vai sobrar</p>
           <h1 className="text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.12] text-white max-w-3xl hero-title">
-            Receita, contas fixas e cartão.
+            O que vai gastar.
             <br />
-            O mês fecha ou não.
+            O que vai sobrar. Todo dia.
           </h1>
           <p className="mt-5 text-[#b7c4cf] text-lg max-w-2xl">
-            É a planilha da família no app: um mês por aba, cartão separado das contas da casa, e o saldo no fim. O trabalho é ir baixando a fatura sem furar a prestação.
+            A planilha entra uma vez. O app não copia a tabela: conta o mês, o ano, e avalia sozinho o que cortar — principalmente o cartão.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/cadastro" className="btn btn-primary">Criar conta</Link>
@@ -44,18 +44,18 @@ export default function HomePage() {
       <section id="produto" className="bg-bg/80 backdrop-blur-[2px] text-ink py-20 px-8">
         <div className="max-w-6xl mx-auto">
           <p className="page-kicker">O que o app faz</p>
-          <h2 className="text-3xl font-semibold mt-2">O controle financeiro da casa, mês a mês.</h2>
+          <h2 className="text-3xl font-semibold mt-2">Não é para ver a mesma planilha.</h2>
           <p className="text-muted mt-3 max-w-2xl">
-            Não é um painel genérico. É receita prevista, contas que quase não mudam, fatura de cada cartão e o que sobrou. Empresa fica em outro espaço, se você tiver.
+            Você manda o Excel da casa. O app diz o que ainda vai sair, o que sobra, e o que fazer hoje. Empresa fica em outro espaço.
           </p>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-10">
             {[
-              ["Resumo anual", "Jan a dez numa tabela: receita, fixas, cartões, outras, saldo e quanto o cartão come do mês."],
-              ["Este mês", "Três caixas, como na planilha: cartão (laranja), contas da casa (fixas) e o que aparece uma vez."],
-              ["Cartões", "Nubank, Inter, loja — mês a mês. A meta é reduzir. Sem parcela nova enquanto as atuais não acabam."],
-              ["Contas fixas", "Prestação da casa, luz, água, internet, IPTU. Você confere o valor. Não mistura com fatura."],
-              ["Manda o Excel", "Uma aba por mês. O app lê sozinho. Não precisa lançar linha por linha."],
-              ["IA da casa", "Pergunta quanto saiu no cartão. Ela mostra a linha. Não pede senha e não move PIX."],
+              ["Este mês", "Vai gastar X. Vai sobrar Y. Faltam N dias. Sem gasto novo no cartão, o número se segura."],
+              ["Mês a mês", "Janeiro a dezembro: o que já saiu, o que ainda vem, e o que sobra em cada um."],
+              ["No ano", "Quanto vai gastar no total e quanto sobra no fim. Se o cartão cair 10%, quanto a mais sobra."],
+              ["Avaliação todo dia", "A IA lê o ano da casa de novo cada dia. Dica concreta: amortizar, não abrir parcela, o mês que não fecha."],
+              ["Cartões", "Qual fatura mais come. A meta é baixar. Sem parcela nova enquanto as atuais não acabam."],
+              ["Manda o Excel uma vez", "Ponto de partida, não a tela. Depois o app trabalha em cima dos números."],
             ].map(([title, body]) => (
               <article key={title} className="card p-5">
                 <h3 className="font-semibold">{title}</h3>
@@ -70,8 +70,8 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10">
           <div>
             <p className="page-kicker">Pessoa</p>
-            <h2 className="text-2xl font-semibold mt-2">A planilha da família.</h2>
-            <p className="text-muted mt-3">Receita, prestação, luz e cartão. Pessoa e empresa não se misturam.</p>
+            <h2 className="text-2xl font-semibold mt-2">O que vai sobrar na casa.</h2>
+            <p className="text-muted mt-3">Mês, ano e dica do dia. Pessoa e empresa não se misturam.</p>
           </div>
           <div>
             <p className="page-kicker">Empresa</p>

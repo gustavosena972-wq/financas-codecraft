@@ -171,6 +171,31 @@ export function FreeMoneyChart({
   );
 }
 
+export function LeftoverChart({ data }: { data: { month: string; net: number }[] }) {
+  const chart = data.map((row) => ({
+    month: row.month,
+    Sobra: row.net >= 0 ? row.net / 100 : 0,
+    Falta: row.net < 0 ? row.net / 100 : 0,
+  }));
+  return (
+    <div className="h-56">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chart}>
+          <CartesianGrid stroke="#d5dde4" vertical={false} />
+          <XAxis dataKey="month" tickFormatter={(v) => formatMonthLabel(v).slice(0, 3)} tick={{ fontSize: 12 }} />
+          <YAxis tick={{ fontSize: 12 }} />
+          <Tooltip
+            formatter={(value) => brl(Math.round(Number(value) * 100))}
+            labelFormatter={(label) => formatMonthLabel(String(label))}
+          />
+          <Bar dataKey="Sobra" fill="#1f8a62" radius={4} />
+          <Bar dataKey="Falta" fill="#b94a3c" radius={4} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 export function NetWorthChart({ data }: { data: { month: string; worth: number }[] }) {
   const chart = data.map((row) => ({ month: row.month, Patrimônio: row.worth / 100 }));
   return (

@@ -7,6 +7,7 @@ import { useLive } from "@/lib/live";
 import { go } from "@/lib/types";
 import { formatMonthLabel, brl, parseMoneyToCents } from "@/lib/money";
 import { cardEvolution, cardMetaFromTotals } from "@/lib/family-budget";
+import { familyOutlook } from "@/lib/family-forecast";
 import { monthsToClearDebt } from "@/lib/tools";
 import { netWorthSnapshot } from "@/lib/net-worth";
 
@@ -15,6 +16,7 @@ export default function DividasPage() {
   const [ready, setReady] = useState(false);
   const [cards, setCards] = useState<{ name: string; balance: number }[]>([]);
   const [evo, setEvo] = useState<ReturnType<typeof cardEvolution> | null>(null);
+  const [cutExtra, setCutExtra] = useState(0);
   const [debt, setDebt] = useState({ principal: "5000", pay: "400", rate: "2,5" });
 
   useEffect(() => {
@@ -27,6 +29,7 @@ export default function DividasPage() {
       const worth = netWorthSnapshot(session.workspace.id);
       setCards(worth.accounts.filter((a) => a.type === "CREDIT").map((a) => ({ name: a.name, balance: a.balance })));
       setEvo(cardEvolution(session.workspace.id));
+      setCutExtra(familyOutlook(session.workspace.id).cutPath.extra);
       setReady(true);
     })();
   }, [live]);
@@ -49,7 +52,8 @@ export default function DividasPage() {
         <p className="page-kicker">Cartões</p>
         <h1 className="text-2xl font-semibold mt-1">Evolução dos cartões</h1>
         <p className="text-sm text-muted mt-1 max-w-2xl">
-          Cada cartão, mês a mês — como na aba da planilha. A meta padrão é baixar 10% ao mês a partir de setembro, sem parcela nova enquanto as atuais não acabam.
+          Cada cartão, mês a mês. O trabalho não é olhar a tabela — é baixar a fatura. Se cair 10% ao mês daqui pra frente
+          {cutExtra > 5000 ? `, sobra mais ${brl(cutExtra)} no ano` : ""}. Sem parcela nova.
         </p>
       </div>
       {evo && evo.cards.length ? (

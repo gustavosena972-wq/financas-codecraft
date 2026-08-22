@@ -4,22 +4,22 @@ import { useEffect, useState } from "react";
 
 const SCENES = [
   [
-    ["Receita jan", "R$ 8.000"],
-    ["Fixas", "R$ 4.198"],
-    ["Cartões", "R$ 4.817"],
-    ["Saldo", "− R$ 1.015"],
+    ["Este mês sai", "R$ 9.015"],
+    ["Vai faltar", "R$ 1.015"],
+    ["No ano sobra", "R$ 15.859"],
+    ["Dias no mês", "9"],
   ],
   [
-    ["Nubank", "R$ 1.580"],
-    ["Inter", "R$ 2.283"],
-    ["% cartão", "53% do mês"],
-    ["Meta", "baixar a fatura"],
+    ["Até dezembro", "ainda sai"],
+    ["Se o cartão cair 10%", "sobra mais"],
+    ["Avaliado", "hoje"],
+    ["IA", "o que fazer agora"],
   ],
   [
-    ["Três grupos", "cartão, fixas, outras"],
-    ["Uma aba", "por mês"],
-    ["O trabalho", "o mês fechar"],
-    ["IA", "mostra a linha"],
+    ["Mês a mês", "gastar e sobrar"],
+    ["Cartão", "baixar, não copiar"],
+    ["Planilha", "entra uma vez"],
+    ["Empresa", "outro espaço"],
   ],
 ];
 
@@ -36,7 +36,7 @@ export function HeroPreview() {
   return (
     <div className="rounded-xl border border-[#2c4458] bg-panel-2 p-6 text-sm space-y-4 float-card">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-[#9aabba] text-[11px] uppercase tracking-[0.16em]">Painel — o mês da casa</div>
+        <div className="text-[#9aabba] text-[11px] uppercase tracking-[0.16em]">Painel — o que vai sobrar</div>
         <div className="flex gap-1">
           {SCENES.map((_, i) => (
             <button
@@ -68,7 +68,7 @@ export function HeroPreview() {
           </button>
         ))}
       </div>
-      <p className="text-[11px] text-[#9aabba]">Receita, contas da casa e cartão. O mês fecha ou não. A IA só aponta a linha.</p>
+      <p className="text-[11px] text-[#9aabba]">Não é a planilha na tela. É o que ainda vai sair, o que sobra, e a dica de hoje.</p>
     </div>
   );
 }

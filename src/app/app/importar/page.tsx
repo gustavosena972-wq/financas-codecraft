@@ -9,7 +9,7 @@ export default function ImportPage() {
       <div>
         <h1 className="text-2xl font-semibold">Mandar planilha</h1>
         <p className="text-sm text-muted max-w-2xl">
-          Manda o Excel da casa: uma aba por mês (Jan, Fev, Mar…). O app lê cartão, contas fixas e o que varia. OFX e CSV também entram.
+          Manda o Excel da casa uma vez. O app lê e passa a dizer o que vai gastar, o que sobra no mês e no ano, e avalia isso todo dia. Não é para ver a mesma tabela.
         </p>
       </div>
       <OrganizeWizard />

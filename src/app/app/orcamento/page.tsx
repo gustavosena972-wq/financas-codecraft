@@ -10,6 +10,7 @@ import { saveBudgetAction } from "@/app/actions/budgets";
 import { ActionForm } from "@/components/action-form";
 import { BudgetBars } from "@/components/charts";
 import { familyMonthItems, familyGroupLabel, type FamilyGroup } from "@/lib/family-budget";
+import { familyOutlook } from "@/lib/family-forecast";
 import { go } from "@/lib/types";
 
 const GROUPS: FamilyGroup[] = ["cards", "fixed", "other"];
@@ -20,6 +21,7 @@ export default function BudgetPage() {
   const [rows, setRows] = useState<{ id: string; name: string; planned: number; actual: number }[]>([]);
   const [items, setItems] = useState<ReturnType<typeof familyMonthItems>>([]);
   const [income, setIncome] = useState(0);
+  const [outlook, setOutlook] = useState<ReturnType<typeof familyOutlook> | null>(null);
   const [company, setCompany] = useState(false);
 
   useEffect(() => {
@@ -42,6 +44,7 @@ export default function BudgetPage() {
       setCompany(session.workspace.type === "BUSINESS");
       setItems(familyMonthItems(session.workspace.id, m));
       setIncome(summary.income);
+      setOutlook(familyOutlook(session.workspace.id));
       setRows(
         categories.map((category) => ({
           id: category.id,
@@ -62,10 +65,10 @@ export default function BudgetPage() {
       <div className="space-y-6">
         <div className="flex items-end justify-between gap-4 flex-wrap">
           <div>
-            <p className="page-kicker">Aba do mês</p>
+            <p className="page-kicker">O que vai sair</p>
             <h1 className="text-2xl font-semibold">Este mês da casa</h1>
             <p className="text-sm text-muted max-w-2xl capitalize">
-              Igual à planilha: cartão, contas fixas e o que varia. {formatMonthLabel(month)}.
+              Quanto vai gastar, quanto sobra, e de onde sai. {formatMonthLabel(month)}.
             </p>
           </div>
           <div className="flex gap-2">
@@ -117,18 +120,39 @@ export default function BudgetPage() {
 
             <article className="card p-5 grid sm:grid-cols-3 gap-4">
               <div>
-                <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">Receita prevista</div>
-                <div className="text-xl font-semibold mt-1">{income ? brl(income) : "—"}</div>
-              </div>
-              <div>
-                <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">Total de despesas</div>
+                <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">Vai gastar</div>
                 <div className="text-xl font-semibold mt-1">{brl(expense)}</div>
               </div>
               <div>
-                <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">Saldo previsto</div>
-                <div className={`text-xl font-semibold mt-1 ${net < 0 ? "text-negative" : "text-positive"}`}>{brl(net)}</div>
+                <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">{net >= 0 ? "Vai sobrar" : "Vai faltar"}</div>
+                <div className={`text-xl font-semibold mt-1 ${net < 0 ? "text-negative" : "text-positive"}`}>{brl(Math.abs(net))}</div>
+              </div>
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">Receita do mês</div>
+                <div className="text-xl font-semibold mt-1">{income ? brl(income) : "—"}</div>
               </div>
             </article>
+            {outlook && !outlook.empty ? (
+              <article className="card p-5">
+                <h2 className="font-semibold">Os meses que ainda vêm</h2>
+                <p className="text-sm text-muted mt-1">
+                  Daqui até dezembro ainda sai {brl(outlook.rest.expense)}. No ano {outlook.yearTotal.leftover >= 0 ? `sobra ${brl(outlook.yearTotal.leftover)}` : `falta ${brl(Math.abs(outlook.yearTotal.leftover))}`}.
+                </p>
+                <ul className="mt-3 grid sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm">
+                  {outlook.series
+                    .filter((row) => row.kind !== "past" && (row.income || row.expense))
+                    .map((row) => (
+                      <li key={row.month} className="rounded-lg bg-bg px-3 py-2">
+                        <div className="capitalize text-muted">{formatMonthLabel(row.month).split(" ")[0]}</div>
+                        <div>Sai {brl(row.expense)}</div>
+                        <div className={row.net < 0 ? "text-negative" : "text-positive"}>
+                          {row.net >= 0 ? `Sobra ${brl(row.net)}` : `Falta ${brl(Math.abs(row.net))}`}
+                        </div>
+                      </li>
+                    ))}
+                </ul>
+              </article>
+            ) : null}
           </>
         )}
       </div>

@@ -101,7 +101,7 @@ export function navFor(type: WorkspaceKind): NavGroup[] {
     {
       label: "A casa",
       items: [
-        { href: "/app", label: "Resumo do ano", icon: LayoutDashboard },
+        { href: "/app", label: "O que sobra", icon: LayoutDashboard },
         { href: "/app/orcamento", label: "Este mês", icon: PiggyBank },
         { href: "/app/dividas", label: "Cartões", icon: CreditCard },
         { href: "/app/importar", label: "Mandar planilha", icon: Upload },

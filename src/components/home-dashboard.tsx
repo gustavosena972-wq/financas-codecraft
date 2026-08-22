@@ -8,10 +8,10 @@ import { go } from "@/lib/types";
 import { brl, formatMonthLabel, monthKey } from "@/lib/money";
 import { accountBalances, categorySpend, cashflowSeries, monthSummary } from "@/lib/queries";
 import { netWorthSeries, netWorthSnapshot } from "@/lib/net-worth";
-import { familyNow } from "@/lib/family-budget";
+import { familyOutlook } from "@/lib/family-forecast";
 import { financePulse } from "@/lib/accountant";
 import { buildInsights } from "@/lib/ai";
-import { CashflowChart, CategoryChart, NetWorthChart } from "@/components/charts";
+import { CashflowChart, CategoryChart, LeftoverChart, NetWorthChart } from "@/components/charts";
 import { CountMoney } from "@/components/count-up";
 import { AccountantChat } from "@/components/accountant-chat";
 import { AiInsights } from "@/components/ai-insights";
@@ -35,7 +35,7 @@ type View = {
   goals: { name: string; target: number; pct: number }[];
   insights: ReturnType<typeof buildInsights>;
   ai: boolean;
-  family: ReturnType<typeof familyNow>;
+  family: ReturnType<typeof familyOutlook>;
 };
 
 export function HomeDashboard() {
@@ -86,7 +86,7 @@ export function HomeDashboard() {
         })),
         insights: buildInsights(id, month),
         ai: planHasAi(session.user.plan),
-        family: familyNow(id),
+        family: familyOutlook(id),
       });
     })();
   }, [live]);
@@ -268,150 +268,160 @@ export function HomeDashboard() {
 function FamilyHome({ view }: { view: View }) {
   const { family } = view;
   const now = family.now;
-  const cardPct = now.expense ? Math.round(now.cardShare * 100) : 0;
+  const year = family.yearTotal;
 
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <p className="page-kicker">Casa · {family.year}</p>
-          <h1 className="page-title">Orçamento da família</h1>
+          <p className="page-kicker">Avaliado hoje · {family.today.split("-").reverse().join("/")}</p>
+          <h1 className="page-title">O que vai sobrar</h1>
           <p className="text-sm text-muted mt-1 max-w-2xl">
-            O mesmo da planilha: receita do mês, contas fixas, fatura de cartão e o que sobra. O trabalho é um só — ir baixando o cartão sem furar a casa.
+            A planilha entra uma vez. Daí o app diz, sozinho, o que ainda vai sair, o que sobra no mês e no ano, e o que fazer hoje.
           </p>
         </div>
         <div className="flex gap-2">
-          <Link href="/app/importar" className="btn btn-primary">
-            Mandar a planilha
+          <Link href="/app/chat" className="btn btn-primary">
+            Pedir dica
           </Link>
-          <Link href="/app/orcamento" className="btn btn-ghost">
-            Ver este mês
+          <Link href="/app/importar" className="btn btn-ghost">
+            Atualizar planilha
           </Link>
         </div>
       </div>
 
-      <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <article className="tool-tile">
-          <strong>Cartões</strong>
-          <p>Nubank, Inter, loja. Cada fatura do mês. A meta é reduzir um pouco todo mês, sem parcela nova.</p>
-        </article>
-        <article className="tool-tile">
-          <strong>Fixas</strong>
-          <p>Casa, luz, água, internet, prestação. O que quase não muda — você só confere o valor.</p>
-        </article>
-        <article className="tool-tile">
-          <strong>Outras</strong>
-          <p>O que aparece uma vez: IPVA, um extra, um acerto. Não mistura com a fatura do cartão.</p>
-        </article>
-        <article className="tool-tile">
-          <strong>Saldo</strong>
-          <p>Receita menos as três caixas. Se ficou positivo, o caminho é amortizar cartão, não gastar de novo.</p>
-        </article>
-      </section>
-
       {family.empty ? (
         <article className="card p-6 space-y-3">
-          <h2 className="font-semibold">Ainda não tem o ano da casa aqui</h2>
+          <h2 className="font-semibold">Manda o Excel uma vez</h2>
           <p className="text-sm text-muted max-w-2xl">
-            Manda o Excel com uma aba por mês (Jan, Fev, Mar…). O app lê cartão, contas fixas e o que varia, e monta o resumo anual. Não precisa lançar linha por linha.
+            Não é para ver a mesma tabela. É para o app passar a contar o que vai gastar e o que vai sobrar, e avaliar isso todo dia.
           </p>
           <Link href="/app/importar" className="btn btn-primary">
-            Abrir a planilha da casa
+            Mandar a planilha da casa
           </Link>
         </article>
       ) : (
         <>
-          <section className="grid lg:grid-cols-[1.3fr_.7fr] gap-4">
-            <article className="card p-6">
-              <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">Neste mês · {formatMonthLabel(now.month)}</div>
-              <div className={`text-4xl font-semibold mt-2 ${now.net >= 0 ? "text-ink" : "text-negative"}`}>
-                <CountMoney cents={now.net} />
+          <section className="grid lg:grid-cols-3 gap-4">
+            <article className="card p-6 lg:col-span-2">
+              <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">
+                Este mês · {formatMonthLabel(now.month)}
               </div>
-              <p className="text-sm text-muted mt-2">{now.net >= 0 ? "Sobra depois das contas." : "O mês não fecha. O cartão ou as fixas passaram da receita."}</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
-                <Kpi label="Receita" value={brl(now.income)} />
-                <Kpi label="Fixas" value={brl(now.fixed)} />
+              <p className="text-sm text-muted mt-3">Vai gastar</p>
+              <div className="text-2xl font-semibold">{brl(now.expense)}</div>
+              <p className="text-sm text-muted mt-4">{now.net >= 0 ? "Vai sobrar" : "Vai faltar"}</p>
+              <div className={`text-4xl font-semibold mt-1 ${now.net >= 0 ? "text-positive" : "text-negative"}`}>
+                <CountMoney cents={Math.abs(now.net)} />
+              </div>
+              <p className="text-sm text-muted mt-3">
+                {family.daysLeft
+                  ? `Faltam ${family.daysLeft} dia(s). Sem gasto novo no cartão, este número se segura.`
+                  : "Último dia do mês. O que entrar agora já é do mês que vem."}
+              </p>
+              <div className="grid grid-cols-3 gap-3 mt-6">
                 <Kpi label="Cartões" value={brl(now.cards)} tone="neg" />
+                <Kpi label="Contas da casa" value={brl(now.fixed)} />
                 <Kpi label="Outras" value={brl(now.other)} />
               </div>
-              <p className="text-sm mt-4">
-                Cartão leva <strong>{cardPct}%</strong> do que sai neste mês.
-                {cardPct > 40 ? " Na planilha da casa, acima de 40% já aperta o saldo." : " Quanto menor essa fatia, mais o mês respira."}
-              </p>
             </article>
-            <article className="card p-5">
-              <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">No ano</div>
-              <h2 className="font-semibold mt-1">Entra {brl(family.totals.income)}</h2>
-              <p className="text-sm text-muted mt-2">
-                Sai {brl(family.totals.expense)}. Cartões {brl(family.totals.cards)}. Fixas {brl(family.totals.fixed)}. Saldo {brl(family.totals.net)}.
-              </p>
-              <div className="mt-4">
-                <CashflowChart data={family.used} />
+            <article className="card p-6 space-y-4">
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">No ano</div>
+                <p className="text-sm text-muted mt-2">Vai gastar</p>
+                <div className="text-xl font-semibold">{brl(year.expense)}</div>
+                <p className="text-sm text-muted mt-3">{year.leftover >= 0 ? "Vai sobrar" : "Vai faltar"}</p>
+                <div className={`text-3xl font-semibold ${year.leftover >= 0 ? "text-positive" : "text-negative"}`}>
+                  {brl(Math.abs(year.leftover))}
+                </div>
               </div>
-              <Link href="/app/dividas" className="text-sm underline mt-3 inline-block">
-                Evolução dos cartões
+              {family.rest.count ? (
+                <p className="text-sm text-muted">
+                  Daqui até dezembro ainda sai {brl(family.rest.expense)}.
+                  {family.cutPath.extra > 5000
+                    ? ` Se o cartão cair 10% ao mês, sobra mais ${brl(family.cutPath.extra)} no ano.`
+                    : ""}
+                </p>
+              ) : null}
+              <Link href="/app/orcamento" className="text-sm underline inline-block">
+                Ver este mês no detalhe
               </Link>
             </article>
           </section>
 
-          <article className="card overflow-x-auto">
-            <div className="p-5 pb-2">
-              <h2 className="font-semibold">Resumo anual</h2>
-              <p className="text-sm text-muted mt-1">Receita, fixas, cartões, outras e o saldo — igual à aba Resumo da planilha.</p>
+          <section className="card p-5">
+            <div className="flex items-end justify-between gap-3 flex-wrap">
+              <div>
+                <p className="page-kicker">IA · avaliação do dia</p>
+                <h2 className="font-semibold mt-1">O que fazer com o número de hoje</h2>
+              </div>
+              <span className="text-xs text-muted">Atualiza sozinha todo dia, e de novo se a planilha mudar.</span>
             </div>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Mês</th>
-                  <th>Receita</th>
-                  <th>Fixas</th>
-                  <th>Cartões</th>
-                  <th>Outras</th>
-                  <th>Total</th>
-                  <th>Saldo</th>
-                  <th>% cartão</th>
-                </tr>
-              </thead>
-              <tbody>
-                {family.series.map((row) => (
-                  <tr key={row.month} className={row.month === now.month ? "xls-now" : ""}>
-                    <td className="capitalize">{formatMonthLabel(row.month)}</td>
-                    <td>{row.income ? brl(row.income) : "—"}</td>
-                    <td>{row.fixed ? brl(row.fixed) : "—"}</td>
-                    <td>{row.cards ? brl(row.cards) : "—"}</td>
-                    <td>{row.other ? brl(row.other) : "—"}</td>
-                    <td>{row.expense ? brl(row.expense) : "—"}</td>
-                    <td className={row.net < 0 ? "text-negative" : row.net > 0 ? "text-positive" : ""}>
-                      {row.income || row.expense ? brl(row.net) : "—"}
-                    </td>
-                    <td>{row.expense ? `${Math.round(row.cardShare * 100)}%` : "—"}</td>
+            <ul className="mt-4 space-y-3">
+              {family.review.map((tip) => (
+                <li key={tip.title} className="rounded-lg bg-bg px-4 py-3">
+                  <div
+                    className={`text-sm font-semibold ${
+                      tip.tone === "warn" ? "text-negative" : tip.tone === "ok" ? "text-positive" : ""
+                    }`}
+                  >
+                    {tip.title}
+                  </div>
+                  <p className="text-sm text-muted mt-1">{tip.body}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="card p-5">
+            <h2 className="font-semibold">Mês a mês</h2>
+            <p className="text-sm text-muted mt-1">O que já saiu, o que ainda vai sair, e o que sobra. Meses vazios o app projeta.</p>
+            <div className="mt-4">
+              <LeftoverChart data={family.series.filter((row) => row.income || row.expense)} />
+            </div>
+            <div className="overflow-x-auto mt-2">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Mês</th>
+                    <th>Vai gastar</th>
+                    <th>Vai sobrar</th>
+                    <th></th>
                   </tr>
-                ))}
-                <tr>
-                  <td>Ano</td>
-                  <td>{brl(family.totals.income)}</td>
-                  <td>{brl(family.totals.fixed)}</td>
-                  <td>{brl(family.totals.cards)}</td>
-                  <td>{brl(family.totals.other)}</td>
-                  <td>{brl(family.totals.expense)}</td>
-                  <td className={family.totals.net < 0 ? "text-negative" : "text-positive"}>{brl(family.totals.net)}</td>
-                  <td>
-                    {family.totals.expense
-                      ? `${Math.round((family.totals.cards / family.totals.expense) * 100)}%`
-                      : "—"}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </article>
+                </thead>
+                <tbody>
+                  {family.series.map((row) => (
+                    <tr key={row.month} className={row.kind === "now" ? "xls-now" : ""}>
+                      <td className="capitalize">
+                        {formatMonthLabel(row.month)}
+                        {row.projected ? <span className="fam-sub block">projetado</span> : null}
+                      </td>
+                      <td>{row.expense ? brl(row.expense) : "—"}</td>
+                      <td className={row.net < 0 ? "text-negative" : row.net > 0 ? "text-positive" : ""}>
+                        {row.income || row.expense ? brl(row.net) : "—"}
+                      </td>
+                      <td className="text-muted text-sm">
+                        {row.kind === "past" ? "já foi" : row.kind === "now" ? "agora" : "ainda vem"}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <td>Ano</td>
+                    <td>{brl(year.expense)}</td>
+                    <td className={year.leftover < 0 ? "text-negative" : "text-positive"}>{brl(year.leftover)}</td>
+                    <td />
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
         </>
       )}
 
       <section className="card overflow-hidden">
         <div className="px-5 pt-4">
           <p className="page-kicker">Assistente</p>
-          <h2 className="font-semibold mt-1">Pergunta sobre o mês da casa.</h2>
-          <p className="text-sm text-muted mt-1">Ex.: “quanto saiu no cartão este mês?”. Sem senha. Sem PIX.</p>
+          <h2 className="font-semibold mt-1">Pergunta o que cortar. A IA usa o ano da casa.</h2>
+          <p className="text-sm text-muted mt-1">Ex.: “o que vai sobrar até dezembro?”. Sem senha. Sem PIX.</p>
         </div>
         <AccountantChat compact />
       </section>

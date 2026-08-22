@@ -11,31 +11,31 @@ export type GuideItem = {
 export const START_STEPS = [
   {
     n: "1",
-    title: "Manda a planilha da casa",
-    body: "Uma aba por mês: cartão, contas fixas e o que varia. O app lê sozinho.",
+    title: "Manda a planilha uma vez",
+    body: "É o ponto de partida. O app não serve para repetir a tabela.",
     href: "/app/importar",
   },
   {
     n: "2",
-    title: "Olha se o mês fecha",
-    body: "Receita, fixas, cartão e o saldo. O trabalho é ir baixando a fatura.",
+    title: "Olha o que vai sobrar",
+    body: "Este mês e o ano: quanto ainda sai, quanto sobra. A IA avalia isso todo dia.",
     href: "/app",
   },
   {
     n: "3",
-    title: "Confere os cartões",
-    body: "Cada cartão, mês a mês. Sem parcela nova enquanto as atuais não acabam.",
+    title: "Baixa o cartão",
+    body: "A dica do dia diz onde cortar. Sem parcela nova. A sobra amortiza a maior fatura.",
     href: "/app/dividas",
   },
 ];
 
 export const GUIDE: GuideItem[] = [
-  { href: "/app", title: "Resumo da casa", does: "Receita, contas fixas, cartões e o saldo do mês. Igual à aba Resumo da planilha.", tip: "Pessoa e Empresa no topo. Os números não se misturam." },
-  { href: "/app/chat", title: "IA", does: "Pergunta quanto saiu no cartão. A IA mostra a linha. Não é a tela principal.", tip: "Grátis: 8 perguntas/dia. Pro 40, Business 80. Sem senha. Sem PIX." },
+  { href: "/app", title: "O que sobra", does: "Este mês e o ano: o que vai gastar, o que vai sobrar. A IA avalia todo dia e diz o que fazer.", tip: "A planilha entra uma vez. A tela não copia a tabela." },
+  { href: "/app/chat", title: "IA", does: "Pergunta o que vai sobrar até dezembro. Ela lê o ano da casa e dá a dica do dia.", tip: "Grátis: 8 perguntas/dia. Pro 40, Business 80. Sem senha. Sem PIX." },
   { href: "/app/lancamentos", title: "Lançar na mão", does: "Uma linha por movimento: salário, aluguel, mercado.", tip: "Descreva simples: “Aluguel”, “iFood”." },
   { href: "/app/contas", title: "Contas", does: "Onde o dinheiro mora: banco, carteira, cartão.", tip: "Uma conta por lugar real." },
   { href: "/app/agenda", title: "Contas do mês", does: "O que se repete, tipo aluguel ou internet.", tip: "No mês, lance o recorrente. Não sai sozinho do banco." },
-  { href: "/app/orcamento", title: "Este mês", does: "Três grupos: cartão, contas da casa e o que varia. Como a aba do mês na planilha.", tip: "Parcela e status vêm do Excel. Confira o saldo no fim." },
+  { href: "/app/orcamento", title: "Este mês", does: "Quanto vai gastar e quanto sobra. Os meses que ainda vêm aparecem embaixo.", tip: "Parcela que está acabando some no mês que vem — não substitui por compra nova." },
   { href: "/app/investimentos", title: "Investimentos", does: "Saldo da carteira, se você tiver. Não é o centro do produto da casa.", tip: "Lance o saldo de hoje. Open Finance vem depois, por agregador." },
   { href: "/app/dividas", title: "Cartões", does: "Cada cartão mês a mês. A meta é reduzir a fatura, sem parcela nova.", tip: "Quite o rotativo primeiro.", audience: "personal" },
   { href: "/app/ferramentas", title: "Ferramentas", does: "Pessoa: reserva, 50-30-20, corte, dívida, moradia. Empresa: giro e preço. Cada uma tem uma linha dizendo o que faz.", tip: "No grátis o chat lê a planilha. Pro R$ 27,90 e Business R$ 69,90 liberam o resto." },
