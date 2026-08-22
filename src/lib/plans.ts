@@ -23,17 +23,17 @@ export const PIX_PLAN_KEY = "31999758385";
 export const PLANS: Plan[] = [
   {
     id: "FREE",
-    name: "Grátis",
+    name: "Experimentar",
     audience: "all",
     price: "R$ 0",
     priceValue: 0,
-    period: "para sempre",
-    forWho: "Entrar e usar. Pessoa e empresa no mesmo login. IA no assistente. Nada entra sem você aceitar.",
+    period: "para entrar",
+    forWho: "Ver a casa e a empresa no mesmo login. A planilha entra. A IA lê. Nada muda sem você aceitar.",
     includes: [
       "Pessoa e empresa, espaços separados",
-      "IA: 8 perguntas por dia, com o lançamento real",
-      "Lançamentos ilimitados",
-      "Resumo da casa: receita, fixas, cartão e saldo",
+      "Mandar o Excel da casa",
+      "Ver o que vai gastar e o que sobra neste mês",
+      "IA: 8 perguntas por dia",
       "Só muda se você gostar",
     ],
     news: [],
@@ -41,65 +41,81 @@ export const PLANS: Plan[] = [
   },
   {
     id: "PRO",
-    name: "Pro",
-    audience: "all",
-    price: "R$ 27,90",
-    priceValue: 27.9,
-    period: "por mês",
-    forWho: "Quem quer teto, metas, exportar e as contas da vida com a IA.",
+    name: "Casa",
+    audience: "person",
+    price: "R$ 107",
+    priceValue: 107,
+    period: "por mês, renovação automática",
+    forWho: "A família. O app diz o que ainda sai, o que sobra no ano, e o que cortar no cartão — todo dia.",
     badge: "Mais usado",
     includes: [
-      "Tudo do Grátis — pessoa e empresa",
-      "IA: 40 perguntas por dia, 50-30-20, corte e dívida",
-      "Exportar planilha",
-      "Foto do comprovante (OCR)",
-      "Metas, teto do mês e importar extrato",
-      "Previsão dos próximos meses",
+      "Tudo do Experimentar",
+      "Ano inteiro: vai gastar / vai sobrar",
+      "Cartões mês a mês e meta de baixar a fatura",
+      "IA avalia o plano todo dia · 40 perguntas",
+      "Sem parcela nova enquanto as atuais não acabam",
     ],
     news: [],
-    cta: "Assinar Pro",
+    cta: "Assinar Casa",
     highlight: true,
   },
   {
-    id: "BUSINESS",
-    name: "Business",
-    audience: "company",
-    price: "R$ 69,90",
-    priceValue: 69.9,
-    period: "por mês",
-    forWho: "Empresa pequena. Tesouraria, DRE, títulos, centros, equipe e o arquivo que o contador pede.",
-    badge: "Empresa",
+    id: "PLUS",
+    name: "Casa Plus",
+    audience: "person",
+    price: "R$ 200",
+    priceValue: 200,
+    period: "por mês, renovação automática",
+    forWho: "Quem já usa a casa e quer exportar, foto da nota e as contas extras.",
     includes: [
-      "Tudo do Pro",
-      "IA: 80 perguntas por dia na tesouraria",
-      "Vários usuários na empresa",
-      "Contas a pagar e a receber",
-      "Centros de custo",
-      "DRE, fluxo e giro",
-      "Relatório Excel/CSV para o contador",
+      "Tudo da Casa",
+      "IA: 80 perguntas por dia",
+      "Exportar planilha",
+      "Foto do comprovante",
+      "Metas e simulador de dívida",
     ],
     news: [],
-    cta: "Assinar Business",
+    cta: "Assinar Casa Plus",
+  },
+  {
+    id: "BUSINESS",
+    name: "Empresa",
+    audience: "company",
+    price: "R$ 305",
+    priceValue: 305,
+    period: "por mês, renovação automática",
+    forWho: "MEI ao PME. Caixa, títulos, DRE e fluxo — o que o QuickBooks faz, em português, sem misturar com a casa.",
+    badge: "Empresa",
+    includes: [
+      "Tudo da Casa Plus no espaço pessoa",
+      "IA: 120 perguntas por dia na tesouraria",
+      "A pagar e a receber",
+      "DRE e fluxo de caixa",
+      "Equipe (até 8 pessoas)",
+      "Relatório para o contador",
+    ],
+    news: [],
+    cta: "Assinar Empresa",
   },
   {
     id: "ENTERPRISE",
-    name: "Contador",
-    audience: "company",
-    price: "A combinar",
-    priceValue: null,
-    period: "por cliente ativo",
-    forWho: "Escritório de contabilidade. White-label: seus clientes usam o app com a sua marca.",
-    badge: "B2B",
+    name: "Completo",
+    audience: "all",
+    price: "R$ 400",
+    priceValue: 400,
+    period: "por mês, renovação automática",
+    forWho: "Casa + empresa no mesmo login, com fechamento de mês. O pacote que escritório de fora reconhece.",
+    badge: "Tudo",
     includes: [
-      "Tudo do Business",
+      "Tudo da Empresa",
       "IA sem teto de perguntas no dia",
-      "Fechar mês e conciliação",
+      "Conciliação com o extrato",
       "Auditoria de quem fez o quê",
-      "Vários CNPJs no mesmo login",
-      "Combinar no WhatsApp da CodeCraft",
+      "Fechar o mês",
+      "Equipe sem limite",
     ],
     news: [],
-    cta: "Falar no WhatsApp",
+    cta: "Assinar Completo",
   },
 ];
 
@@ -120,11 +136,12 @@ export function companyPaid(plan: PlanId | string | null | undefined) {
 }
 
 export function workspaceToolsPaid(plan: PlanId | string | null | undefined, company: boolean) {
-  return company ? companyPaid(plan) : personPaid(plan);
+  if (company) return companyPaid(plan);
+  return plan === "PLUS" || plan === "BUSINESS" || plan === "ENTERPRISE";
 }
 
 export function planHasSimulators(plan: PlanId | string | null | undefined) {
-  return personPaid(plan);
+  return plan === "PLUS" || plan === "BUSINESS" || plan === "ENTERPRISE";
 }
 
 export function planHasAi(_plan?: PlanId | string | null) {
@@ -148,8 +165,7 @@ export function planIsPaid(plan: PlanId | string | null | undefined) {
 }
 
 export function planForecastMonths(plan: PlanId | string | null | undefined, _company: boolean) {
-  if (plan === "ENTERPRISE" || plan === "BUSINESS") return 11;
-  if (plan === "PRO" || plan === "PLUS") return 6;
+  if (planIsPaid(plan)) return 11;
   return 1;
 }
 
@@ -163,15 +179,17 @@ export function goalLimit(plan: PlanId | string | null | undefined) {
 
 export function planChatAsksPerDay(plan: PlanId | string | null | undefined) {
   if (plan === "ENTERPRISE") return Number.POSITIVE_INFINITY;
-  if (plan === "BUSINESS") return 80;
-  if (plan === "PRO" || plan === "PLUS") return 40;
+  if (plan === "BUSINESS") return 120;
+  if (plan === "PLUS") return 80;
+  if (plan === "PRO") return 40;
   return 8;
 }
 
 export function planChatChars(plan: PlanId | string | null | undefined) {
   if (plan === "ENTERPRISE") return 4000;
-  if (plan === "BUSINESS") return 2000;
-  if (plan === "PRO" || plan === "PLUS") return 1200;
+  if (plan === "BUSINESS") return 2500;
+  if (plan === "PLUS") return 1800;
+  if (plan === "PRO") return 1200;
   return 400;
 }
 
@@ -187,6 +205,13 @@ export function teamLimit(plan: PlanId | string | null | undefined) {
 }
 
 export function planById(id: string | null | undefined, _audience?: PlanAudience): Plan {
-  if (id === "PLUS") return PLANS.find((p) => p.id === "PRO") ?? PLANS[0];
   return PLANS.find((p) => p.id === id) ?? PLANS[0];
+}
+
+export function planLabel(plan: PlanId | string | null | undefined) {
+  return planById(plan).name;
+}
+
+export function planPriceLine() {
+  return "Experimentar grátis. Casa R$ 107, Casa Plus R$ 200, Empresa R$ 305, Completo R$ 400 — por mês, renovação automática.";
 }

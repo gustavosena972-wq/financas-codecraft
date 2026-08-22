@@ -58,7 +58,7 @@ export default function ExportPage() {
       <div>
         <h1 className="text-2xl font-semibold">Exportar para Excel</h1>
         <p className="text-sm text-muted max-w-2xl">
-          Baixa a planilha{name ? ` de ${name}` : ""} para o contador ou para o Excel de casa. Entra no Pro (R$ 27,90).
+          Baixa a planilha{name ? ` de ${name}` : ""} para o contador ou para o Excel de casa. Entra no Casa Plus (R$ 200).
         </p>
       </div>
       <div className="card p-6 max-w-lg space-y-4">

@@ -51,7 +51,7 @@ export default function TitulosPage() {
         title="Títulos"
         subtitle="Título do cliente e do fornecedor. Quando pagar, use Baixar. Título a receber não é caixa até cair."
       />
-      <PlanGate allowed={ops} title="Títulos entram no Business" body="Contas a pagar e a receber ficam no Business (R$ 69,90)." />
+      <PlanGate allowed={ops} title="Títulos entram no plano Empresa" body="Contas a pagar e a receber ficam no plano Empresa (R$ 305)." />
       {ops ? (
         <>
           <section className="grid sm:grid-cols-4 gap-3">

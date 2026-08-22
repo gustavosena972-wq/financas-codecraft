@@ -95,9 +95,9 @@ export const PRODUCTS: Product[] = [
   {
     id: "ocr",
     name: "Foto do comprovante",
-    does: "Tira foto da nota. O Pro lê valor e data para você conferir antes de lançar.",
+    does: "Tira foto da nota. O Casa Plus lê valor e data para você conferir antes de lançar.",
     audience: "person",
-    plan: "PRO",
+    plan: "PLUS",
     href: "/app/lancamentos",
   },
   {
@@ -105,7 +105,7 @@ export const PRODUCTS: Product[] = [
     name: "Exportar",
     does: "Baixa a planilha do seu espaço para o contador ou para o Excel de casa.",
     audience: "person",
-    plan: "PRO",
+    plan: "PLUS",
     href: "/app/exportar",
   },
   {
@@ -113,7 +113,7 @@ export const PRODUCTS: Product[] = [
     name: "50-30-20",
     does: "Divide o que entra: 50% essencial, 30% escolha, 20% reserva. Compara com o que você realmente gastou.",
     audience: "person",
-    plan: "PRO",
+    plan: "PLUS",
     href: "/app/ferramentas",
   },
   {
@@ -121,7 +121,7 @@ export const PRODUCTS: Product[] = [
     name: "Corte",
     does: "Mostra o que mais pesa no mês e quanto sobra se baixar 20% disso. Não corta sozinho.",
     audience: "person",
-    plan: "PRO",
+    plan: "PLUS",
     href: "/app/ferramentas",
   },
   {
@@ -129,7 +129,7 @@ export const PRODUCTS: Product[] = [
     name: "Teto de moradia",
     does: "Aluguel + casa deve caber em 30% do que entra. Se passou, avisa — não cancela a casa.",
     audience: "person",
-    plan: "PRO",
+    plan: "PLUS",
     href: "/app/ferramentas",
   },
   {
@@ -137,7 +137,7 @@ export const PRODUCTS: Product[] = [
     name: "Reserva e alerta",
     does: "Quantos meses o saldo cobre o essencial. Crítica, média ou boa. É o pulso do caixa.",
     audience: "person",
-    plan: "PRO",
+    plan: "PLUS",
     href: "/app/ferramentas",
   },
   {
@@ -145,7 +145,7 @@ export const PRODUCTS: Product[] = [
     name: "Simulador de dívida",
     does: "Você diz saldo, parcela e juro. Ele conta em quantos meses acaba e quanto de juro vai embora.",
     audience: "person",
-    plan: "PRO",
+    plan: "PLUS",
     href: "/app/ferramentas",
   },
   {
@@ -264,8 +264,9 @@ export function productByHref(href: string) {
 }
 
 export function planLabel(plan: PlanId) {
-  if (plan === "FREE") return "Grátis";
-  if (plan === "PRO" || plan === "PLUS") return "Pro";
-  if (plan === "BUSINESS") return "Business";
-  return "Contador";
+  if (plan === "FREE") return "Experimentar";
+  if (plan === "PRO") return "Casa";
+  if (plan === "PLUS") return "Casa Plus";
+  if (plan === "BUSINESS") return "Empresa";
+  return "Completo";
 }

@@ -277,7 +277,7 @@ function FamilyHome({ view }: { view: View }) {
           <p className="page-kicker">Avaliado hoje · {family.today.split("-").reverse().join("/")}</p>
           <h1 className="page-title">O que vai sobrar</h1>
           <p className="text-sm text-muted mt-1 max-w-2xl">
-            A planilha entra uma vez. Daí o app diz, sozinho, o que ainda vai sair, o que sobra no mês e no ano, e o que fazer hoje.
+            A planilha entra uma vez. Daí o app diz, sozinho, o que ainda vai sair, o que sobra no mês e no ano, e o que fazer hoje. Não é para ver a mesma tabela do Excel.
           </p>
         </div>
         <div className="flex gap-2">

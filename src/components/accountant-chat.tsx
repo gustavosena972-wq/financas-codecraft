@@ -324,7 +324,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
 
   function quotaReply() {
     const name = planById(plan).name;
-    return `A IA deste plano (${name}) já usou as ${asks.limit} perguntas de hoje. Amanhã zera. No Pro sobem para 40, no Business para 80, no Contador não tem teto.`;
+    return `A IA deste plano (${name}) já usou as ${asks.limit} perguntas de hoje. Amanhã zera. No Casa sobem para 40, no Casa Plus para 80, no Empresa para 120, no Completo não tem teto.`;
   }
 
   async function answer(raw: string) {
@@ -375,8 +375,8 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     if (tool) {
       if (tool.id !== "analise" && !workspaceToolsPaid(plan, company)) {
         return company
-          ? "Giro, DRE e preço entram no Business (R$ 69,90). Análise do porte, planilha e o mês de agora já vêm no grátis."
-          : "Corte, 50-30-20 e reserva entram no Pro (R$ 27,90). No grátis eu só leio a planilha e o mês de agora.";
+          ? "Giro, DRE e preço entram no plano Empresa (R$ 305). Análise do porte, planilha e o mês de agora já vêm no Experimentar."
+          : "Simuladores entram no Casa Plus (R$ 200). No Experimentar eu só leio a planilha e o mês de agora.";
       }
       if (tool.id === "analise") {
         setShowSheet(true);
@@ -845,7 +845,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
               />
               {!paid && !imported ? (
                 <p className="text-sm text-muted px-1 pt-2">
-                  No grátis eu mostro este mês. No Pro (R$ 27,90) o chat prevê os próximos meses e libera as contas da pessoa. Business (R$ 69,90) é tesouraria.{" "}
+                  No Experimentar eu mostro este mês. No Casa (R$ 107) o chat prevê o ano e avalia o cartão todo dia. Empresa (R$ 305) é tesouraria.{" "}
                   <Link href="/app/planos" className="underline">
                     Ver planos
                   </Link>

@@ -2,11 +2,8 @@ import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
   BookOpen,
-  Building2,
-  CalendarDays,
   CreditCard,
   LayoutDashboard,
-  LineChart,
   ListChecks,
   MessageCircle,
   PiggyBank,
@@ -18,7 +15,6 @@ import {
   Upload,
   Users,
   Wallet,
-  Wrench,
 } from "lucide-react";
 
 export type WorkspaceKind = "PERSONAL" | "BUSINESS";
@@ -65,8 +61,6 @@ export function navFor(type: WorkspaceKind): NavGroup[] {
           { href: "/app/lancamentos", label: "Lançamentos", icon: Receipt },
           { href: "/app/titulos", label: "A pagar e receber", icon: ListChecks },
           { href: "/app/contas", label: "Contas", icon: Wallet },
-          { href: "/app/agenda", label: "Agenda", icon: CalendarDays },
-          { href: "/app/orcamento", label: "Orçamento", icon: PiggyBank },
         ],
       },
       {
@@ -74,15 +68,12 @@ export function navFor(type: WorkspaceKind): NavGroup[] {
         items: [
           { href: "/app/dre", label: "DRE", icon: Scale },
           { href: "/app/fluxo", label: "Fluxo", icon: ArrowLeftRight },
-          { href: "/app/investimentos", label: "Investimentos", icon: LineChart },
-          { href: "/app/ferramentas", label: "Ferramentas", icon: Wrench },
           { href: "/app/conciliacao", label: "Conciliação", icon: BookOpen },
         ],
       },
       {
         label: "Empresa",
         items: [
-          { href: "/app/centros", label: "Centros", icon: Building2 },
           { href: "/app/importar", label: "Importar", icon: Upload },
           { href: "/app/equipe", label: "Equipe", icon: Users },
           { href: "/app/auditoria", label: "Auditoria", icon: Shield },

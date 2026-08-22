@@ -13,7 +13,7 @@ export function AuthFrame({
     <div className="land min-h-screen grid place-items-center px-4">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
-          <BrandLogo tone="light" />
+          <BrandLogo tone="dark" />
         </div>
         <div className="card p-7">
           <h1 className="text-2xl font-semibold">{title}</h1>

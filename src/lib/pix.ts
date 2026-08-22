@@ -75,3 +75,9 @@ export function whatsappLink(text?: string) {
   const base = `https://wa.me/${PIX_WHATSAPP}`;
   return text ? `${base}?text=${encodeURIComponent(text)}` : base;
 }
+
+export function whatsappCardPay(planName: string, price: string) {
+  return whatsappLink(
+    `Olá! Quero assinar o plano ${planName} (${price}/mês) no cartão de crédito, com renovação automática. Pode mandar a cobrança para cair na conta da CodeCraft?`,
+  );
+}

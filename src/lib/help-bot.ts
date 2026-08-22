@@ -4,11 +4,11 @@ export function helpReply(message: string) {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 
-  if (/(senha|codigo do banco|token|cvv|cartao)/.test(text)) {
+  if (/(senha|codigo do banco|token|cvv|cvc|numero do cartao)/.test(text)) {
     return {
       auto: true,
       human: false,
-      body: "Por segurança eu não peço senha, código do banco nem dado de cartão. A CodeCraft também não pede isso no chat.",
+      body: "Por segurança eu não peço senha, código do banco nem o número do cartão. A assinatura no cartão é no Mercado Pago. A CodeCraft também não pede isso no chat.",
     };
   }
   if (/(transfer|pix para mim|me manda|chave de outro)/.test(text)) {
@@ -29,7 +29,7 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "Grátis, Pro R$ 27,90, Business R$ 69,90 e Contador a combinar. Pessoa e empresa no mesmo login, espaços separados. Só no PIX 31999758385.",
+      body: "Experimentar grátis. Casa R$ 107, Casa Plus R$ 200, Empresa R$ 305, Completo R$ 400 — por mês, renovação automática no cartão ou no PIX 31999758385. Pessoa e empresa no mesmo login, espaços separados.",
     };
   }
   if (/(planilha|excel|import|orcamento)/.test(text)) {
@@ -43,7 +43,7 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "Ferramentas testa o número. No grátis o chat lê a planilha e o mês de agora. Pro (R$ 27,90) libera 50-30-20, corte e dívida. Business (R$ 69,90) libera giro, DRE e títulos.",
+      body: "A casa é: o que sobra, este mês, cartões e a planilha. Casa Plus (R$ 200) libera exportar e simuladores. Empresa (R$ 305) libera DRE e títulos. Completo (R$ 400) fecha o mês.",
     };
   }
   if (/(agenda|recorrente|aluguel)/.test(text)) {
@@ -78,7 +78,7 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "Empresa: autônomo, MEI, pequena ou grande. Análise no chat grátis. DRE, títulos e equipe no Business (R$ 69,90). Conciliação no plano Contador. Pessoa fica no outro espaço.",
+      body: "Empresa: autônomo, MEI, pequena ou grande. DRE, títulos e equipe no plano Empresa (R$ 305). Conciliação e fechar mês no Completo (R$ 400). Pessoa fica no outro espaço.",
     };
   }
   if (/(ia|inteligencia)/.test(text)) {

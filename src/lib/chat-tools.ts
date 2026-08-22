@@ -91,7 +91,7 @@ export function runChatTool(id: string, workspaceId: string, company: boolean) {
     return `DRE do mês: receita ${brl(dre.income)}, despesa ${brl(dre.expense)}, resultado ${brl(dre.net)} (${dre.margin}%).`;
   }
   if (id === "fechar") {
-    return "Fechar o mês trava lançamento. Isso é do plano Contador. Abre DRE e use Fechar mês quando a conta bater com o banco.";
+    return "Fechar o mês trava lançamento. Isso é do plano Completo (R$ 400). Abre DRE e use Fechar mês quando a conta bater com o banco.";
   }
   return "Essa ferramenta não está neste espaço.";
 }

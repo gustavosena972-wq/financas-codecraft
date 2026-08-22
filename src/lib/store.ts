@@ -1,6 +1,7 @@
 import type { Account, AuditLog, Bill, Budget, Category, CostCenter, Goal, Holding, Party, Recurring, TeamSeat, Transaction, User, Workspace, WorkspaceExtras } from "./types";
 import { newId, nowIso } from "./types";
 import { getSupabase } from "./supabase";
+import { loadLocalBilling, parseBilling, saveLocalBilling, type Billing } from "./billing";
 
 const WS_KEY = "ccs-financas-ws";
 
@@ -13,6 +14,7 @@ type Snapshot = {
   budgets: Budget[];
   extras: Record<string, WorkspaceExtras>;
   auditLogs: AuditLog[];
+  billing: Billing | null;
 };
 
 let snapshot: Snapshot | null = null;
@@ -48,6 +50,7 @@ function storeFingerprint(data: Snapshot | null) {
     tx: data.transactions.map((t) => t.id),
     bud: data.budgets.map((b) => [b.id, b.amount]),
     extras: data.extras,
+    billing: data.billing,
     log: data.auditLogs[0]?.id ?? "",
   });
 }
@@ -300,6 +303,7 @@ async function loadSnapshot() {
     budgets,
     extras: parseExtras(authUser.user_metadata?.extras),
     auditLogs: (logs ?? []).map((row) => mapLog(row as Record<string, unknown>)),
+    billing: parseBilling(authUser.user_metadata?.billing) ?? loadLocalBilling(authUser.id),
   };
   return snapshot;
 }
@@ -639,11 +643,22 @@ export async function pushAudit(userId: string, action: string, entity: string, 
   bumpStore();
 }
 
-export async function setUserPlan(plan: User["plan"]) {
+export function currentBilling(): Billing | null {
+  return snapshot?.billing ?? (snapshot?.user.id ? loadLocalBilling(snapshot.user.id) : null);
+}
+
+export async function setUserPlan(plan: User["plan"], billing?: Billing | null) {
   const supabase = getSupabase();
-  const { error } = await supabase.auth.updateUser({ data: { plan, extras: snapshot?.extras ?? {} } });
+  const nextBilling = billing === undefined ? snapshot?.billing ?? null : billing;
+  const { error } = await supabase.auth.updateUser({
+    data: { plan, extras: snapshot?.extras ?? {}, billing: nextBilling },
+  });
   if (error) throw error;
-  if (snapshot) snapshot.user.plan = plan;
+  if (snapshot) {
+    snapshot.user.plan = plan;
+    snapshot.billing = nextBilling;
+    saveLocalBilling(snapshot.user.id, nextBilling);
+  }
   bumpStore();
 }
 

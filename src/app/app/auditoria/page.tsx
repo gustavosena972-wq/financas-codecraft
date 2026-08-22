@@ -31,7 +31,7 @@ export default function AuditoriaPage() {
         title="Auditoria"
         subtitle="Quem lançou, quem baixou, quem mudou. Trilha para o dono e para o contador."
       />
-      <PlanGate allowed={ok} title="Auditoria entra no plano Contador" body="A trilha de quem fez o quê fica no plano Contador (white-label)." />
+      <PlanGate allowed={ok} title="Auditoria entra no Completo" body="A trilha de quem fez o quê fica no plano Completo (R$ 400)." />
       {ok ? (
         <div className="card overflow-x-auto">
           <table className="table">

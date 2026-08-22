@@ -309,11 +309,11 @@ function Gate({ allowed, company, children }: { allowed: boolean; company?: bool
       <div className="pointer-events-none select-none opacity-40">{children}</div>
       <div className="absolute inset-0 grid place-items-center p-4">
         <div className="card p-5 max-w-md text-center space-y-3">
-          <p className="font-semibold">{company ? "No plano Business" : "No plano Pro"}</p>
+          <p className="font-semibold">{company ? "No plano Empresa" : "No Casa Plus"}</p>
           <p className="text-sm text-muted">
             {company
-              ? "Giro, preço e DRE entram no Business (R$ 69,90) ou no Contador."
-              : "50-30-20, corte, moradia, reserva e dívida entram no Pro (R$ 27,90)."}
+              ? "Giro, preço e DRE entram no plano Empresa (R$ 305) ou no Completo (R$ 400)."
+              : "Simuladores entram no Casa Plus (R$ 200). A casa em si é o que sobra e o cartão."}
           </p>
           <Link href="/app/planos" className="btn btn-primary">
             Ver planos

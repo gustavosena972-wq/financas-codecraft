@@ -18,7 +18,7 @@ export function PixPay({
   const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => {
-    void QRCode.toDataURL(payload, { width: 220, margin: 1, color: { dark: "#12202b", light: "#ffffff" } }).then(setQr);
+    void QRCode.toDataURL(payload, { width: 220, margin: 1, color: { dark: "#12172B", light: "#ffffff" } }).then(setQr);
   }, [payload]);
 
   async function copy(text: string, which: string) {
@@ -27,27 +27,28 @@ export function PixPay({
     setTimeout(() => setCopied(null), 2500);
   }
 
+  const value = amount ? `R$ ${amount.toFixed(2).replace(".", ",")}` : "";
+
   return (
-    <div className="card p-6 grid md:grid-cols-[220px_1fr] gap-6 items-start">
+    <div className="ccs-pix">
       {qr ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={qr} alt="QR Code PIX" className="rounded-xl border border-line bg-white w-[220px] h-[220px]" />
+        <img src={qr} alt="QR Code PIX" className="rounded-lg border border-line bg-white w-[160px] h-[160px]" />
       ) : (
-        <div className="w-[220px] h-[220px] rounded-xl border border-line bg-white" />
+        <div className="w-[160px] h-[160px] rounded-lg border border-line bg-white" />
       )}
-      <div className="space-y-3">
+      <div className="space-y-3 min-w-0">
         <div>
-          <div className="text-xs uppercase tracking-wide text-muted font-semibold">Pagar com PIX</div>
-          <h2 className="font-semibold mt-1">{label ?? "O dinheiro cai na conta da CodeCraft"}</h2>
-          {amount ? <p className="text-2xl font-semibold mt-2">R$ {amount.toFixed(2).replace(".", ",")}</p> : null}
+          <div className="page-kicker">Pagar com PIX</div>
+          <h2 className="font-bold mt-1">{label ?? "O dinheiro cai na conta da CodeCraft"}</h2>
+          {value ? <p className="text-2xl font-extrabold font-mono mt-2">{value}</p> : null}
         </div>
         <p className="text-sm text-muted">
-          Chave PIX (celular): <strong className="text-ink">{PIX_KEY}</strong>
+          Valor: <strong className="text-ink">{value || "a combinar"}</strong> · Chave: <strong className="text-ink">{PIX_KEY}</strong>
         </p>
-        <label className="field">
-          <span>PIX copia e cola</span>
-          <textarea readOnly rows={3} value={payload} className="font-mono text-[11px] leading-snug" onFocus={(e) => e.currentTarget.select()} />
-        </label>
+        <div className="ccs-pix-key" onClick={(e) => (e.currentTarget.querySelector("textarea") as HTMLTextAreaElement | null)?.select()}>
+          <textarea readOnly rows={3} value={payload} className="w-full bg-transparent border-0 p-0 font-mono text-[11px] leading-snug resize-none" onFocus={(e) => e.currentTarget.select()} />
+        </div>
         <div className="flex flex-wrap gap-2">
           <button className="btn btn-primary" type="button" onClick={() => void copy(PIX_KEY, "chave")}>
             {copied === "chave" ? "Chave copiada" : "Copiar chave"}
@@ -55,13 +56,13 @@ export function PixPay({
           <button className="btn btn-ink" type="button" onClick={() => void copy(payload, "pix")}>
             {copied === "pix" ? "PIX copiado" : "Copiar copia e cola"}
           </button>
-          <a className="btn btn-ghost" href={whatsappLink(`Olá! Paguei o PIX ${label ?? ""} no valor de R$ ${amount?.toFixed(2) ?? ""}. Chave ${PIX_KEY}.`)}>
+          <a className="btn btn-ghost" href={whatsappLink(`Olá! Paguei o PIX ${label ?? ""} no valor de ${value}. Chave ${PIX_KEY}.`)}>
             Enviar comprovante
           </a>
         </div>
-        {copied === "erro" ? <p className="text-sm text-negative">Não copiou sozinho. Selecione o código acima e copie no celular.</p> : null}
+        {copied === "erro" ? <p className="text-sm text-negative">Não copiou sozinho. Selecione o código e copie no celular.</p> : null}
         <p className="text-xs text-muted">
-          Abra o app do banco, pague o QR ou cole o código. A chave é {PIX_KEY}. Não pedimos senha e o chat não libera pagamento sozinho.
+          Abra o banco, pague o QR ou cole o código. É o mesmo PIX da CodeCraft. O valor cai na hora na conta.
         </p>
       </div>
     </div>

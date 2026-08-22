@@ -44,7 +44,7 @@ export default function CentrosPage() {
         title="Centros e parceiros"
         subtitle="Cliente, projeto ou área. Mostra onde o gasto pesa para você não misturar tudo no mesmo bolo."
       />
-      <PlanGate allowed={ops} title="Centros entram no Business" body="Centro de custo e parceiro são da empresa. Business (R$ 69,90)." />
+      <PlanGate allowed={ops} title="Centros entram no plano Empresa" body="Centro de custo e parceiro são da empresa. Plano Empresa (R$ 305)." />
       {ops ? (
         <div className="grid lg:grid-cols-2 gap-6">
           <div className="card p-6 space-y-4">

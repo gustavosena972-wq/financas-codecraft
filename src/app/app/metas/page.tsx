@@ -43,7 +43,7 @@ export default function GoalsPage() {
           {Number.isFinite(limit) ? (
             <>
               {" "}
-              <Link href="/app/planos">Pro (R$ 27,90)</Link> tira o teto.
+              <Link href="/app/planos">Casa (R$ 107)</Link> tira o teto.
             </>
           ) : null}
         </p>
