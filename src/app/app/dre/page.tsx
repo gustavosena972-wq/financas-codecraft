@@ -42,7 +42,7 @@ export default function DrePage() {
       <PageHeader
         kicker="Análise"
         title="DRE"
-        subtitle={`Demonstrativo de resultado de ${ws}. Receitas, despesas e margem do período.`}
+        subtitle="Receita menos despesa do período. Diz se sobrou ou faltou, e a margem. Use no fechamento do mês."
         actions={
           <>
             <button className="btn btn-ghost" onClick={() => setMonth(shiftMonth(month, -1))}>Mês anterior</button>
@@ -64,14 +64,14 @@ export default function DrePage() {
       <PlanGate
         allowed={ops}
         title="DRE entra no plano Empresa"
-        body="Só no espaço Empresa, no Empresa 100 (R$ 100) ou 200 (R$ 200)."
+        body="Só no espaço Empresa, no Business (R$ 69,90)."
       />
       {ops ? (
         <div className="card overflow-hidden print-sheet">
           <div className="px-6 py-5 border-b border-line flex justify-between">
             <div>
               <div className="text-xs uppercase tracking-widest text-muted">Finanças CodeCraft</div>
-              <h2 className="text-lg font-semibold capitalize mt-1">{formatMonthLabel(month)}</h2>
+              <h2 className="text-lg font-semibold capitalize mt-1">{ws ? `${ws} · ` : ""}{formatMonthLabel(month)}</h2>
             </div>
             <div className="text-right">
               <div className="text-xs text-muted">Resultado</div>

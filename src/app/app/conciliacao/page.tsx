@@ -5,7 +5,7 @@ import { listReconciledIds, requireSession } from "@/lib/store";
 import { useLive } from "@/lib/live";
 import { accountBalances, monthSummary } from "@/lib/queries";
 import { brl, formatMonthLabel, monthKey, parseMoneyToCents, shiftMonth } from "@/lib/money";
-import { planHasOps } from "@/lib/plans";
+import { planHasClose } from "@/lib/plans";
 import { toggleReconciledAction } from "@/app/actions/enterprise";
 import { PageHeader, PlanGate } from "@/components/page-header";
 import { go } from "@/lib/types";
@@ -27,7 +27,7 @@ export default function ConciliacaoPage() {
         go("/login");
         return;
       }
-      setOps(planHasOps(session.user.plan));
+      setOps(planHasClose(session.user.plan));
       const bals = accountBalances(session.workspace.id);
       setAccounts(bals);
       const current = accountId || bals[0]?.id || "";
@@ -47,7 +47,7 @@ export default function ConciliacaoPage() {
       <PageHeader
         kicker="Análise"
         title="Conciliação"
-        subtitle="Marque o que já bateu com o extrato do banco. A diferença entre o livro e o extrato aparece na hora."
+        subtitle="Bate o livro do app com o extrato do banco. Marque o que já conferiu."
         actions={
           <>
             <button className="btn btn-ghost" onClick={() => setMonth(shiftMonth(month, -1))}>Mês anterior</button>
@@ -55,7 +55,7 @@ export default function ConciliacaoPage() {
           </>
         }
       />
-      <PlanGate allowed={ops} title="Conciliação entra no Empresa 200" body="Bater livro com banco é da empresa. Empresa 200." />
+      <PlanGate allowed={ops} title="Conciliação entra no plano Contador" body="Bater livro com banco entra no plano Contador. Business já tem DRE, títulos e equipe." />
       {ops ? (
         <>
           <div className="grid sm:grid-cols-3 gap-3">

@@ -50,8 +50,8 @@ export default function BudgetPage() {
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold">Orçamento mensal</h1>
-          <p className="text-sm text-muted capitalize">{formatMonthLabel(month)} — previsto × realizado</p>
+          <h1 className="text-2xl font-semibold">Teto do mês</h1>
+          <p className="text-sm text-muted max-w-2xl capitalize">Você põe um limite por categoria. O app avisa se passou. {formatMonthLabel(month)}.</p>
         </div>
         <div className="flex gap-2">
           <Link className="btn btn-ghost" href={`/app/orcamento?month=${shiftMonth(month, -1)}`}>Mês anterior</Link>

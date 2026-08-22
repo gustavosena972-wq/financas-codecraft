@@ -35,12 +35,12 @@ export default function EquipePage() {
       <PageHeader
         kicker="Empresa"
         title="Equipe"
-        subtitle="Quem pode ver e lançar nesta operação. Login compartilhado extra combina no Enterprise com a CodeCraft."
+        subtitle="Dono, financeiro, contador ou quem só lança. Cada um vê o que a função deixa."
       />
       <PlanGate
         allowed={ok}
-        title="Equipe entra no plano"
-        body="No plano Empresa cabem 8 pessoas. No Completo, sem teto."
+        title="Equipe entra no Business"
+        body="No Business cabem 8 pessoas. No Contador, sem teto."
       />
       {ok ? (
         <>

@@ -222,8 +222,8 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     if (tool) {
       if (tool.id !== "analise" && !workspaceToolsPaid(plan, company)) {
         return company
-          ? "Giro, DRE e preço entram no Empresa 100 ou 200. Análise do porte, planilha e o mês de agora já vêm no grátis."
-          : "Corte, 50-30-20 e reserva entram no Pessoa 100 ou 200. No grátis eu só leio a planilha e o mês de agora.";
+          ? "Giro, DRE e preço entram no Business (R$ 69,90). Análise do porte, planilha e o mês de agora já vêm no grátis."
+          : "Corte, 50-30-20 e reserva entram no Pro (R$ 27,90). No grátis eu só leio a planilha e o mês de agora.";
       }
       if (tool.id === "analise") {
         setShowSheet(true);
@@ -319,6 +319,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     if (fileRef.current) fileRef.current.value = "";
   }
 
+  const toolHint = Object.fromEntries(toolsForChat(plan, company).map((item) => [item.label, item.does]));
   const chips = company
     ? [
         "Faz a análise da empresa",
@@ -462,7 +463,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
               />
               {!paid && !imported ? (
                 <p className="text-sm text-muted px-1 pt-2">
-                  No grátis eu mostro este mês. Nos planos de R$ 100 e R$ 200 o chat prevê os próximos meses e libera as ferramentas.{" "}
+                  No grátis eu mostro este mês. No Pro (R$ 27,90) o chat prevê os próximos meses e libera as contas da pessoa. Business (R$ 69,90) é tesouraria.{" "}
                   <Link href="/app/planos" className="underline">
                     Ver planos
                   </Link>
@@ -495,7 +496,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       {!compact ? (
         <div className="acct-chips">
           {chips.map((item) => (
-            <button key={item} type="button" className="acct-chip" onClick={() => void send(item)} disabled={busy}>
+            <button key={item} type="button" className="acct-chip" title={toolHint[item]} onClick={() => void send(item)} disabled={busy}>
               {item}
             </button>
           ))}

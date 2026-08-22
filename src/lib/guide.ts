@@ -36,7 +36,7 @@ export const GUIDE: GuideItem[] = [
   { href: "/app/agenda", title: "Contas do mês", does: "O que se repete, tipo aluguel ou internet.", tip: "No mês, lance o recorrente. Não sai sozinho do banco." },
   { href: "/app/orcamento", title: "Teto do mês", does: "Você diz o limite. O app mostra se passou.", tip: "Ponha valor só no que importa." },
   { href: "/app/metas", title: "Metas", does: "Um alvo de caixa. O progresso usa o saldo de agora.", tip: "Uma meta já basta no começo.", audience: "personal" },
-  { href: "/app/ferramentas", title: "Ferramentas", does: "Reserva, 50-30-20, corte, dívida, moradia. Empresa: giro e preço.", tip: "No grátis o chat lê a planilha. O resto entra no R$ 100 ou R$ 200." },
+  { href: "/app/ferramentas", title: "Ferramentas", does: "Pessoa: reserva, 50-30-20, corte, dívida, moradia. Empresa: giro e preço. Cada uma tem uma linha dizendo o que faz.", tip: "No grátis o chat lê a planilha. Pro R$ 27,90 e Business R$ 69,90 liberam o resto." },
   { href: "/app/educacao", title: "Educação", does: "Banco de reserva, cartão, DRE, MEI e o que o chat também usa.", tip: "Aperte Perguntar no chat para cruzar com os seus números." },
   { href: "/app/importar", title: "Mandar planilha", does: "Manda o Excel que você já tem. O app lê e joga nos gastos.", tip: "Depois volte ao chat." },
   { href: "/app/titulos", title: "Títulos", does: "O que a empresa ainda vai pagar ou receber.", tip: "Quando pagar, use Baixar. O caixa atualiza.", audience: "company" },
@@ -46,7 +46,7 @@ export const GUIDE: GuideItem[] = [
   { href: "/app/centros", title: "Centros e parceiros", does: "Cliente, fornecedor e onde o gasto pesa.", tip: "Cadastre o nome. O título fica claro.", audience: "company" },
   { href: "/app/auditoria", title: "Auditoria", does: "Quem fez o quê neste espaço da empresa.", tip: "Business para cima.", audience: "company" },
   { href: "/app/equipe", title: "Equipe", does: "Quem pode ver ou lançar na empresa.", tip: "No começo, só você já resolve.", audience: "company" },
-  { href: "/app/planos", title: "Planos", does: "Pessoa: grátis, R$ 100, R$ 200. Empresa: grátis, R$ 100, R$ 200.", tip: "Pague só no PIX 31999758385." },
+  { href: "/app/planos", title: "Planos", does: "Grátis, Pro R$ 27,90, Business R$ 69,90 e Contador a combinar.", tip: "Pague só no PIX 31999758385. A IA não move dinheiro." },
   { href: "/app/configuracoes", title: "Configurações", does: "Seu login e os espaços Pessoal e Empresa.", tip: "Troque no topo. Os lançamentos não se misturam." },
   { href: "/app/ajuda", title: "Ajuda", does: "Chat para dúvida simples. Dinheiro e senha vão para uma pessoa.", tip: "Ninguém da CodeCraft pede senha." },
   { href: "/app/comecar", title: "Como usar", does: "Guia curto e um vídeo de um minuto.", tip: "Aperte play. A voz explica os três passos." },
@@ -64,7 +64,7 @@ export const VIDEO_SCENES = [
   {
     image: "/guide/scene-1.png",
     title: "O app inteiro",
-    voice: "Finanças CodeCraft. Pessoa de um lado, empresa do outro. Autônomo, MEI, pequena ou grande. Vamos testar o projeto e os seis planos.",
+    voice: "Finanças CodeCraft. Pessoa de um lado, empresa do outro. Autônomo, MEI, pequena ou grande. Vamos testar o projeto e os planos.",
   },
   {
     image: "/guide/scene-2.png",
@@ -79,7 +79,7 @@ export const VIDEO_SCENES = [
   {
     image: "/guide/scene-4.png",
     title: "Planos",
-    voice: "Seis pacotes. Pessoa grátis, R$ 100 e R$ 200. Empresa grátis, R$ 100 e R$ 200. Você assina, abre o QR, paga no PIX da CodeCraft. O chat não pede senha.",
+    voice: "Quatro planos. Grátis, Pro 27 reais e 90, Business 69 reais e 90, Contador a combinar. Você assina, abre o QR, paga no PIX da CodeCraft. O chat não pede senha.",
   },
 ];
 

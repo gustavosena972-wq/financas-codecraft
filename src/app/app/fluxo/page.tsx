@@ -32,7 +32,7 @@ export default function CashflowPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Fluxo de caixa</h1>
-        <p className="text-sm text-muted">O realizado deste mês e o que ainda entra ou sai pelas contas recorrentes.</p>
+        <p className="text-sm text-muted max-w-2xl">Saldo de agora e o que ainda entra ou sai. Olhe antes de um pagamento grande. Título a receber não é caixa até cair.</p>
       </div>
       <div className="grid sm:grid-cols-3 gap-4">
         <div className="card p-5">

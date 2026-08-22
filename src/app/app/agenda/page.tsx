@@ -43,8 +43,8 @@ export default function AgendaPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Agenda</h1>
-        <p className="text-sm text-muted capitalize">
-          {formatMonthLabel(month)} — o que ainda vence, o que atrasou e as contas que se repetem.
+        <p className="text-sm text-muted max-w-2xl">
+          Aluguel, internet, DAS. Você cadastra uma vez. No mês, lança — o banco não sai sozinho. {formatMonthLabel(month)}.
         </p>
       </div>
       <div className="card overflow-x-auto">

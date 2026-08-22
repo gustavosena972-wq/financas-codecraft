@@ -38,12 +38,12 @@ export default function GoalsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Metas</h1>
-        <p className="text-sm text-muted">
-          Um alvo de caixa. O progresso usa o saldo atual das contas. No Free cabe {Number.isFinite(limit) ? limit : "várias"}.
+        <p className="text-sm text-muted max-w-2xl">
+          Um alvo de caixa. O progresso usa o saldo de agora. No Grátis cabe {Number.isFinite(limit) ? limit : "várias"}.
           {Number.isFinite(limit) ? (
             <>
               {" "}
-              <Link href="/app/planos">Atualize o plano</Link> para ter mais.
+              <Link href="/app/planos">Pro (R$ 27,90)</Link> tira o teto.
             </>
           ) : null}
         </p>

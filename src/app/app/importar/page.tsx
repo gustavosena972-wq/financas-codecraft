@@ -9,8 +9,7 @@ export default function ImportPage() {
       <div>
         <h1 className="text-2xl font-semibold">Mandar planilha</h1>
         <p className="text-sm text-muted max-w-2xl">
-          Manda o Excel ou CSV que você já tem. O app lê, organiza e joga nos seus gastos. Sem modelo para baixar.
-          Se preferir, manda pelo clipe no chat ou lança na mão.
+          Manda OFX, CSV ou Excel. O app lê, sugere categoria e só lança se você aceitar. Sem modelo para baixar.
         </p>
       </div>
       <OrganizeWizard />

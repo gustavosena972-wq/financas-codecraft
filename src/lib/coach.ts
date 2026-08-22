@@ -113,7 +113,7 @@ export function buildMoneySheet(
 ) {
   const company = Boolean(opts?.company);
   const plan = opts?.plan ?? (paid ? (company ? "BUSINESS" : "PRO") : "FREE");
-  const full = plan === "PLUS" || plan === "ENTERPRISE";
+  const full = plan === "PLUS" || plan === "ENTERPRISE" || plan === "BUSINESS";
   const now = monthKey();
   const today = new Date().toISOString().slice(0, 10);
   const history = [shiftMonth(now, -2), shiftMonth(now, -1), now].map((month) => ({

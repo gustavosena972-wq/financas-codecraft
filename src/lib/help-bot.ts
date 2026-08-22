@@ -29,7 +29,7 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "Pessoa: grátis, R$ 100 e R$ 200. Empresa: grátis, R$ 100 e R$ 200. O chat é o mesmo; o que muda são as ferramentas. Só no PIX 31999758385.",
+      body: "Grátis, Pro R$ 27,90, Business R$ 69,90 e Contador a combinar. Pessoa e empresa no mesmo login, espaços separados. Só no PIX 31999758385.",
     };
   }
   if (/(planilha|excel|import|orcamento)/.test(text)) {
@@ -43,7 +43,7 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "Ferramentas testa o número no chat pago. No grátis o chat lê a planilha e o mês de agora.",
+      body: "Ferramentas testa o número. No grátis o chat lê a planilha e o mês de agora. Pro (R$ 27,90) libera 50-30-20, corte e dívida. Business (R$ 69,90) libera giro, DRE e títulos.",
     };
   }
   if (/(agenda|recorrente|aluguel)/.test(text)) {
@@ -78,7 +78,7 @@ export function helpReply(message: string) {
     return {
       auto: true,
       human: false,
-      body: "Empresa: autônomo, MEI, pequena ou grande. Análise no chat grátis. DRE, títulos e conciliação no Empresa 100 ou 200. Pessoa fica no outro espaço.",
+      body: "Empresa: autônomo, MEI, pequena ou grande. Análise no chat grátis. DRE, títulos e equipe no Business (R$ 69,90). Conciliação no plano Contador. Pessoa fica no outro espaço.",
     };
   }
   if (/(ia|inteligencia)/.test(text)) {

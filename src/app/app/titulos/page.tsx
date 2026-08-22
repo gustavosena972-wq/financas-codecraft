@@ -49,9 +49,9 @@ export default function TitulosPage() {
       <PageHeader
         kicker="Operação"
         title="Títulos"
-        subtitle="Contas a pagar e a receber. Baixa gera lançamento no caixa. Isso é o que a tesouraria usa todo dia."
+        subtitle="Título do cliente e do fornecedor. Quando pagar, use Baixar. Título a receber não é caixa até cair."
       />
-      <PlanGate allowed={ops} title="Títulos entram no Empresa 100" body="Contas a pagar e a receber ficam só na empresa. Empresa 100 ou 200." />
+      <PlanGate allowed={ops} title="Títulos entram no Business" body="Contas a pagar e a receber ficam no Business (R$ 69,90)." />
       {ops ? (
         <>
           <section className="grid sm:grid-cols-4 gap-3">

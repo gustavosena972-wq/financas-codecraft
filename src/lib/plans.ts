@@ -1,5 +1,5 @@
 export type PlanId = "FREE" | "PRO" | "PLUS" | "BUSINESS" | "ENTERPRISE";
-export type PlanAudience = "person" | "company";
+export type PlanAudience = "person" | "company" | "all";
 
 export type Plan = {
   id: PlanId;
@@ -24,114 +24,80 @@ export const PLANS: Plan[] = [
   {
     id: "FREE",
     name: "Grátis",
-    audience: "person",
+    audience: "all",
     price: "R$ 0",
     priceValue: 0,
     period: "para sempre",
-    forWho: "Chat, planilha e o mês de agora. Nada entra no controle sem você aceitar.",
+    forWho: "Entrar e usar. Um perfil, lançamento sem limite, chat e o mês de agora. Nada entra sem você aceitar.",
     includes: [
-      "Chat para estruturar a planilha",
-      "Abre o Excel do computador e sugere",
+      "1 perfil: pessoa ou empresa",
+      "Lançamentos ilimitados",
+      "Chat e planilha do mês",
+      "Análise do porte no espaço empresa",
       "Só muda se você gostar",
-      "Se não tiver planilha, ele monta uma",
-      "Previsão deste mês",
     ],
     news: [],
     cta: "Começar grátis",
   },
   {
     id: "PRO",
-    name: "Pessoa 100",
-    audience: "person",
-    price: "R$ 100",
-    priceValue: 100,
+    name: "Pro",
+    audience: "all",
+    price: "R$ 27,90",
+    priceValue: 27.9,
     period: "por mês",
-    forWho: "O chat ganha as ferramentas da pessoa: corte, 50-30-20, moradia e dívida.",
+    forWho: "Pessoa avançada e autônomo. Dois perfis juntos, exportar, foto do comprovante e chat com as contas da vida.",
+    badge: "Pessoa + 2 perfis",
     includes: [
       "Tudo do Grátis",
-      "Planilha completa: 50-30-20, reserva, contas e fórmulas",
-      "Previsão dos próximos 6 meses",
-      "50-30-20, corte e teto de moradia",
-      "Simulador de dívida",
-      "Metas e contas do mês sem limite",
+      "2 perfis ao mesmo tempo: pessoa e empresa",
+      "Exportar planilha",
+      "Foto do comprovante (OCR)",
+      "Chat com 50-30-20, corte, moradia, reserva e dívida",
+      "Metas, teto do mês e importar extrato",
     ],
     news: [],
-    cta: "Assinar Pessoa 100",
+    cta: "Assinar Pro",
     highlight: true,
-  },
-  {
-    id: "PLUS",
-    name: "Pessoa 200",
-    audience: "person",
-    price: "R$ 200",
-    priceValue: 200,
-    period: "por mês",
-    forWho: "O pacote cheio da pessoa. Ano inteiro no chat e IA na categoria.",
-    includes: [
-      "Tudo do Pessoa 100",
-      "Planilha cheia: metas e previsão do ano com fórmula",
-      "Previsão do ano todo",
-      "IA sugere categoria",
-      "Reserva e o que cortar com mais detalhe",
-    ],
-    news: [],
-    cta: "Assinar Pessoa 200",
-  },
-  {
-    id: "FREE",
-    name: "Grátis",
-    audience: "company",
-    price: "R$ 0",
-    priceValue: 0,
-    period: "para sempre",
-    forWho: "Chat do caixa. Autônomo, MEI ou empresa. Planilha só entra se você aceitar.",
-    includes: [
-      "Análise do porte: autônomo, MEI, pequena ou grande",
-      "Abre o arquivo e sugere, sem mudar sozinho",
-      "Monta planilha e orçamento mês a mês",
-      "Gráfico do dinheiro livre no próximo mês",
-    ],
-    news: [],
-    cta: "Começar grátis",
   },
   {
     id: "BUSINESS",
-    name: "Empresa 100",
+    name: "Business",
     audience: "company",
-    price: "R$ 100",
-    priceValue: 100,
+    price: "R$ 69,90",
+    priceValue: 69.9,
     period: "por mês",
-    forWho: "Tesouraria no chat: giro, preço, títulos e DRE. Serve da PJ pequena para cima.",
+    forWho: "Empresa pequena. Tesouraria, DRE, títulos, centros, equipe e o arquivo que o contador pede.",
+    badge: "Empresa",
     includes: [
-      "Tudo do Grátis da empresa",
-      "Planilha de tesouraria: DRE, fluxo, títulos, giro e indicadores",
-      "Previsão dos próximos 6 meses",
-      "Giro: não gaste o que ainda não caiu",
-      "Precificar serviço com imposto e margem",
-      "Títulos e DRE no chat",
+      "Tudo do Pro",
+      "Vários usuários na empresa",
+      "Contas a pagar e a receber",
+      "Centros de custo",
+      "DRE, fluxo e giro",
+      "Relatório Excel/CSV para o contador",
     ],
     news: [],
-    cta: "Assinar Empresa 100",
-    highlight: true,
+    cta: "Assinar Business",
   },
   {
     id: "ENTERPRISE",
-    name: "Empresa 200",
+    name: "Contador",
     audience: "company",
-    price: "R$ 200",
-    priceValue: 200,
-    period: "por mês",
-    forWho: "O pacote cheio: fechamento, equipe, conciliação. Empresa grande de verdade.",
+    price: "A combinar",
+    priceValue: null,
+    period: "por cliente ativo",
+    forWho: "Escritório de contabilidade. White-label: seus clientes usam o app com a sua marca.",
+    badge: "B2B",
     includes: [
-      "Tudo do Empresa 100",
-      "Planilha cheia: fechamento, equipe, conciliação e ano",
-      "Previsão do ano todo",
-      "Fechamento de mês",
-      "Equipe e auditoria",
-      "Conciliação com o banco",
+      "Tudo do Business",
+      "Fechar mês e conciliação",
+      "Auditoria de quem fez o quê",
+      "Vários CNPJs no mesmo login",
+      "Combinar no WhatsApp da CodeCraft",
     ],
     news: [],
-    cta: "Assinar Empresa 200",
+    cta: "Falar no WhatsApp",
   },
 ];
 
@@ -139,12 +105,12 @@ export function displayPlans() {
   return PLANS;
 }
 
-export function plansFor(audience: PlanAudience) {
-  return PLANS.filter((p) => p.audience === audience);
+export function plansFor(_audience?: PlanAudience) {
+  return PLANS;
 }
 
 export function personPaid(plan: PlanId | string | null | undefined) {
-  return plan === "PRO" || plan === "PLUS";
+  return plan === "PRO" || plan === "PLUS" || plan === "BUSINESS" || plan === "ENTERPRISE";
 }
 
 export function companyPaid(plan: PlanId | string | null | undefined) {
@@ -156,11 +122,11 @@ export function workspaceToolsPaid(plan: PlanId | string | null | undefined, com
 }
 
 export function planHasSimulators(plan: PlanId | string | null | undefined) {
-  return personPaid(plan) || companyPaid(plan);
+  return personPaid(plan);
 }
 
 export function planHasAi(plan: PlanId | string | null | undefined) {
-  return plan === "PLUS" || plan === "ENTERPRISE" || plan === "PRO" || plan === "BUSINESS";
+  return personPaid(plan);
 }
 
 export function planHasOps(plan: PlanId | string | null | undefined) {
@@ -179,19 +145,14 @@ export function planIsPaid(plan: PlanId | string | null | undefined) {
   return personPaid(plan) || companyPaid(plan);
 }
 
-export function planForecastMonths(plan: PlanId | string | null | undefined, company: boolean) {
-  if (company) {
-    if (plan === "ENTERPRISE") return 11;
-    if (plan === "BUSINESS") return 6;
-    return 1;
-  }
-  if (plan === "PLUS") return 11;
-  if (plan === "PRO") return 6;
+export function planForecastMonths(plan: PlanId | string | null | undefined, _company: boolean) {
+  if (plan === "ENTERPRISE" || plan === "BUSINESS") return 11;
+  if (plan === "PRO" || plan === "PLUS") return 6;
   return 1;
 }
 
 export function recurringLimit(plan: PlanId | string | null | undefined) {
-  return personPaid(plan) || companyPaid(plan) ? Number.POSITIVE_INFINITY : FREE_RECURRING_LIMIT;
+  return personPaid(plan) ? Number.POSITIVE_INFINITY : FREE_RECURRING_LIMIT;
 }
 
 export function goalLimit(plan: PlanId | string | null | undefined) {
@@ -204,11 +165,7 @@ export function teamLimit(plan: PlanId | string | null | undefined) {
   return 0;
 }
 
-export function planById(id: string | null | undefined, audience?: PlanAudience): Plan {
-  if (audience) {
-    const match = PLANS.find((p) => p.id === id && p.audience === audience);
-    if (match) return match;
-    return PLANS.find((p) => p.id === "FREE" && p.audience === audience) ?? PLANS[0];
-  }
+export function planById(id: string | null | undefined, _audience?: PlanAudience): Plan {
+  if (id === "PLUS") return PLANS.find((p) => p.id === "PRO") ?? PLANS[0];
   return PLANS.find((p) => p.id === id) ?? PLANS[0];
 }

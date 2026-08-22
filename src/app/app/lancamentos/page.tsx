@@ -57,7 +57,7 @@ export default function TransactionsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Lançar na mão</h1>
-        <p className="text-sm text-muted">Uma linha por gasto. Também pode falar no chat ou mandar a planilha pelo clipe.</p>
+        <p className="text-sm text-muted max-w-2xl">Uma linha por movimento: salário, aluguel, mercado. Sem limite no grátis. O chat só lança se você aceitar.</p>
       </div>
       <div className="flex flex-wrap gap-2 items-end">
         <label className="field">

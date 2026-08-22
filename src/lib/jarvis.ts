@@ -57,7 +57,7 @@ export function jarvisCompanyReply(message: string, workspaceId: string, market?
   if (/(ideia|melhorar|futuro|inovar|cliente|prospec|quem precisa|achar|instagram)/.test(t)) {
     return {
       body:
-        "Isso é do Jarvis, no painel da CodeCraft — projeto, cliente e Instagram @code.invention. Aqui no Finanças eu cuido do caixa: DRE, título, planilha e o que entra ou sai.",
+        "Isso é do Jarvis, no painel da CodeCraft — projeto e cliente. Aqui no Finanças eu cuido do caixa: DRE, título, planilha e o que entra ou sai.",
     };
   }
 

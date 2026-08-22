@@ -29,9 +29,9 @@ export default function AuditoriaPage() {
       <PageHeader
         kicker="Empresa"
         title="Auditoria"
-        subtitle="Quem criou, baixou ou fechou o quê. Sem isso não dá para responder a sócio nem a contador."
+        subtitle="Quem lançou, quem baixou, quem mudou. Trilha para o dono e para o contador."
       />
-      <PlanGate allowed={ok} title="Auditoria entra no Empresa 200" body="A trilha de quem fez o quê fica no Empresa 200 (R$ 200)." />
+      <PlanGate allowed={ok} title="Auditoria entra no plano Contador" body="A trilha de quem fez o quê fica no plano Contador (white-label)." />
       {ok ? (
         <div className="card overflow-x-auto">
           <table className="table">

@@ -72,7 +72,7 @@ export default function PlanosPage() {
       <div>
         <h1 className="text-2xl font-semibold">Planos</h1>
         <p className="text-sm text-muted max-w-2xl">
-          Pessoa: grátis, R$ 100 e R$ 200. Empresa: grátis, R$ 100 e R$ 200. O chat é igual; as ferramentas é que mudam.
+          Grátis, Pro R$ 27,90, Business R$ 69,90 e Contador a combinar. Pessoa e empresa no mesmo login, espaços separados. A IA sugere; você confirma.
         </p>
       </div>
       {chosen && chosen.priceValue ? (

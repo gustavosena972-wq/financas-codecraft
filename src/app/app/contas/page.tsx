@@ -32,7 +32,7 @@ export default function AccountsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Contas e carteiras</h1>
-        <p className="text-sm text-muted">Saldo inicial + lançamentos.</p>
+        <p className="text-sm text-muted max-w-2xl">Onde o dinheiro mora: banco, carteira, poupança e cartão. O saldo inicial entra aqui — o gráfico parte desse número.</p>
       </div>
       <div className="grid lg:grid-cols-3 gap-4">
         {data.map((account) => (

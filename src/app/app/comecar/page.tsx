@@ -43,7 +43,7 @@ export default function ComecarPage() {
         <div className="px-5 pt-4 pb-3">
           <p className="page-kicker">Teste gravado</p>
           <h2 className="font-semibold mt-1">Vídeo do projeto e dos planos</h2>
-          <p className="text-sm text-muted mt-1">Pessoa, empresa, os seis pacotes e o PIX. Sem áudio de microfone — a voz fica no resumo acima.</p>
+          <p className="text-sm text-muted mt-1">Pessoa, empresa, Grátis, Pro, Business e o PIX. Sem áudio de microfone — a voz fica no resumo acima.</p>
         </div>
         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <video className="w-full bg-ink" controls playsInline preload="metadata" src={guideAsset("/guide/teste-completo.mp4")} />
@@ -90,7 +90,7 @@ export default function ComecarPage() {
       </section>
 
       <p className="text-sm text-muted">
-        Planos: pessoa grátis, R$ 100 e R$ 200 · empresa grátis, R$ 100 e R$ 200. O chat não pede senha e não mexe no PIX.
+        Planos: Grátis, Pro R$ 27,90, Business R$ 69,90 e Contador a combinar. O chat não pede senha e não mexe no PIX.
       </p>
     </div>
   );

@@ -10,6 +10,7 @@ import { accountBalances, cashflowSeries, categorySpend, monthSummary } from "@/
 import { billsOverview } from "@/lib/ops";
 import { financePulse } from "@/lib/accountant";
 import { workspaceToolsPaid } from "@/lib/plans";
+import { productsFor } from "@/lib/products";
 import {
   bucketSpend,
   cutSave,
@@ -99,15 +100,24 @@ export default function FerramentasPage() {
     <div className="space-y-6">
       <div>
         <p className="page-kicker">Ferramentas</p>
-        <h1 className="text-2xl font-semibold mt-1">Contas que ajudam a decidir</h1>
+        <h1 className="text-2xl font-semibold mt-1">O que cada ferramenta faz</h1>
         <p className="text-sm text-muted mt-1 max-w-2xl">
-          Usam o que já está no seu espaço. O chat explica; aqui você testa o número. Educação financeira fica em{" "}
+          Mini explicação em cada uma. O chat explica; aqui você testa o número. Educação fica em{" "}
           <Link href="/app/educacao" className="underline">
             Educação
           </Link>
           .
         </p>
       </div>
+
+      <section className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {productsFor(view.company ? "company" : "person").map((item) => (
+          <article key={item.id} className="card p-4">
+            <h2 className="font-semibold">{item.name}</h2>
+            <p className="text-sm text-muted mt-1">{item.does}</p>
+          </article>
+        ))}
+      </section>
 
       <section className="grid sm:grid-cols-3 gap-4">
         <article className="card p-5">
@@ -162,6 +172,7 @@ export default function FerramentasPage() {
         <section className="grid lg:grid-cols-2 gap-4">
           <article className="card p-5 space-y-3">
             <h2 className="font-semibold">50-30-20 no seu mês</h2>
+            <p className="text-sm text-muted">Divide o que entra em essencial, escolha e reserva. Compara com o gasto real.</p>
             {split && buckets ? (
               <>
                 <p className="text-sm text-muted">Do que entrou, o teto saudável e o que realmente saiu.</p>
@@ -178,6 +189,7 @@ export default function FerramentasPage() {
 
           <article className="card p-5 space-y-3">
             <h2 className="font-semibold">E se cortar {cutPct}% do que mais pesa?</h2>
+            <p className="text-sm text-muted">Mostra o que mais sai e quanto sobra se baixar um pedaço. Não corta sozinho.</p>
             <input type="range" min={5} max={40} value={cutPct} onChange={(e) => setCutPct(Number(e.target.value))} />
             {topCuts.length ? (
               <ul className="text-sm space-y-1">
@@ -199,6 +211,7 @@ export default function FerramentasPage() {
         <section className="grid lg:grid-cols-2 gap-4">
           <article className="card p-5 space-y-3">
             <h2 className="font-semibold">Moradia em 30%</h2>
+            <p className="text-sm text-muted">Aluguel e casa devem caber em 30% do que entra. Se passou, avisa — não cancela a casa.</p>
             {view.income > 0 ? (
               <p className="text-sm">
                 Teto saudável: {brl(cap)}. Hoje moradia está em {brl(view.moradia)}.
@@ -213,7 +226,7 @@ export default function FerramentasPage() {
 
           <article className="card p-5 space-y-3">
             <h2 className="font-semibold">Quando a dívida acaba</h2>
-            <p className="text-sm text-muted">Parcela, juro ao mês (cartão costuma ser alto) e o saldo de hoje.</p>
+            <p className="text-sm text-muted">Você diz saldo, parcela e juro. A conta diz em quantos meses acaba. Cartão costuma ser o juro mais alto.</p>
             <div className="grid grid-cols-3 gap-2">
               <label className="field">
                 <span>Dívida</span>
@@ -244,6 +257,7 @@ export default function FerramentasPage() {
           <section className="grid lg:grid-cols-2 gap-4">
             <article className="card p-5 space-y-2">
               <h2 className="font-semibold">Giro da tesouraria</h2>
+              <p className="text-sm text-muted">A pagar versus a receber. Se o cliente demora, o caixa sangra.</p>
               <p className="text-sm">
                 A pagar {brl(view.bills.payables)} · a receber {brl(view.bills.receivables)}.
                 {view.bills.overduePay ? ` Atraso a pagar ${brl(view.bills.overduePay)}.` : ""}
@@ -255,6 +269,7 @@ export default function FerramentasPage() {
             </article>
             <article className="card p-5 space-y-3">
               <h2 className="font-semibold">Precificar um serviço</h2>
+              <p className="text-sm text-muted">Custo + imposto + margem = o que cobrar. Não chute preço.</p>
               <div className="grid grid-cols-3 gap-2">
                 <label className="field">
                   <span>Custo</span>
@@ -299,11 +314,11 @@ function Gate({ allowed, company, children }: { allowed: boolean; company?: bool
       <div className="pointer-events-none select-none opacity-40">{children}</div>
       <div className="absolute inset-0 grid place-items-center p-4">
         <div className="card p-5 max-w-md text-center space-y-3">
-          <p className="font-semibold">{company ? "No plano Empresa" : "No plano Pessoal"}</p>
+          <p className="font-semibold">{company ? "No plano Business" : "No plano Pro"}</p>
           <p className="text-sm text-muted">
             {company
-              ? "Giro, preço e DRE entram no Empresa 100 (R$ 100) ou 200 (R$ 200)."
-              : "50-30-20, corte e moradia entram no Pessoa 100 (R$ 100) ou 200 (R$ 200)."}
+              ? "Giro, preço e DRE entram no Business (R$ 69,90) ou no Contador."
+              : "50-30-20, corte, moradia, reserva e dívida entram no Pro (R$ 27,90)."}
           </p>
           <Link href="/app/planos" className="btn btn-primary">
             Ver planos

@@ -26,7 +26,7 @@ export type OpsState = { error?: string; ok?: string } | null;
 async function needOps() {
   const session = await requireSession();
   if (!session) return { error: "Sessão expirada." as const, session: null };
-  if (!planHasOps(session.user.plan)) return { error: "Isso entra no plano Empresa." as const, session: null };
+  if (!planHasOps(session.user.plan)) return { error: "Isso entra no plano Business." as const, session: null };
   return { error: null, session };
 }
 
@@ -184,17 +184,18 @@ export async function deleteBillAction(id: string) {
 }
 
 export async function toggleReconciledAction(txId: string) {
-  const gate = await needOps();
-  if (!gate.session) return;
-  const current = listReconciledIds(gate.session.workspace.id);
+  const session = await requireSession();
+  if (!session) return;
+  if (!planHasClose(session.user.plan)) return;
+  const current = listReconciledIds(session.workspace.id);
   const next = current.includes(txId) ? current.filter((id) => id !== txId) : [...current, txId];
-  await saveReconciledIds(gate.session.workspace.id, next);
+  await saveReconciledIds(session.workspace.id, next);
 }
 
 export async function toggleMonthLockAction(month?: string) {
   const session = await requireSession();
   if (!session) return { error: "Sessão expirada." };
-  if (!planHasClose(session.user.plan)) return { error: "Fechamento de mês entra no Enterprise." };
+  if (!planHasClose(session.user.plan)) return { error: "Fechamento de mês entra no plano Contador." };
   const key = month ?? monthKey();
   const current = listLockedMonths(session.workspace.id);
   const next = current.includes(key) ? current.filter((item) => item !== key) : [...current, key];

@@ -8,32 +8,36 @@ import { analyzeCompany } from "./company-biz";
 export type ChatTool = {
   id: string;
   label: string;
+  does: string;
   company?: boolean;
 };
 
 export function toolsForChat(plan: PlanId | string | null | undefined, company: boolean): ChatTool[] {
   if (company) {
-    const tools: ChatTool[] = [{ id: "analise", label: "Análise", company: true }];
+    const tools: ChatTool[] = [
+      { id: "analise", label: "Análise", does: "Lê o porte: autônomo, MEI, pequena ou grande. Mostra receita, DAS e o que sobra.", company: true },
+    ];
     if (workspaceToolsPaid(plan, company)) {
       tools.push(
-        { id: "giro", label: "Giro", company: true },
-        { id: "preco", label: "Preço", company: true },
-        { id: "dre", label: "DRE", company: true },
-        { id: "titulos", label: "Títulos", company: true },
+        { id: "giro", label: "Giro", does: "A pagar versus a receber. Não gaste o que ainda não caiu.", company: true },
+        { id: "preco", label: "Preço", does: "Custo + imposto + margem = o que cobrar no serviço.", company: true },
+        { id: "dre", label: "DRE", does: "Receita menos despesa do mês. Diz se sobrou ou faltou.", company: true },
+        { id: "titulos", label: "Títulos", does: "Contas a pagar e a receber. Título a receber não é caixa.", company: true },
       );
-      if (plan === "ENTERPRISE") tools.push({ id: "fechar", label: "Fechar mês", company: true });
+      if (plan === "ENTERPRISE") {
+        tools.push({ id: "fechar", label: "Fechar mês", does: "Trava lançamento quando o banco bater com o livro.", company: true });
+      }
     }
     return tools;
   }
   if (!workspaceToolsPaid(plan, company)) return [];
-  const tools: ChatTool[] = [
-    { id: "503020", label: "50-30-20" },
-    { id: "corte", label: "Corte" },
-    { id: "moradia", label: "Moradia" },
-    { id: "reserva", label: "Reserva" },
+  return [
+    { id: "503020", label: "50-30-20", does: "50% essencial, 30% escolha, 20% reserva — comparado com o mês real." },
+    { id: "corte", label: "Corte", does: "O que mais pesa e quanto sobra se baixar 20% disso." },
+    { id: "moradia", label: "Moradia", does: "Teto de 30% do que entra para aluguel e casa." },
+    { id: "reserva", label: "Reserva", does: "Quantos meses o saldo cobre o essencial." },
+    { id: "divida", label: "Dívida", does: "Saldo, parcela e juro: em quantos meses acaba." },
   ];
-  if (plan === "PLUS") tools.push({ id: "divida", label: "Dívida" });
-  return tools;
 }
 
 export function runChatTool(id: string, workspaceId: string, company: boolean) {
@@ -87,7 +91,7 @@ export function runChatTool(id: string, workspaceId: string, company: boolean) {
     return `DRE do mês: receita ${brl(dre.income)}, despesa ${brl(dre.expense)}, resultado ${brl(dre.net)} (${dre.margin}%).`;
   }
   if (id === "fechar") {
-    return "Fechar o mês trava lançamento. Isso é do Empresa 200. Abre DRE e use Fechar mês quando a conta bater com o banco.";
+    return "Fechar o mês trava lançamento. Isso é do plano Contador. Abre DRE e use Fechar mês quando a conta bater com o banco.";
   }
   return "Essa ferramenta não está neste espaço.";
 }

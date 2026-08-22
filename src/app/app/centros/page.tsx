@@ -42,9 +42,9 @@ export default function CentrosPage() {
       <PageHeader
         kicker="Empresa"
         title="Centros e parceiros"
-        subtitle="Centro de custo para saber onde o dinheiro pesa. Cliente e fornecedor para o título não ficar solto."
+        subtitle="Cliente, projeto ou área. Mostra onde o gasto pesa para você não misturar tudo no mesmo bolo."
       />
-      <PlanGate allowed={ops} title="Centros entram no Empresa 100" body="Centro de custo e parceiro são da empresa. Empresa 100 ou 200." />
+      <PlanGate allowed={ops} title="Centros entram no Business" body="Centro de custo e parceiro são da empresa. Business (R$ 69,90)." />
       {ops ? (
         <div className="grid lg:grid-cols-2 gap-6">
           <div className="card p-6 space-y-4">
