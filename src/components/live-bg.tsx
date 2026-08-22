@@ -1,15 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-
-const BITS = Array.from({ length: 22 }, (_, i) => ({
-  left: `${(i * 13 + 7) % 96}%`,
-  top: `${(i * 19 + 4) % 92}%`,
-  delay: `${(i % 9) * 0.45}s`,
-  dur: `${10 + (i % 8) * 1.4}s`,
-  size: 5 + (i % 4) * 3,
-  kind: i % 4,
-}));
+import { guideAsset } from "@/lib/guide";
 
 type Ripple = { id: number; x: number; y: number };
 
@@ -24,10 +16,6 @@ export function LiveBg() {
     const onMove = (e: PointerEvent) => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        const x = e.clientX / window.innerWidth - 0.5;
-        const y = e.clientY / window.innerHeight - 0.5;
-        el.style.setProperty("--mx", x.toFixed(3));
-        el.style.setProperty("--my", y.toFixed(3));
         el.style.setProperty("--cx", `${e.clientX}px`);
         el.style.setProperty("--cy", `${e.clientY}px`);
       });
@@ -50,26 +38,9 @@ export function LiveBg() {
 
   return (
     <div className="bg-motion" ref={root} aria-hidden="true">
-      <i className="bg-aurora" />
-      <i className="bg-orb a" />
-      <i className="bg-orb b" />
-      <i className="bg-orb c" />
+      <img className="bg-photo" src={guideAsset("/bg/house.png")} alt="" fetchPriority="high" decoding="async" />
+      <i className="bg-wash" />
       <i className="bg-cursor" />
-      <i className="bg-grid" />
-      {BITS.map((bit, i) => (
-        <span
-          key={i}
-          className={`bg-bit k${bit.kind}`}
-          style={{
-            left: bit.left,
-            top: bit.top,
-            width: bit.size,
-            height: bit.size,
-            animationDelay: bit.delay,
-            animationDuration: bit.dur,
-          }}
-        />
-      ))}
       {ripples.map((row) => (
         <span key={row.id} className="bg-ripple" style={{ left: row.x, top: row.y }} />
       ))}
