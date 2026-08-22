@@ -171,4 +171,24 @@ export function FreeMoneyChart({
   );
 }
 
+export function NetWorthChart({ data }: { data: { month: string; worth: number }[] }) {
+  const chart = data.map((row) => ({ month: row.month, Patrimônio: row.worth / 100 }));
+  return (
+    <div className="h-56">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chart}>
+          <CartesianGrid stroke="#d5dde4" vertical={false} />
+          <XAxis dataKey="month" tickFormatter={(v) => formatMonthLabel(v).slice(0, 3)} tick={{ fontSize: 12 }} />
+          <YAxis tick={{ fontSize: 12 }} />
+          <Tooltip
+            formatter={(value) => brl(Math.round(Number(value) * 100))}
+            labelFormatter={(label) => formatMonthLabel(String(label))}
+          />
+          <Area type="monotone" dataKey="Patrimônio" stroke="#c4a35a" fill="#c4a35a22" animationDuration={800} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 export { tooltipMoney };

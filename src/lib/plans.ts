@@ -28,12 +28,12 @@ export const PLANS: Plan[] = [
     price: "R$ 0",
     priceValue: 0,
     period: "para sempre",
-    forWho: "Entrar e usar. Um perfil, lançamento sem limite, chat e o mês de agora. Nada entra sem você aceitar.",
+    forWho: "Entrar e usar. Pessoa e empresa no mesmo login. IA no assistente. Nada entra sem você aceitar.",
     includes: [
-      "1 perfil: pessoa ou empresa",
+      "Pessoa e empresa, espaços separados",
+      "IA no assistente: pergunta e vê o lançamento",
       "Lançamentos ilimitados",
-      "Chat e planilha do mês",
-      "Análise do porte no espaço empresa",
+      "Patrimônio, orçamento e o mês de agora",
       "Só muda se você gostar",
     ],
     news: [],
@@ -46,15 +46,15 @@ export const PLANS: Plan[] = [
     price: "R$ 27,90",
     priceValue: 27.9,
     period: "por mês",
-    forWho: "Pessoa avançada e autônomo. Dois perfis juntos, exportar, foto do comprovante e chat com as contas da vida.",
-    badge: "Pessoa + 2 perfis",
+    forWho: "Quem quer teto, metas, exportar e as contas da vida com a IA.",
+    badge: "Mais usado",
     includes: [
-      "Tudo do Grátis",
-      "2 perfis ao mesmo tempo: pessoa e empresa",
+      "Tudo do Grátis — pessoa e empresa",
+      "IA com 50-30-20, corte, moradia, reserva e dívida",
       "Exportar planilha",
       "Foto do comprovante (OCR)",
-      "Chat com 50-30-20, corte, moradia, reserva e dívida",
       "Metas, teto do mês e importar extrato",
+      "Previsão dos próximos meses",
     ],
     news: [],
     cta: "Assinar Pro",
@@ -125,8 +125,8 @@ export function planHasSimulators(plan: PlanId | string | null | undefined) {
   return personPaid(plan);
 }
 
-export function planHasAi(plan: PlanId | string | null | undefined) {
-  return personPaid(plan);
+export function planHasAi(_plan?: PlanId | string | null) {
+  return true;
 }
 
 export function planHasOps(plan: PlanId | string | null | undefined) {

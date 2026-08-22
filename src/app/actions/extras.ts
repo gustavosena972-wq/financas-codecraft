@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { addTransaction, listRecurring, listGoals, pushAudit, requireSession, saveGoals, saveRecurring } from "@/lib/store";
+import { addTransaction, listGoals, listHoldings, listRecurring, pushAudit, requireSession, saveGoals, saveHoldings, saveRecurring } from "@/lib/store";
 import { monthKey, parseMoneyToCents } from "@/lib/money";
 import { newId, nowIso } from "@/lib/types";
 import { goalLimit, recurringLimit } from "@/lib/plans";
@@ -139,5 +139,44 @@ export async function deleteGoalAction(id: string) {
   await saveGoals(
     session.workspace.id,
     listGoals(session.workspace.id).filter((item) => item.id !== id),
+  );
+}
+
+export async function createHoldingAction(_prev: ExtraState, formData: FormData): Promise<ExtraState> {
+  const session = await requireSession();
+  if (!session) return { error: "Sessão expirada." };
+  const parsed = z
+    .object({
+      name: z.string().trim().min(2),
+      kind: z.enum(["STOCK", "FUND", "FIXED", "CRYPTO", "OTHER"]),
+      value: z.string().min(1),
+    })
+    .safeParse({
+      name: formData.get("name"),
+      kind: formData.get("kind"),
+      value: formData.get("value"),
+    });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
+  const cents = parseMoneyToCents(parsed.data.value);
+  if (cents == null || cents < 0) return { error: "Valor inválido" };
+  await saveHoldings(session.workspace.id, [
+    ...listHoldings(session.workspace.id),
+    {
+      id: newId(),
+      workspaceId: session.workspace.id,
+      name: parsed.data.name,
+      kind: parsed.data.kind,
+      value: cents,
+    },
+  ]);
+  return { ok: "Investimento salvo." };
+}
+
+export async function deleteHoldingAction(id: string) {
+  const session = await requireSession();
+  if (!session) return;
+  await saveHoldings(
+    session.workspace.id,
+    listHoldings(session.workspace.id).filter((item) => item.id !== id),
   );
 }

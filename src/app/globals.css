@@ -171,7 +171,36 @@ button, input, select, textarea { font: inherit; }
   font-weight: 800;
   font-size: 11px;
   letter-spacing: -0.04em;
+  flex: none;
 }
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  min-width: 0;
+}
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.15;
+}
+.brand-name {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+.brand-sub {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.brand.light .brand-name { color: #fff; }
+.brand.light .brand-sub { color: #9aabba; }
 
 .card {
   background: var(--paper);
@@ -345,6 +374,66 @@ html[data-theme="dark"] .btn-ghost {
 .tip-card:hover { transform: translateY(-2px); }
 .tip-open { border-color: color-mix(in srgb, var(--gold) 50%, var(--line)); }
 .tip-done { border-color: var(--positive); background: color-mix(in srgb, var(--positive) 8%, var(--bg)); }
+
+.tx-cite {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+.tx-cite li {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr auto;
+  gap: 8px;
+  font-size: 12px;
+  padding: 8px 0 0;
+  color: var(--muted);
+}
+.tx-cite strong { color: var(--ink); font-weight: 650; }
+
+.app-frame {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: calc(100vh - 3.5rem);
+}
+.app-frame.studio .studio-main {
+  height: calc(100vh - 3.5rem);
+}
+.app-side {
+  border-right: 1px solid var(--line);
+  background: var(--paper);
+  padding: 16px 10px 24px;
+  overflow-y: auto;
+}
+.app-side-mobile {
+  display: none;
+}
+.app-side-chip {
+  flex: none;
+  font-size: 13px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--paper);
+}
+.app-side-chip.on {
+  border-color: var(--gold);
+  color: var(--ink);
+  font-weight: 650;
+}
+@media (max-width: 900px) {
+  .app-frame { grid-template-columns: 1fr; }
+  .app-side { display: none; }
+  .app-side-mobile {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+  }
+}
 
 .nav-link {
   position: relative;

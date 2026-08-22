@@ -80,6 +80,14 @@ export type Goal = {
   deadline: string;
 };
 
+export type Holding = {
+  id: string;
+  workspaceId: string;
+  name: string;
+  kind: "STOCK" | "FUND" | "FIXED" | "CRYPTO" | "OTHER";
+  value: number;
+};
+
 export type CostCenter = {
   id: string;
   workspaceId: string;
@@ -118,6 +126,7 @@ export type TeamSeat = {
 export type WorkspaceExtras = {
   recurring: Recurring[];
   goals: Goal[];
+  holdings: Holding[];
   costCenters: CostCenter[];
   parties: Party[];
   bills: Bill[];

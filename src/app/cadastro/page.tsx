@@ -7,11 +7,12 @@ import { AuthFrame } from "@/components/auth-frame";
 
 export default function RegisterPage() {
   const [state, action, pending] = useActionState(registerAction, null);
-  const [mode, setMode] = useState("PERSONAL");
+  const [start, setStart] = useState("PERSONAL");
 
   return (
-    <AuthFrame title="Criar conta" subtitle="Pessoa de um lado. Empresa do outro — autônomo, MEI, pequena ou grande. Nada misturado.">
+    <AuthFrame title="Criar conta" subtitle="A plataforma é para pessoa e para empresa. Os dois espaços já vêm no mesmo login — o dinheiro não se mistura.">
       <form action={action} className="space-y-4">
+        <input type="hidden" name="mode" value={start} />
         <label className="field">
           <span>Nome</span>
           <input name="name" required placeholder="Seu nome" />
@@ -25,54 +26,46 @@ export default function RegisterPage() {
           <input name="password" type="password" minLength={8} required />
         </label>
         <label className="field">
-          <span>Como vai usar</span>
+          <span>Por onde começar</span>
           <select
-            name="mode"
-            value={mode}
+            value={start}
             onChange={(e) => {
               const next = e.target.value;
-              setMode(next);
-              if (next !== "PERSONAL") {
-                try {
-                  localStorage.setItem("fc-pending-company-size", "autonomo");
-                } catch {
-                  /* ignore */
-                }
+              setStart(next);
+              try {
+                localStorage.setItem("fc-pending-company-size", "autonomo");
+              } catch {
+                /* ignore */
               }
             }}
           >
-            <option value="PERSONAL">Só pessoa</option>
-            <option value="BUSINESS">Só empresa</option>
-            <option value="BOTH">Os dois, separados</option>
+            <option value="PERSONAL">Pessoa (casa, salário, família)</option>
+            <option value="BUSINESS">Empresa (MEI, PJ, caixa)</option>
           </select>
         </label>
-        {mode !== "PERSONAL" ? (
-          <>
-            <label className="field">
-              <span>Nome da empresa</span>
-              <input name="company" placeholder="Opcional" />
-            </label>
-            <label className="field">
-              <span>Porte</span>
-              <select
-                name="porte"
-                defaultValue="autonomo"
-                onChange={(e) => {
-                  try {
-                    localStorage.setItem("fc-pending-company-size", e.target.value);
-                  } catch {
-                    /* ignore */
-                  }
-                }}
-              >
-                <option value="autonomo">Autônomo</option>
-                <option value="mei">MEI</option>
-                <option value="pequena">Empresa pequena</option>
-                <option value="grande">Empresa grande</option>
-              </select>
-            </label>
-          </>
-        ) : null}
+        <label className="field">
+          <span>Nome da empresa</span>
+          <input name="company" placeholder="Opcional — se ainda não tiver, fica Empresa" />
+        </label>
+        <label className="field">
+          <span>Porte da empresa</span>
+          <select
+            name="porte"
+            defaultValue="autonomo"
+            onChange={(e) => {
+              try {
+                localStorage.setItem("fc-pending-company-size", e.target.value);
+              } catch {
+                /* ignore */
+              }
+            }}
+          >
+            <option value="autonomo">Autônomo</option>
+            <option value="mei">MEI</option>
+            <option value="pequena">Empresa pequena</option>
+            <option value="grande">Empresa grande</option>
+          </select>
+        </label>
         {state?.error ? <p className="text-sm text-negative">{state.error}</p> : null}
         <button className="btn btn-primary w-full" disabled={pending}>
           {pending ? "Criando…" : "Criar conta"}

@@ -1,4 +1,4 @@
-import type { Account, AuditLog, Bill, Budget, Category, CostCenter, Goal, Party, Recurring, TeamSeat, Transaction, User, Workspace, WorkspaceExtras } from "./types";
+import type { Account, AuditLog, Bill, Budget, Category, CostCenter, Goal, Holding, Party, Recurring, TeamSeat, Transaction, User, Workspace, WorkspaceExtras } from "./types";
 import { newId, nowIso } from "./types";
 import { getSupabase } from "./supabase";
 
@@ -134,6 +134,7 @@ function parseExtras(raw: unknown): Record<string, WorkspaceExtras> {
     out[key] = {
       recurring: Array.isArray(item?.recurring) ? item.recurring : [],
       goals: Array.isArray(item?.goals) ? item.goals : [],
+      holdings: Array.isArray(item?.holdings) ? item.holdings : [],
       costCenters: Array.isArray(item?.costCenters) ? item.costCenters : [],
       parties: Array.isArray(item?.parties) ? item.parties : [],
       bills: Array.isArray(item?.bills) ? item.bills : [],
@@ -149,6 +150,7 @@ function emptyExtras(): WorkspaceExtras {
   return {
     recurring: [],
     goals: [],
+    holdings: [],
     costCenters: [],
     parties: [],
     bills: [],
@@ -348,6 +350,10 @@ export function listGoals(workspaceId: string) {
   return snapshot?.extras[workspaceId]?.goals ?? [];
 }
 
+export function listHoldings(workspaceId: string) {
+  return extrasOf(workspaceId).holdings;
+}
+
 export function extrasOf(workspaceId: string): WorkspaceExtras {
   return { ...emptyExtras(), ...(snapshot?.extras[workspaceId] ?? {}) };
 }
@@ -399,6 +405,12 @@ export async function saveRecurring(workspaceId: string, items: Recurring[]) {
 export async function saveGoals(workspaceId: string, items: Goal[]) {
   if (!snapshot) throw new Error("Sessão expirada.");
   snapshot.extras[workspaceId] = { ...emptyExtras(), ...(snapshot.extras[workspaceId] ?? {}), goals: items };
+  await persistExtras();
+}
+
+export async function saveHoldings(workspaceId: string, items: Holding[]) {
+  if (!snapshot) throw new Error("Sessão expirada.");
+  snapshot.extras[workspaceId] = { ...emptyExtras(), ...(snapshot.extras[workspaceId] ?? {}), holdings: items };
   await persistExtras();
 }
 

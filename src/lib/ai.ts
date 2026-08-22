@@ -78,8 +78,8 @@ export function buildInsights(workspaceId: string, month = monthKey()): Insight[
   if (!summary.txs.length) {
     return [
       {
-        title: "Ainda não há o que explicar",
-        body: "Lance ou importe movimentações deste mês. A IA usa os seus números, sem chat.",
+        title: "Explicar o mês",
+        body: "Lance ou importe movimentações deste mês. A IA usa os seus números e aponta o lançamento.",
         tone: "info",
       },
     ];

@@ -14,10 +14,19 @@ export type ChatBudget = {
   amount: number;
 };
 
+export type TxCite = {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  type: string;
+};
+
 export type AccountantReply = {
   body: string;
   spends?: ChatSpend[];
   budget?: ChatBudget;
+  evidence?: TxCite[];
 };
 
 function n(value: string) {
@@ -105,6 +114,30 @@ export function parseChatSpends(raw: string): ChatSpend[] {
     });
   }
   return items.slice(0, 12);
+}
+
+export function citeTransactions(workspaceId: string, query: string, limit = 6): TxCite[] {
+  const summary = monthSummary(workspaceId, monthKey());
+  const q = n(query);
+  const words = q
+    .replace(/(quanto|gastei|gastamos|saiu|gasto|gastos|com|de|do|da|em|no|na|este|esse|mes|mês|categoria|lancamento|lançamento)/g, " ")
+    .split(/\s+/)
+    .filter((word) => word.length > 2 && !NOISE.test(word));
+  const txs = summary.txs.filter((tx) => tx.type !== "TRANSFER");
+  const matched = words.length
+    ? txs.filter((tx) => {
+        const hay = n(`${tx.description} ${tx.category?.name ?? ""}`);
+        return words.some((word) => hay.includes(word));
+      })
+    : txs.filter((tx) => tx.type === "EXPENSE");
+  const pick = (matched.length ? matched : txs).slice(0, limit);
+  return pick.map((tx) => ({
+    id: tx.id,
+    date: tx.date.slice(0, 10),
+    description: tx.description,
+    amount: tx.amount,
+    type: tx.type,
+  }));
 }
 
 function parseBudget(raw: string): ChatBudget | null {
@@ -320,6 +353,18 @@ export function accountantReply(message: string, workspaceId: string): Accountan
     };
   }
 
+  if (/(quanto (gastei|gastamos|saiu)|gasto com|despesa com|onde foi|quais lanc|quais lanç|mostrar (os )?gasto)/.test(t)) {
+    const evidence = citeTransactions(workspaceId, text);
+    if (!evidence.length) {
+      return { body: "Neste mês ainda não tem lançamento que bata com isso. Manda a planilha ou lança na mão." };
+    }
+    const total = evidence.reduce((sum, row) => sum + (row.type === "EXPENSE" ? row.amount : 0), 0);
+    return {
+      evidence,
+      body: `Achei ${evidence.length} lançamento(s) neste mês. Soma das saídas nessa lista: ${brl(total)}. Cada linha abaixo é o movimento real — não é chute.`,
+    };
+  }
+
   if (isMath(t)) {
     const value = evalMath(text);
     if (value != null) {
@@ -391,13 +436,15 @@ export function accountantReply(message: string, workspaceId: string): Accountan
       };
     }
     const top = data.spend[0];
+    const evidence = citeTransactions(workspaceId, top?.name ?? "gasto", 5);
     return {
+      evidence,
       body:
         `${pulseLine(pulse)} Neste mês entrou ${brl(data.summary.income)} e saiu ${brl(data.summary.expense)}. ` +
         (data.summary.net >= 0 ? `Sobra ${brl(data.summary.net)}. ` : `Falta ${brl(Math.abs(data.summary.net))}. `) +
         `Saldo nas contas: ${brl(data.balance)}. ` +
         (top ? `O que mais pesou: ${top.name} (${brl(top.amount)}). ` : "") +
-        "Posso revisar os meses passados ou montar o teto da frente.",
+        "Abaixo estão os lançamentos reais por trás deste número.",
     };
   }
 

@@ -1,9 +1,11 @@
 import { z } from "zod";
 import {
   ensureProfile,
+  listWorkspaces,
   logoutSession,
   pushAudit,
   refreshSession,
+  requireSession,
   setLastWorkspace,
   setSessionWorkspaceId,
 } from "@/lib/store";
@@ -58,15 +60,9 @@ export async function registerAction(_prev: AuthState, formData: FormData): Prom
   if (error || !data.user) return { error: authMessage(error?.message) };
   try {
     await ensureProfile(data.user.id, parsed.data.name);
-    let firstId: string | null = null;
-    if (parsed.data.mode === "PERSONAL" || parsed.data.mode === "BOTH") {
-      firstId = (await provisionWorkspace(data.user.id, "Pessoal", "PERSONAL")).id;
-    }
-    if (parsed.data.mode === "BUSINESS" || parsed.data.mode === "BOTH") {
-      const ws = await provisionWorkspace(data.user.id, parsed.data.company || "Empresa", "BUSINESS");
-      firstId = firstId ?? ws.id;
-    }
-    if (firstId) await setLastWorkspace(data.user.id, firstId);
+    const personal = await provisionWorkspace(data.user.id, "Pessoal", "PERSONAL");
+    const company = await provisionWorkspace(data.user.id, parsed.data.company || "Empresa", "BUSINESS");
+    await setLastWorkspace(data.user.id, parsed.data.mode === "BUSINESS" ? company.id : personal.id);
     await pushAudit(data.user.id, "create", "user", { detail: "cadastro" });
     await refreshSession();
   } catch (err) {
@@ -116,4 +112,17 @@ export async function switchWorkspaceAction(formData: FormData) {
   const session = await refreshSession();
   if (session?.user) await setLastWorkspace(session.user.id, workspaceId);
   go("/app");
+}
+
+export async function ensureBothWorkspacesAction() {
+  const session = await requireSession();
+  if (!session) return;
+  const list = listWorkspaces(session.user.id);
+  if (!list.some((ws) => ws.type === "PERSONAL")) {
+    await provisionWorkspace(session.user.id, "Pessoal", "PERSONAL");
+  }
+  if (!list.some((ws) => ws.type === "BUSINESS")) {
+    await provisionWorkspace(session.user.id, "Empresa", "BUSINESS");
+  }
+  await refreshSession();
 }

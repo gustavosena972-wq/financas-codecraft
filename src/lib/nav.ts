@@ -4,8 +4,10 @@ import {
   BookOpen,
   Building2,
   CalendarDays,
+  CreditCard,
   Flag,
-  GraduationCap,
+  LayoutDashboard,
+  LineChart,
   ListChecks,
   MessageCircle,
   PiggyBank,
@@ -17,7 +19,6 @@ import {
   Upload,
   Users,
   Wallet,
-  Wrench,
 } from "lucide-react";
 
 export type WorkspaceKind = "PERSONAL" | "BUSINESS";
@@ -48,75 +49,79 @@ export function isPersonPath(pathname: string) {
 }
 
 export function navFor(type: WorkspaceKind): NavGroup[] {
+  const home: NavGroup = {
+    label: "Visão",
+    items: [
+      { href: "/app", label: "Patrimônio", icon: LayoutDashboard },
+      { href: "/app/chat", label: "IA", icon: MessageCircle },
+      { href: "/app/planos", label: "Planos", icon: Sparkles },
+    ],
+  };
+
   if (type === "BUSINESS") {
     return [
+      home,
       {
-        label: "Dia a dia",
+        label: "Caixa",
         items: [
-          { href: "/app", label: "Chat", icon: MessageCircle },
-          { href: "/app/ferramentas", label: "Ferramentas", icon: Wrench },
-          { href: "/app/educacao", label: "Educação", icon: GraduationCap },
           { href: "/app/lancamentos", label: "Lançamentos", icon: Receipt },
-          { href: "/app/titulos", label: "Títulos", icon: ListChecks },
+          { href: "/app/titulos", label: "A pagar e receber", icon: ListChecks },
           { href: "/app/contas", label: "Contas", icon: Wallet },
           { href: "/app/agenda", label: "Agenda", icon: CalendarDays },
+          { href: "/app/orcamento", label: "Orçamento", icon: PiggyBank },
         ],
       },
       {
         label: "Análise",
         items: [
           { href: "/app/dre", label: "DRE", icon: Scale },
-          { href: "/app/fluxo", label: "Fluxo de caixa", icon: ArrowLeftRight },
-          { href: "/app/orcamento", label: "Orçamento", icon: PiggyBank },
+          { href: "/app/fluxo", label: "Fluxo", icon: ArrowLeftRight },
+          { href: "/app/investimentos", label: "Investimentos", icon: LineChart },
           { href: "/app/conciliacao", label: "Conciliação", icon: BookOpen },
         ],
       },
       {
         label: "Empresa",
         items: [
-          { href: "/app/centros", label: "Centros e parceiros", icon: Building2 },
-          { href: "/app/importar", label: "Planilha", icon: Upload },
-          { href: "/app/auditoria", label: "Auditoria", icon: Shield },
+          { href: "/app/centros", label: "Centros", icon: Building2 },
+          { href: "/app/importar", label: "Importar", icon: Upload },
           { href: "/app/equipe", label: "Equipe", icon: Users },
+          { href: "/app/auditoria", label: "Auditoria", icon: Shield },
         ],
       },
       {
         label: "Conta",
         items: [
-          { href: "/app/planos", label: "Planos", icon: Sparkles },
-          { href: "/app/configuracoes", label: "Configurações", icon: Settings },
-          { href: "/app/ajuda", label: "Ajuda", icon: MessageCircle },
+          { href: "/app/configuracoes", label: "Ajustes", icon: Settings },
         ],
       },
     ];
   }
 
   return [
+    home,
     {
-      label: "Seu dinheiro",
+      label: "Dinheiro",
       items: [
-        { href: "/app", label: "Chat", icon: MessageCircle },
-        { href: "/app/ferramentas", label: "Ferramentas", icon: Wrench },
-        { href: "/app/educacao", label: "Educação", icon: GraduationCap },
-        { href: "/app/importar", label: "Mandar planilha", icon: Upload },
-        { href: "/app/lancamentos", label: "Lançar na mão", icon: Receipt },
+        { href: "/app/lancamentos", label: "Lançamentos", icon: Receipt },
+        { href: "/app/orcamento", label: "Orçamento", icon: PiggyBank },
         { href: "/app/contas", label: "Contas", icon: Wallet },
-        { href: "/app/agenda", label: "Contas do mês", icon: CalendarDays },
+        { href: "/app/agenda", label: "Faturas", icon: CalendarDays },
       ],
     },
     {
-      label: "Controle",
+      label: "Planejar",
       items: [
-        { href: "/app/orcamento", label: "Teto do mês", icon: PiggyBank },
         { href: "/app/metas", label: "Metas", icon: Flag },
+        { href: "/app/investimentos", label: "Investimentos", icon: LineChart },
+        { href: "/app/dividas", label: "Dívidas", icon: CreditCard },
+        { href: "/app/importar", label: "Importar", icon: Upload },
       ],
     },
     {
       label: "Conta",
       items: [
-        { href: "/app/planos", label: "Planos", icon: Sparkles },
-        { href: "/app/configuracoes", label: "Configurações", icon: Settings },
-        { href: "/app/ajuda", label: "Ajuda", icon: MessageCircle },
+        { href: "/app/configuracoes", label: "Ajustes", icon: Settings },
       ],
     },
   ];

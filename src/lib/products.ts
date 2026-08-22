@@ -15,10 +15,10 @@ export const PRODUCTS: Product[] = [
   {
     id: "chat-pessoa",
     name: "Chat da pessoa",
-    does: "Você manda a planilha ou pergunta. Ele lê o mês, sugere corte e só muda se você gostar.",
+    does: "Você pergunta. Ele lê o mês, sugere corte e mostra o lançamento real. Só muda se você gostar.",
     audience: "person",
     plan: "FREE",
-    href: "/app",
+    href: "/app/chat",
   },
   {
     id: "contas",

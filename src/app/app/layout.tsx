@@ -5,6 +5,7 @@ import { AppShell } from "@/components/shell";
 import { listWorkspaces, requireSession } from "@/lib/store";
 import { useLive } from "@/lib/live";
 import { go } from "@/lib/types";
+import { ensureBothWorkspacesAction } from "@/app/actions/auth";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const live = useLive();
@@ -21,9 +22,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         go("/login");
         return;
       }
-      setName(user.name);
-      setWorkspaces(listWorkspaces(user.id));
-      setActiveId(session.workspace.id);
+      await ensureBothWorkspacesAction();
+      const again = await requireSession();
+      if (!again) {
+        go("/login");
+        return;
+      }
+      setName(again.user.name);
+      setWorkspaces(listWorkspaces(again.user.id));
+      setActiveId(again.workspace.id);
       setReady(true);
     })();
   }, [live]);

@@ -17,9 +17,9 @@ export function AiInsights({
     return (
       <section className="card p-5 border-dashed rise">
         <p className="text-[11px] uppercase tracking-wide text-gold font-semibold">IA operacional</p>
-        <h2 className="font-semibold mt-1">Explicar o mês, no plano pago</h2>
+        <h2 className="font-semibold mt-1">O que o mês está dizendo</h2>
         <p className="text-sm text-muted mt-2">
-          A IA lê os seus números, avisa desvio e aponta o que cortar. Sem chat no meio do caminho.
+          A IA lê os seus números e aponta desvio. No assistente ela lista o lançamento, não só o total.
         </p>
         <Link href="/app/planos" className="btn btn-primary mt-4">
           Ver planos
@@ -31,7 +31,7 @@ export function AiInsights({
   return (
     <section className="card p-5 rise">
       <p className="text-[11px] uppercase tracking-wide text-gold font-semibold">IA operacional</p>
-      <h2 className="font-semibold mt-1 mb-4">Toque no recado. Ele abre.</h2>
+      <h2 className="font-semibold mt-1 mb-4">O que o mês está dizendo</h2>
       <ul className="space-y-2">
         {insights.map((item, i) => {
           const on = open === i;

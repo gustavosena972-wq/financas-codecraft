@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Paperclip } from "lucide-react";
-import { accountantReply, financePulse, type FinancePulse } from "@/lib/accountant";
+import { accountantReply, financePulse, type FinancePulse, type TxCite } from "@/lib/accountant";
 import { jarvisCompanyReply } from "@/lib/jarvis";
 import { addChatSpendsAction } from "@/app/actions/transactions";
 import { saveChatBudgetAction } from "@/app/actions/budgets";
@@ -16,11 +16,12 @@ import { listAccounts, listCategories, requireSession } from "@/lib/store";
 import { planForecastMonths, planHasAi, type PlanId, workspaceToolsPaid } from "@/lib/plans";
 import { runChatTool, toolsForChat, wantsApply, wantsReject, wantsSheetCreate } from "@/lib/chat-tools";
 import { useLive } from "@/lib/live";
+import { brl } from "@/lib/money";
 import { TransactionForm } from "@/components/transaction-form";
 import { MoneySheet } from "@/components/money-sheet";
 import { buildMoneySheet } from "@/lib/coach";
 
-type Msg = { from: "user" | "bot"; body: string };
+type Msg = { from: "user" | "bot"; body: string; evidence?: TxCite[] };
 
 function welcomeBot(isCompany: boolean) {
   return isCompany
@@ -233,10 +234,10 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       return runChatTool(tool.id, workspaceId, company);
     }
 
-    let reply: { body: string; spends?: { type: "INCOME" | "EXPENSE"; description: string; amount: number }[]; budget?: { categoryName: string; amount: number } };
+    let reply: { body: string; spends?: { type: "INCOME" | "EXPENSE"; description: string; amount: number }[]; budget?: { categoryName: string; amount: number }; evidence?: TxCite[] };
     if (company) {
       const spendTry = accountantReply(raw, workspaceId);
-      if (spendTry.spends?.length || spendTry.budget) {
+      if (spendTry.spends?.length || spendTry.budget || spendTry.evidence?.length) {
         reply = spendTry;
       } else {
         let market: { usd?: number; usdPct?: string; selic?: string } | undefined;
@@ -269,7 +270,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     setPulse(financePulse(workspaceId));
     refreshSheet(workspaceId, plan, company);
     setShowSheet(true);
-    return reply.body;
+    return { body: reply.body, evidence: reply.evidence };
   }
 
   async function send(text = input) {
@@ -278,8 +279,9 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     setInput("");
     setBusy(true);
     setMessages((current) => [...current, { from: "user", body: raw }]);
-    const body = await answer(raw);
-    setMessages((current) => [...current, { from: "bot", body }]);
+    const next = await answer(raw);
+    const payload = typeof next === "string" ? { body: next, evidence: undefined as TxCite[] | undefined } : { body: next.body, evidence: "evidence" in next ? next.evidence : undefined };
+    setMessages((current) => [...current, { from: "bot", body: payload.body, evidence: payload.evidence }]);
     setBusy(false);
   }
 
@@ -365,7 +367,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       {studio ? (
         <header className="claude-top">
           <div className="chat-abas">
-            <div className="chat-aba on">{company ? "Chat da empresa" : "Chat da pessoa"}</div>
+            <div className="chat-aba on">{company ? "IA da empresa" : "IA da pessoa"}</div>
             <button type="button" className="chat-aba-btn" onClick={startNewChat}>
               Nova conversa
             </button>
@@ -384,10 +386,10 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       ) : !compact ? (
         <header className="acct-head">
           <p className="text-[11px] uppercase tracking-wide text-gold font-semibold">Chat</p>
-          <h2 className="font-semibold mt-1">{company ? "Empresa" : "Pessoa"}</h2>
+          <h2 className="font-semibold mt-1">{company ? "IA da empresa" : "IA da pessoa"}</h2>
         </header>
       ) : (
-        <div className="font-semibold px-4 pt-4">{company ? "Empresa" : "Pessoa"}</div>
+        <div className="font-semibold px-4 pt-4">{company ? "IA da empresa" : "IA da pessoa"}</div>
       )}
 
       <div className="claude-stage">
@@ -429,7 +431,20 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
             if (studio && empty && i === 0 && msg.from === "bot") return null;
             return (
               <div key={`${msg.from}-${i}`} className={`acct-row ${msg.from}`}>
-                <div className="acct-bubble">{msg.body}</div>
+                <div className="acct-bubble">
+                  {msg.body}
+                  {msg.evidence?.length ? (
+                    <ul className="tx-cite">
+                      {msg.evidence.map((row) => (
+                        <li key={row.id}>
+                          <span>{row.date}</span>
+                          <span>{row.description}</span>
+                          <strong>{row.type === "EXPENSE" ? "−" : "+"}{brl(row.amount)}</strong>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
               </div>
             );
           })}

@@ -4,22 +4,22 @@ import { useEffect, useState } from "react";
 
 const SCENES = [
   [
-    ["Este mês sai", "R$ 4.820"],
-    ["Próximo mês", "R$ 4.610"],
-    ["Dá para cortar", "R$ 640 / mês"],
-    ["Saldo projetado", "R$ 12.190"],
+    ["Patrimônio líquido", "R$ 48.320"],
+    ["Ativos", "R$ 62.100"],
+    ["Dívidas", "R$ 13.780"],
+    ["Investido", "R$ 21.400"],
   ],
   [
-    ["Entrou", "R$ 7.400"],
-    ["Saiu", "R$ 5.180"],
-    ["Sobra", "R$ 2.220"],
-    ["No teto", "ainda cabe"],
+    ["Orçado mercado", "R$ 1.200"],
+    ["Realizado", "R$ 1.540"],
+    ["Passou", "R$ 340"],
+    ["Lançamentos", "12 deste mês"],
   ],
   [
-    ["Aluguel", "negociar"],
-    ["Assinaturas", "R$ 89"],
-    ["iFood", "R$ 420"],
-    ["Corte sugerido", "R$ 180"],
+    ["Pessoa + empresa", "mesmo login"],
+    ["IA com recibo", "mostra o gasto"],
+    ["Controle ativo", "teto, não só relatório"],
+    ["Open Finance", "via agregador"],
   ],
 ];
 
@@ -36,7 +36,7 @@ export function HeroPreview() {
   return (
     <div className="rounded-xl border border-[#2c4458] bg-panel-2 p-6 text-sm space-y-4 float-card">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-[#9aabba] text-[11px] uppercase tracking-[0.16em]">Prévia — toque para girar</div>
+        <div className="text-[#9aabba] text-[11px] uppercase tracking-[0.16em]">Painel — patrimônio no centro</div>
         <div className="flex gap-1">
           {SCENES.map((_, i) => (
             <button
@@ -68,7 +68,7 @@ export function HeroPreview() {
           </button>
         ))}
       </div>
-      <p className="text-[11px] text-[#9aabba]">Clique em qualquer número. A planilha real faz isso com os seus gastos.</p>
+      <p className="text-[11px] text-[#9aabba]">A tela de verdade abre no patrimônio líquido. A IA aponta o lançamento, não um número solto.</p>
     </div>
   );
 }
