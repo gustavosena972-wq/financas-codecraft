@@ -14,6 +14,7 @@ import { CashflowChart, CategoryChart, NetWorthChart } from "@/components/charts
 import { CountMoney } from "@/components/count-up";
 import { AccountantChat } from "@/components/accountant-chat";
 import { AiInsights } from "@/components/ai-insights";
+import { ToolTiles } from "@/components/tool-tiles";
 import { planHasAi } from "@/lib/plans";
 
 type View = {
@@ -103,6 +104,19 @@ export function HomeDashboard() {
           Perguntar à IA
         </Link>
       </div>
+
+      <section>
+        <div className="flex items-end justify-between gap-3 mb-3">
+          <div>
+            <p className="page-kicker">Ferramentas</p>
+            <h2 className="font-semibold mt-1">O que cada uma faz</h2>
+          </div>
+          <Link href="/app/ferramentas" className="text-sm underline">
+            Ver todas
+          </Link>
+        </div>
+        <ToolTiles mode={view.company ? "BUSINESS" : "PERSONAL"} limit={8} />
+      </section>
 
       <section className="grid lg:grid-cols-[1.4fr_.9fr] gap-4">
         <article className="card p-6">

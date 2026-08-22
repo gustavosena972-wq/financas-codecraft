@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Eraser, Paperclip, Plus, SendHorizontal, Shield, Sparkles, Trash2 } from "lucide-react";
+import { Clock, Eraser, Paperclip, PanelLeft, Plus, Search, SendHorizontal, Shield, Sparkles, Trash2 } from "lucide-react";
 import { accountantReply, financePulse, type FinancePulse, type TxCite } from "@/lib/accountant";
 import { jarvisCompanyReply } from "@/lib/jarvis";
 import { addChatSpendsAction } from "@/app/actions/transactions";
@@ -12,7 +12,7 @@ import { organizeWorkbook, type OrganizeResult } from "@/lib/organize";
 import { analyzeImported, importedSheetView } from "@/lib/import-sheet";
 import { analyzeCompany, analyzeCompanyFile, COMPANY_SIZES, inferCompanySize, parseCompanySize, saveCompanySize } from "@/lib/company-biz";
 import { buildChatWorkbook } from "@/lib/workbooks";
-import { listAccounts, listCategories, requireSession } from "@/lib/store";
+import { clearAuditLogs, listAccounts, listCategories, requireSession } from "@/lib/store";
 import { planById, planChatAskLabel, planChatChars, planForecastMonths, planHasAi, type PlanId, workspaceToolsPaid } from "@/lib/plans";
 import { runChatTool, toolsForChat, wantsApply, wantsReject, wantsSheetCreate } from "@/lib/chat-tools";
 import {
@@ -31,6 +31,7 @@ import {
   type ChatThread,
 } from "@/lib/chat-guard";
 import { nowIso } from "@/lib/types";
+import { clearSearches, listSearches, pushSearch, wipePlatformHistory, type SearchHit } from "@/lib/history";
 import { useLive } from "@/lib/live";
 import { brl } from "@/lib/money";
 import { TransactionForm } from "@/components/transaction-form";
@@ -95,6 +96,9 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
   const [openId, setOpenId] = useState("");
   const [thinkLine, setThinkLine] = useState(THINKING_LINES[0]);
   const [pop, setPop] = useState(false);
+  const [searches, setSearches] = useState<SearchHit[]>([]);
+  const [historyQ, setHistoryQ] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(true);
   const logRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const loadedFor = useRef("");
@@ -128,6 +132,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       setCategories(listCategories(id));
       setAiEnabled(planHasAi(session.user.plan));
       setAsks(readChatAsks(session.user.id, session.user.plan));
+      setSearches(listSearches(session.user.id, id));
       if (isCompany) {
         try {
           const pendingSize = localStorage.getItem("fc-pending-company-size");
@@ -153,7 +158,20 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     setOpenId(pack.openId);
     setMessages(open?.messages?.length ? open.messages : welcomeMsgs(company));
     setShowSheet(open ? Boolean(open.showSheet) : true);
-  }, [workspaceId, company]);
+    if (userId) {
+      const saved = listSearches(userId, workspaceId);
+      if (saved.length) {
+        setSearches(saved);
+      } else {
+        for (const thread of pack.threads) {
+          for (const msg of thread.messages) {
+            if (msg.from === "user" && !isConfirm(msg.body)) pushSearch(userId, { text: msg.body, threadId: thread.id, workspaceId });
+          }
+        }
+        setSearches(listSearches(userId, workspaceId));
+      }
+    }
+  }, [workspaceId, company, userId]);
 
   useEffect(() => {
     if (hydrating.current) {
@@ -247,11 +265,47 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
   function deleteHistory() {
     if (!window.confirm("Apagar o histórico? Todas as conversas deste espaço somem. O dinheiro lançado continua.")) return;
     if (workspaceId) clearChatPack(workspaceId);
+    if (userId) {
+      const rest = listSearches(userId).filter((row) => row.workspaceId !== workspaceId);
+      try {
+        localStorage.setItem(`fc-searches-${userId}`, JSON.stringify(rest));
+      } catch {
+        /* ignore */
+      }
+      setSearches([]);
+    }
     const created = freshThread(welcomeMsgs(company));
     persistThreads([created], created.id);
     setMessages(created.messages);
     setShowSheet(false);
     resetExtras();
+  }
+
+  async function wipePlatform() {
+    if (!window.confirm("Apagar o histórico de tudo? Conversas, pesquisas e a auditoria deste login somem. Contas e lançamentos continuam.")) return;
+    if (userId) {
+      wipePlatformHistory(userId);
+      try {
+        await clearAuditLogs(userId);
+      } catch {
+        /* local already cleared */
+      }
+      clearSearches(userId);
+    } else {
+      wipePlatformHistory();
+    }
+    setSearches([]);
+    const created = freshThread(welcomeMsgs(company));
+    persistThreads([created], created.id);
+    setMessages(created.messages);
+    setShowSheet(false);
+    resetExtras();
+  }
+
+  function openSearch(hit: SearchHit) {
+    const thread = threads.find((item) => item.id === hit.threadId);
+    if (thread) openThread(thread.id);
+    else setInput(hit.text);
   }
 
   function openThread(id: string) {
@@ -390,7 +444,11 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     setPop(true);
     window.setTimeout(() => setPop(false), 420);
     setMessages((current) => [...current, { from: "user", body: raw }]);
-    if (!isConfirm(raw) && userId) setAsks(bumpChatAsk(userId, plan));
+    if (!isConfirm(raw) && userId) {
+      setAsks(bumpChatAsk(userId, plan));
+      pushSearch(userId, { text: raw, threadId: openId || "open", workspaceId });
+      setSearches(listSearches(userId, workspaceId));
+    }
     const next = await answer(raw);
     const payload = typeof next === "string" ? { body: next, evidence: undefined as TxCite[] | undefined } : { body: next.body, evidence: "evidence" in next ? next.evidence : undefined };
     setMessages((current) => [...current, { from: "bot", body: payload.body, evidence: payload.evidence }]);
@@ -475,6 +533,56 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
   const quotaPct = asks.infinite ? 100 : Math.min(100, Math.round((asks.used / Math.max(1, asks.limit)) * 100));
   const limits = chatLimitLines(plan);
   const recent = threads.filter((thread) => thread.messages.some((msg) => msg.from === "user")).slice(0, 6);
+  const shownSearches = searches.filter((row) => !historyQ.trim() || row.text.toLowerCase().includes(historyQ.trim().toLowerCase()));
+
+  const historyPanel = (
+    <aside className="search-history">
+      <div className="search-history-head">
+        <div>
+          <p className="page-kicker">Histórico</p>
+          <h3>Pesquisas</h3>
+        </div>
+        <button type="button" className="acct-icon" title="Esconder histórico" onClick={() => setHistoryOpen(false)}>
+          <PanelLeft size={16} />
+        </button>
+      </div>
+      <label className="history-search">
+        <Search size={14} />
+        <input value={historyQ} placeholder="Buscar no histórico" onChange={(e) => setHistoryQ(e.target.value)} />
+      </label>
+      <ul className="history-list">
+        {shownSearches.map((hit) => (
+          <li key={hit.id}>
+            <button type="button" onClick={() => openSearch(hit)}>
+              <Clock size={13} />
+              <span>
+                <strong>{hit.text}</strong>
+                <em>{new Date(hit.at).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</em>
+              </span>
+            </button>
+          </li>
+        ))}
+        {!shownSearches.length ? <li className="history-empty">Ainda não tem pesquisa neste espaço.</li> : null}
+      </ul>
+      <div className="history-actions">
+        <button type="button" className="tool-btn" onClick={startNewChat}>
+          <Plus size={14} />
+          Nova conversa
+        </button>
+        <button type="button" className="tool-btn danger" onClick={deleteHistory}>
+          <Eraser size={14} />
+          Excluir histórico
+        </button>
+        <button type="button" className="tool-btn danger" onClick={() => void wipePlatform()}>
+          <Trash2 size={14} />
+          Excluir tudo da plataforma
+        </button>
+        <Link href="/app/configuracoes" className="history-link">
+          Também em Ajustes
+        </Link>
+      </div>
+    </aside>
+  );
 
   const composer = (
     <div className={`chat-composer ${atLimit ? "locked" : ""} ${pop ? "pop" : ""}`}>
@@ -570,6 +678,10 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
           <Eraser size={15} />
           Excluir histórico
         </button>
+        <button type="button" className="tool-btn danger" onClick={() => void wipePlatform()}>
+          <Trash2 size={15} />
+          Excluir tudo da plataforma
+        </button>
         {studio ? (
           <>
             <button type="button" className="tool-btn" disabled={busy || atLimit} onClick={() => void send("Montar orçamento mês a mês")}>
@@ -594,7 +706,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
 
   return (
     <section
-      className={`acct-chat ${studio ? "studio" : "card"} ${compact ? "compact" : ""} ${hand ? "with-hand" : ""} ${dragOver ? "drop-on" : ""}`}
+      className={`acct-chat ${studio ? "studio" : "card"} ${compact ? "compact" : ""} ${hand ? "with-hand" : ""} ${dragOver ? "drop-on" : ""} ${studio && historyOpen ? "with-hist" : ""}`}
       onDragOver={(e) => {
         if (!studio) return;
         e.preventDefault();
@@ -609,9 +721,16 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
         if (file) void onFile(file);
       }}
     >
+      {studio && historyOpen ? historyPanel : null}
+      <div className="chat-col">
       {studio ? (
         <header className="claude-top">
           <div className="chat-abas">
+            {!historyOpen ? (
+              <button type="button" className="chat-aba-btn" onClick={() => setHistoryOpen(true)}>
+                Histórico
+              </button>
+            ) : null}
             <div className="chat-aba on">{company ? "IA da empresa" : "IA da pessoa"}</div>
           </div>
           <div className="claude-actions">
@@ -767,6 +886,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       ) : null}
 
       {composer}
+      </div>
     </section>
   );
 }

@@ -19,6 +19,7 @@ import {
   Upload,
   Users,
   Wallet,
+  Wrench,
 } from "lucide-react";
 
 export type WorkspaceKind = "PERSONAL" | "BUSINESS";
@@ -77,6 +78,7 @@ export function navFor(type: WorkspaceKind): NavGroup[] {
           { href: "/app/dre", label: "DRE", icon: Scale },
           { href: "/app/fluxo", label: "Fluxo", icon: ArrowLeftRight },
           { href: "/app/investimentos", label: "Investimentos", icon: LineChart },
+          { href: "/app/ferramentas", label: "Ferramentas", icon: Wrench },
           { href: "/app/conciliacao", label: "Conciliação", icon: BookOpen },
         ],
       },
@@ -115,6 +117,7 @@ export function navFor(type: WorkspaceKind): NavGroup[] {
         { href: "/app/metas", label: "Metas", icon: Flag },
         { href: "/app/investimentos", label: "Investimentos", icon: LineChart },
         { href: "/app/dividas", label: "Dívidas", icon: CreditCard },
+        { href: "/app/ferramentas", label: "Ferramentas", icon: Wrench },
         { href: "/app/importar", label: "Importar", icon: Upload },
       ],
     },

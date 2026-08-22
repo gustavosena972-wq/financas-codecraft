@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { listLogs, listWorkspaces, requireSession, setLastWorkspace } from "@/lib/store";
+import { clearAuditLogs, listLogs, listWorkspaces, requireSession, setLastWorkspace } from "@/lib/store";
+import { wipePlatformHistory } from "@/lib/history";
 import { useLive } from "@/lib/live";
 import { provisionWorkspace } from "@/lib/workspace";
 import { go } from "@/lib/types";
@@ -14,6 +15,8 @@ export default function SettingsPage() {
   const [user, setUser] = useState<Pick<User, "id" | "name" | "email" | "plan"> | null>(null);
   const [workspaces, setWorkspaces] = useState<{ id: string; name: string; type: "PERSONAL" | "BUSINESS" }[]>([]);
   const [logs, setLogs] = useState<ReturnType<typeof listLogs>>([]);
+  const [wiping, setWiping] = useState(false);
+  const [wipeMsg, setWipeMsg] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -39,6 +42,25 @@ export default function SettingsPage() {
     go("/app");
   }
 
+  async function wipeAll() {
+    if (!user) return;
+    if (!window.confirm("Apagar o histórico da plataforma? Conversas da IA, pesquisas e a auditoria deste login somem. Contas e lançamentos continuam.")) return;
+    setWiping(true);
+    setWipeMsg(null);
+    try {
+      wipePlatformHistory(user.id);
+      await clearAuditLogs(user.id);
+      setLogs([]);
+      setWipeMsg("Histórico apagado. O dinheiro lançado continua.");
+    } catch (err) {
+      wipePlatformHistory(user.id);
+      setLogs([]);
+      setWipeMsg(err instanceof Error ? err.message : "Apaguei o que estava neste navegador. A auditoria no servidor pode ter ficado.");
+    } finally {
+      setWiping(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -57,6 +79,16 @@ export default function SettingsPage() {
           {!hasBusiness ? <button className="btn btn-ghost" onClick={() => void addProfile("BUSINESS")}>Criar perfil empresarial</button> : null}
           <Link className="btn btn-primary" href="/app/planos">Atualizar plano</Link>
         </div>
+      </div>
+      <div className="card p-6">
+        <h2 className="font-semibold mb-1">Histórico da plataforma</h2>
+        <p className="text-sm text-muted mb-3">
+          Apaga conversas da IA, pesquisas e a trilha de auditoria. Não apaga conta, lançamento nem patrimônio.
+        </p>
+        <button className="btn btn-ghost" type="button" disabled={wiping} onClick={() => void wipeAll()}>
+          {wiping ? "Apagando…" : "Excluir histórico de tudo"}
+        </button>
+        {wipeMsg ? <p className="text-sm text-muted mt-3">{wipeMsg}</p> : null}
       </div>
       <div className="card p-6">
         <h2 className="font-semibold mb-3">Auditoria recente</h2>

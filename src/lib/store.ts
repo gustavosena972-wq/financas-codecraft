@@ -460,6 +460,14 @@ export function listLogs(userId: string) {
   return (snapshot?.auditLogs ?? []).filter((l) => l.userId === userId).slice(0, 80);
 }
 
+export async function clearAuditLogs(userId: string) {
+  const supabase = getSupabase();
+  const { error } = await supabase.from("fc_audit_logs").delete().eq("user_id", userId);
+  if (error) throw error;
+  if (snapshot) snapshot.auditLogs = snapshot.auditLogs.filter((row) => row.userId !== userId);
+  bumpStore();
+}
+
 export async function ensureProfile(userId: string, name: string) {
   const supabase = getSupabase();
   const { data } = await supabase.from("fc_profiles").select("id").eq("id", userId).maybeSingle();

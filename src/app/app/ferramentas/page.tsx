@@ -10,7 +10,7 @@ import { accountBalances, cashflowSeries, categorySpend, monthSummary } from "@/
 import { billsOverview } from "@/lib/ops";
 import { financePulse } from "@/lib/accountant";
 import { workspaceToolsPaid } from "@/lib/plans";
-import { productsFor } from "@/lib/products";
+import { ToolTiles } from "@/components/tool-tiles";
 import {
   bucketSpend,
   cutSave,
@@ -110,13 +110,8 @@ export default function FerramentasPage() {
         </p>
       </div>
 
-      <section className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {productsFor(view.company ? "company" : "person").map((item) => (
-          <article key={item.id} className="card p-4">
-            <h2 className="font-semibold">{item.name}</h2>
-            <p className="text-sm text-muted mt-1">{item.does}</p>
-          </article>
-        ))}
+      <section>
+        <ToolTiles mode={view.company ? "BUSINESS" : "PERSONAL"} />
       </section>
 
       <section className="grid sm:grid-cols-3 gap-4">
