@@ -46,12 +46,7 @@ export function TransactionForm({
   }
 
   if (simple) {
-    const houseCats = categories.filter((c) =>
-      type === "INCOME"
-        ? c.kind === "INCOME"
-        : /cartoes|fixas|outras/i.test(c.name) && c.kind === "EXPENSE",
-    );
-    const cats = houseCats.length ? houseCats : filtered;
+    const cats = filtered;
     if (!accounts[0]) {
       return <p className="text-sm text-muted">Cria um lugar do dinheiro em Onde está. Depois você anota aqui.</p>;
     }
