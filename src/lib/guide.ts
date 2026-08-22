@@ -31,7 +31,7 @@ export const START_STEPS = [
 
 export const GUIDE: GuideItem[] = [
   { href: "/app", title: "Patrimônio", does: "Tela central: o que você tem menos o que deve. Gráfico, orçamento e lançamentos.", tip: "Pessoa e Empresa no topo. Os números não se misturam." },
-  { href: "/app/chat", title: "IA", does: "Pergunta em português. A IA mostra o lançamento real por trás do número.", tip: "Ex.: quanto gastei com iFood. Sem senha. Sem PIX." },
+  { href: "/app/chat", title: "IA", does: "Pergunta em português. A IA mostra o lançamento real por trás do número.", tip: "Grátis: 8 perguntas/dia. Pro 40, Business 80. Sem senha. Sem PIX." },
   { href: "/app/lancamentos", title: "Lançar na mão", does: "Uma linha por movimento: salário, aluguel, mercado.", tip: "Descreva simples: “Aluguel”, “iFood”." },
   { href: "/app/contas", title: "Contas", does: "Onde o dinheiro mora: banco, carteira, cartão.", tip: "Uma conta por lugar real." },
   { href: "/app/agenda", title: "Contas do mês", does: "O que se repete, tipo aluguel ou internet.", tip: "No mês, lance o recorrente. Não sai sozinho do banco." },

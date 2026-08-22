@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Paperclip } from "lucide-react";
+import { Eraser, Paperclip, Plus, SendHorizontal, Shield, Sparkles, Trash2 } from "lucide-react";
 import { accountantReply, financePulse, type FinancePulse, type TxCite } from "@/lib/accountant";
 import { jarvisCompanyReply } from "@/lib/jarvis";
 import { addChatSpendsAction } from "@/app/actions/transactions";
@@ -13,8 +13,24 @@ import { analyzeImported, importedSheetView } from "@/lib/import-sheet";
 import { analyzeCompany, analyzeCompanyFile, COMPANY_SIZES, inferCompanySize, parseCompanySize, saveCompanySize } from "@/lib/company-biz";
 import { buildChatWorkbook } from "@/lib/workbooks";
 import { listAccounts, listCategories, requireSession } from "@/lib/store";
-import { planForecastMonths, planHasAi, type PlanId, workspaceToolsPaid } from "@/lib/plans";
+import { planById, planChatAskLabel, planChatChars, planForecastMonths, planHasAi, type PlanId, workspaceToolsPaid } from "@/lib/plans";
 import { runChatTool, toolsForChat, wantsApply, wantsReject, wantsSheetCreate } from "@/lib/chat-tools";
+import {
+  bumpChatAsk,
+  chatFileIssue,
+  chatLimitLines,
+  chatMessageIssue,
+  clearChatPack,
+  freshThread,
+  loadChatPack,
+  readChatAsks,
+  saveChatPack,
+  THINKING_LINES,
+  threadTitleFrom,
+  type ChatAskState,
+  type ChatThread,
+} from "@/lib/chat-guard";
+import { nowIso } from "@/lib/types";
 import { useLive } from "@/lib/live";
 import { brl } from "@/lib/money";
 import { TransactionForm } from "@/components/transaction-form";
@@ -29,6 +45,10 @@ function welcomeBot(isCompany: boolean) {
     : "Este chat é só da pessoa. Manda a planilha, ou se ainda não tiver arquivo abre a aba Orçamento e preenche mês a mês. Eu sugiro; só aplico se você gostar.";
 }
 
+function welcomeMsgs(isCompany: boolean): Msg[] {
+  return [{ from: "bot", body: welcomeBot(isCompany) }];
+}
+
 function downloadBuffer(buffer: ArrayBuffer, filename: string) {
   const blob = new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -41,9 +61,18 @@ function downloadBuffer(buffer: ArrayBuffer, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+function isConfirm(raw: string) {
+  const n = raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  return wantsApply(n) || wantsReject(n);
+}
+
 export function AccountantChat({ compact = false, studio = false }: { compact?: boolean; studio?: boolean }) {
   const live = useLive();
   const [workspaceId, setWorkspaceId] = useState("");
+  const [userId, setUserId] = useState("");
   const [company, setCompany] = useState(false);
   const [plan, setPlan] = useState<PlanId>("FREE");
   const [input, setInput] = useState("");
@@ -61,9 +90,15 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
   const [wantTab, setWantTab] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<{ id: string; name: string }[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string; kind: string }[]>([]);
+  const [asks, setAsks] = useState<ChatAskState>({ used: 0, limit: 8, remaining: 8, infinite: false });
+  const [threads, setThreads] = useState<ChatThread<Msg>[]>([]);
+  const [openId, setOpenId] = useState("");
+  const [thinkLine, setThinkLine] = useState(THINKING_LINES[0]);
+  const [pop, setPop] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const loadedFor = useRef("");
+  const hydrating = useRef(true);
 
   function refreshSheet(id: string, nextPlan: PlanId, isCompany: boolean) {
     const months = planForecastMonths(nextPlan, isCompany);
@@ -72,12 +107,19 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
     setSheet(buildMoneySheet(id, nextPaid, months, { company: isCompany, plan: nextPlan }));
   }
 
+  function persistThreads(next: ChatThread<Msg>[], nextOpen: string) {
+    setThreads(next);
+    setOpenId(nextOpen);
+    if (workspaceId) saveChatPack(workspaceId, next, nextOpen);
+  }
+
   useEffect(() => {
     void (async () => {
       const session = await requireSession();
       if (!session) return;
       const id = session.workspace.id;
       setWorkspaceId(id);
+      setUserId(session.user.id);
       const isCompany = session.workspace.type === "BUSINESS";
       setCompany(isCompany);
       setPlan(session.user.plan);
@@ -85,6 +127,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       setAccounts(listAccounts(id));
       setCategories(listCategories(id));
       setAiEnabled(planHasAi(session.user.plan));
+      setAsks(readChatAsks(session.user.id, session.user.plan));
       if (isCompany) {
         try {
           const pendingSize = localStorage.getItem("fc-pending-company-size");
@@ -102,34 +145,48 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
 
   useEffect(() => {
     if (!workspaceId) return;
+    hydrating.current = true;
     loadedFor.current = "";
-    try {
-      const raw = localStorage.getItem(`fc-chat-${workspaceId}`);
-      if (raw) {
-        const saved = JSON.parse(raw) as { messages?: Msg[]; showSheet?: boolean };
-        if (saved.messages?.length) {
-          setMessages(saved.messages);
-          setShowSheet(Boolean(saved.showSheet));
-          loadedFor.current = workspaceId;
-          return;
-        }
-      }
-    } catch {
-      /* ignore */
-    }
-    setMessages([{ from: "bot", body: welcomeBot(company) }]);
-    setShowSheet(true);
-    loadedFor.current = workspaceId;
+    const pack = loadChatPack<Msg>(workspaceId, welcomeMsgs(company));
+    const open = pack.threads.find((t) => t.id === pack.openId) ?? pack.threads[0];
+    setThreads(pack.threads);
+    setOpenId(pack.openId);
+    setMessages(open?.messages?.length ? open.messages : welcomeMsgs(company));
+    setShowSheet(open ? Boolean(open.showSheet) : true);
   }, [workspaceId, company]);
 
   useEffect(() => {
-    if (!workspaceId || loadedFor.current !== workspaceId) return;
-    localStorage.setItem(`fc-chat-${workspaceId}`, JSON.stringify({ messages, showSheet }));
-  }, [workspaceId, messages, showSheet]);
+    if (hydrating.current) {
+      hydrating.current = false;
+      loadedFor.current = workspaceId;
+      return;
+    }
+    if (!workspaceId || loadedFor.current !== workspaceId || !openId) return;
+    setThreads((prev) => {
+      const next = prev.map((thread) =>
+        thread.id === openId
+          ? { ...thread, messages, showSheet, title: threadTitleFrom(messages), updatedAt: nowIso() }
+          : thread,
+      );
+      saveChatPack(workspaceId, next, openId);
+      return next;
+    });
+  }, [messages, showSheet, openId, workspaceId]);
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, busy]);
+
+  useEffect(() => {
+    if (!busy) return;
+    setThinkLine(THINKING_LINES[0]);
+    let i = 0;
+    const timer = window.setInterval(() => {
+      i = (i + 1) % THINKING_LINES.length;
+      setThinkLine(THINKING_LINES[i]);
+    }, 1500);
+    return () => window.clearInterval(timer);
+  }, [busy]);
 
   async function applyPending() {
     if (!pending) return "Não tem sugestão esperando.";
@@ -157,22 +214,63 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       : "Montei uma planilha modelo e baixei no seu computador. Preenche com os seus números e manda de volta aqui. Eu sugiro; só mudo se você gostar.";
   }
 
-  function startNewChat() {
-    setMessages([{ from: "bot", body: welcomeBot(company) }]);
+  function resetExtras() {
     setPending(null);
     setImported(null);
     setInput("");
     setHand(false);
     setBusy(false);
-    setShowSheet(false);
     setWantTab(null);
-    if (workspaceId) localStorage.setItem(`fc-chat-${workspaceId}`, JSON.stringify({ messages: [{ from: "bot", body: welcomeBot(company) }], showSheet: false }));
+  }
+
+  function startNewChat() {
+    const created = freshThread(welcomeMsgs(company));
+    const kept = threads.map((thread) =>
+      thread.id === openId ? { ...thread, messages, showSheet, title: threadTitleFrom(messages), updatedAt: nowIso() } : thread,
+    );
+    persistThreads([created, ...kept.filter((thread) => thread.messages.some((msg) => msg.from === "user"))].slice(0, 12), created.id);
+    setMessages(created.messages);
+    setShowSheet(false);
+    resetExtras();
   }
 
   function deleteChat() {
-    if (!window.confirm("Apagar esta conversa? O dinheiro lançado continua. Só some o chat.")) return;
-    if (workspaceId) localStorage.removeItem(`fc-chat-${workspaceId}`);
-    startNewChat();
+    if (!window.confirm("Apagar esta conversa? O dinheiro lançado continua. Só some este chat.")) return;
+    const rest = threads.filter((thread) => thread.id !== openId);
+    const next = rest.length ? rest : [freshThread(welcomeMsgs(company))];
+    persistThreads(next, next[0].id);
+    setMessages(next[0].messages);
+    setShowSheet(Boolean(next[0].showSheet));
+    resetExtras();
+  }
+
+  function deleteHistory() {
+    if (!window.confirm("Apagar o histórico? Todas as conversas deste espaço somem. O dinheiro lançado continua.")) return;
+    if (workspaceId) clearChatPack(workspaceId);
+    const created = freshThread(welcomeMsgs(company));
+    persistThreads([created], created.id);
+    setMessages(created.messages);
+    setShowSheet(false);
+    resetExtras();
+  }
+
+  function openThread(id: string) {
+    const thread = threads.find((item) => item.id === id);
+    if (!thread) return;
+    persistThreads(
+      threads.map((item) =>
+        item.id === openId ? { ...item, messages, showSheet, title: threadTitleFrom(messages), updatedAt: nowIso() } : item,
+      ),
+      id,
+    );
+    setMessages(thread.messages);
+    setShowSheet(Boolean(thread.showSheet));
+    resetExtras();
+  }
+
+  function quotaReply() {
+    const name = planById(plan).name;
+    return `A IA deste plano (${name}) já usou as ${asks.limit} perguntas de hoje. Amanhã zera. No Pro sobem para 40, no Business para 80, no Contador não tem teto.`;
   }
 
   async function answer(raw: string) {
@@ -276,9 +374,23 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
   async function send(text = input) {
     const raw = text.trim();
     if (!raw || busy || !workspaceId) return;
+    const issue = chatMessageIssue(raw, plan);
+    if (issue) {
+      setInput("");
+      setMessages((current) => [...current, { from: "user", body: raw }, { from: "bot", body: issue }]);
+      return;
+    }
+    if (!isConfirm(raw) && !asks.infinite && asks.remaining <= 0) {
+      setInput("");
+      setMessages((current) => [...current, { from: "user", body: raw }, { from: "bot", body: quotaReply() }]);
+      return;
+    }
     setInput("");
     setBusy(true);
+    setPop(true);
+    window.setTimeout(() => setPop(false), 420);
     setMessages((current) => [...current, { from: "user", body: raw }]);
+    if (!isConfirm(raw) && userId) setAsks(bumpChatAsk(userId, plan));
     const next = await answer(raw);
     const payload = typeof next === "string" ? { body: next, evidence: undefined as TxCite[] | undefined } : { body: next.body, evidence: "evidence" in next ? next.evidence : undefined };
     setMessages((current) => [...current, { from: "bot", body: payload.body, evidence: payload.evidence }]);
@@ -297,7 +409,19 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
 
   async function onFile(file: File) {
     if (!workspaceId || busy) return;
+    const fileIssue = chatFileIssue(file);
+    if (fileIssue) {
+      setMessages((current) => [...current, { from: "bot", body: fileIssue }]);
+      return;
+    }
+    if (!asks.infinite && asks.remaining <= 0) {
+      setMessages((current) => [...current, { from: "bot", body: quotaReply() }]);
+      return;
+    }
     setBusy(true);
+    setPop(true);
+    window.setTimeout(() => setPop(false), 420);
+    if (userId) setAsks(bumpChatAsk(userId, plan));
     setMessages((current) => [...current, { from: "user", body: `Mandei a planilha ${file.name}` }]);
     try {
       const organized = await organizeWorkbook(await file.arrayBuffer(), file.name);
@@ -346,6 +470,127 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
         ...toolsForChat(plan, company).map((item) => item.label),
       ];
   const empty = messages.length <= 1;
+  const maxChars = planChatChars(plan);
+  const atLimit = !asks.infinite && asks.remaining <= 0;
+  const quotaPct = asks.infinite ? 100 : Math.min(100, Math.round((asks.used / Math.max(1, asks.limit)) * 100));
+  const limits = chatLimitLines(plan);
+  const recent = threads.filter((thread) => thread.messages.some((msg) => msg.from === "user")).slice(0, 6);
+
+  const composer = (
+    <div className={`chat-composer ${atLimit ? "locked" : ""} ${pop ? "pop" : ""}`}>
+      {recent.length > 1 ? (
+        <div className="thread-pills">
+          {recent.map((thread) => (
+            <button
+              key={thread.id}
+              type="button"
+              className={`thread-pill ${thread.id === openId ? "on" : ""}`}
+              onClick={() => openThread(thread.id)}
+            >
+              {thread.title}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <div className="quota-row">
+        <Sparkles size={14} />
+        <div className="quota-track" aria-hidden="true">
+          <span className={`quota-fill ${asks.remaining <= 2 && !asks.infinite ? "low" : ""}`} style={{ width: `${quotaPct}%` }} />
+        </div>
+        <p>
+          {asks.infinite
+            ? "Perguntas livres hoje"
+            : `${asks.remaining} de ${asks.limit} perguntas hoje · ${planById(plan).name}`}
+        </p>
+      </div>
+      <div className="composer-box">
+        {studio ? (
+          <>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".xlsx,.xls,.csv,.xlsm"
+              hidden
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void onFile(file);
+              }}
+            />
+            <button type="button" className="acct-icon" title="Anexar planilha" disabled={busy || atLimit} onClick={() => fileRef.current?.click()}>
+              <Paperclip size={18} />
+            </button>
+          </>
+        ) : null}
+        <input
+          value={input}
+          maxLength={maxChars}
+          disabled={atLimit}
+          placeholder={
+            atLimit
+              ? "Acabaram as perguntas de hoje"
+              : company
+                ? "Pergunta do caixa, porte ou planilha"
+                : "Pergunta, solta o Excel, ou pede a planilha"
+          }
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              void send();
+            }
+          }}
+        />
+        <button className="btn btn-primary send-btn" type="button" disabled={busy || atLimit || !input.trim()} onClick={() => void send()}>
+          <SendHorizontal size={16} />
+          Enviar
+        </button>
+      </div>
+      <div className="composer-meta">
+        <span>
+          {input.length}/{maxChars}
+        </span>
+        {atLimit ? (
+          <Link href="/app/planos" className="quota-up">
+            Quero mais perguntas
+          </Link>
+        ) : (
+          <span>{planChatAskLabel(plan)}</span>
+        )}
+      </div>
+      <div className="composer-tools">
+        <button type="button" className="tool-btn" onClick={startNewChat}>
+          <Plus size={15} />
+          Nova conversa
+        </button>
+        <button type="button" className="tool-btn danger" onClick={deleteChat}>
+          <Trash2 size={15} />
+          Excluir
+        </button>
+        <button type="button" className="tool-btn danger" onClick={deleteHistory}>
+          <Eraser size={15} />
+          Excluir histórico
+        </button>
+        {studio ? (
+          <>
+            <button type="button" className="tool-btn" disabled={busy || atLimit} onClick={() => void send("Montar orçamento mês a mês")}>
+              Mês a mês
+            </button>
+            <button type="button" className="tool-btn" disabled={busy} onClick={() => setHand((v) => !v)}>
+              {hand ? "Esconder mão" : "Colocar na mão"}
+            </button>
+          </>
+        ) : null}
+      </div>
+      <ul className="chat-limits">
+        {limits.map((line) => (
+          <li key={line}>
+            <Shield size={12} />
+            {line}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 
   return (
     <section
@@ -368,12 +613,6 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
         <header className="claude-top">
           <div className="chat-abas">
             <div className="chat-aba on">{company ? "IA da empresa" : "IA da pessoa"}</div>
-            <button type="button" className="chat-aba-btn" onClick={startNewChat}>
-              Nova conversa
-            </button>
-            <button type="button" className="chat-aba-btn danger" onClick={deleteChat}>
-              Excluir
-            </button>
           </div>
           <div className="claude-actions">
             {pulse ? (
@@ -396,6 +635,12 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
         <div className="acct-log" ref={logRef}>
           {studio && empty ? (
             <div className="claude-empty">
+              <div className="empty-spark" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </div>
+              <div className="empty-mark">FC</div>
               <h2>{company ? "De autônomo a empresa grande." : "Como posso olhar suas finanças hoje?"}</h2>
               <p>
                 {company
@@ -405,7 +650,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
               {company ? (
                 <div className="flex flex-wrap gap-2 justify-center mt-4">
                   {COMPANY_SIZES.map((item) => (
-                    <button key={item.id} type="button" className="btn btn-ghost" onClick={() => void send(item.id === "mei" ? "Sou MEI" : item.id === "autonomo" ? "Sou autônomo" : item.name)}>
+                    <button key={item.id} type="button" className="btn btn-ghost bounce-in" onClick={() => void send(item.id === "mei" ? "Sou MEI" : item.id === "autonomo" ? "Sou autônomo" : item.name)}>
                       {item.name}
                     </button>
                   ))}
@@ -439,7 +684,10 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
                         <li key={row.id}>
                           <span>{row.date}</span>
                           <span>{row.description}</span>
-                          <strong>{row.type === "EXPENSE" ? "−" : "+"}{brl(row.amount)}</strong>
+                          <strong>
+                            {row.type === "EXPENSE" ? "−" : "+"}
+                            {brl(row.amount)}
+                          </strong>
                         </li>
                       ))}
                     </ul>
@@ -456,7 +704,7 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
                   <i />
                   <i />
                 </span>
-                Pensando
+                {thinkLine}
               </div>
             </div>
           ) : null}
@@ -511,59 +759,14 @@ export function AccountantChat({ compact = false, studio = false }: { compact?: 
       {!compact ? (
         <div className="acct-chips">
           {chips.map((item) => (
-            <button key={item} type="button" className="acct-chip" title={toolHint[item]} onClick={() => void send(item)} disabled={busy}>
+            <button key={item} type="button" className="acct-chip" title={toolHint[item]} onClick={() => void send(item)} disabled={busy || atLimit}>
               {item}
             </button>
           ))}
         </div>
       ) : null}
 
-      <div className="acct-bar">
-        {studio ? (
-          <>
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".xlsx,.xls,.csv,.xlsm"
-              hidden
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void onFile(file);
-              }}
-            />
-            <button type="button" className="btn btn-ink" title="Abrir planilha" disabled={busy} onClick={() => fileRef.current?.click()}>
-              Abrir planilha
-            </button>
-            <button type="button" className="acct-icon" title="Anexar arquivo" disabled={busy} onClick={() => fileRef.current?.click()}>
-              <Paperclip size={18} />
-            </button>
-            <button type="button" className="acct-chip" disabled={busy} onClick={() => void send("Montar orçamento mês a mês")}>
-              Preencher mês a mês
-            </button>
-            <button type="button" className="acct-chip" disabled={busy} onClick={() => setHand((v) => !v)}>
-              {hand ? "Esconder mão" : "Colocar na mão"}
-            </button>
-          </>
-        ) : null}
-        <input
-          value={input}
-          placeholder={
-            company
-              ? "Sou autônomo, MEI, pequena ou grande. Manda a planilha ou pede a análise"
-              : "Pergunta, solta o Excel, ou pede para eu montar a planilha"
-          }
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              void send();
-            }
-          }}
-        />
-        <button className="btn btn-primary" type="button" disabled={busy || !input.trim()} onClick={() => void send()}>
-          Enviar
-        </button>
-      </div>
+      {composer}
     </section>
   );
 }

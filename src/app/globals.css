@@ -902,6 +902,11 @@ html[data-theme="dark"] .btn-ghost {
   margin: 0 auto;
   width: 100%;
 }
+@media (max-width: 640px) {
+  .composer-box { flex-wrap: wrap; }
+  .composer-box input { min-width: 100%; }
+  .send-btn { margin-left: auto; }
+}
 .acct-bar input {
   flex: 1;
   border: 1.5px solid var(--line);
@@ -910,6 +915,192 @@ html[data-theme="dark"] .btn-ghost {
   font-size: 14px;
   background: var(--bg);
 }
+
+.chat-composer {
+  width: min(920px, 100%);
+  margin: 0 auto;
+  padding: 8px 16px 20px;
+  display: grid;
+  gap: 8px;
+}
+.acct-chat.compact .chat-composer { padding: 8px 12px 14px; }
+.thread-pills {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.thread-pill {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.thread-pill.on {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 16%, var(--paper));
+}
+.quota-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+.quota-row svg { color: var(--gold); flex: none; }
+.quota-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-2);
+  overflow: hidden;
+}
+.quota-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--gold), #e8d39a);
+  transition: width 0.45s ease;
+}
+.quota-fill.low { background: linear-gradient(90deg, #c45c4a, var(--gold)); }
+.composer-box {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border: 1.5px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--ink) 6%, transparent);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+.composer-box:focus-within {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 20%, transparent), 0 12px 32px color-mix(in srgb, var(--gold) 18%, transparent);
+}
+.chat-composer.pop .composer-box {
+  animation: composerPop 0.42s ease;
+}
+.composer-box input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 10px 8px;
+  font-size: 14.5px;
+  min-width: 0;
+}
+.composer-box input:focus { outline: none; box-shadow: none; }
+.send-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+}
+.composer-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 0 4px;
+}
+.quota-up {
+  color: var(--gold);
+  font-weight: 750;
+}
+.composer-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+.tool-btn:hover { transform: translateY(-1px); border-color: var(--gold); }
+.tool-btn.danger {
+  color: var(--negative);
+  background: #f8e8e5;
+  border-color: #e8cfc9;
+}
+.tool-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.chat-limits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.chat-limits li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: color-mix(in srgb, var(--gold) 10%, var(--bg));
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  animation: limitIn 0.45s ease both;
+}
+.chat-limits li:nth-child(2) { animation-delay: 0.05s; }
+.chat-limits li:nth-child(3) { animation-delay: 0.1s; }
+.chat-limits li:nth-child(4) { animation-delay: 0.15s; }
+.chat-limits li:nth-child(5) { animation-delay: 0.2s; }
+.chat-limits svg { color: var(--gold); }
+.chat-composer.locked .composer-box {
+  border-color: color-mix(in srgb, var(--negative) 35%, var(--line));
+}
+.empty-mark {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, var(--gold), #c9a45a);
+  color: #1a1408;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  animation: floaty 4.8s ease-in-out infinite;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--gold) 40%, transparent);
+}
+.empty-spark {
+  position: relative;
+  height: 0;
+}
+.empty-spark i {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  animation: spark 2.4s ease-in-out infinite;
+}
+.empty-spark i:nth-child(1) { left: 22%; top: 8px; animation-delay: 0s; }
+.empty-spark i:nth-child(2) { left: 70%; top: -6px; animation-delay: 0.4s; }
+.empty-spark i:nth-child(3) { left: 48%; top: 18px; width: 5px; height: 5px; animation-delay: 0.8s; }
+.bounce-in { animation: bubbleIn 0.5s ease both; }
 
 .guide-mask {
   position: fixed;
@@ -1032,6 +1223,19 @@ html[data-theme="dark"] .btn-ghost {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
 }
+@keyframes composerPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.985); }
+  100% { transform: scale(1); }
+}
+@keyframes limitIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes spark {
+  0%, 100% { opacity: 0.15; transform: scale(0.7) translateY(0); }
+  50% { opacity: 1; transform: scale(1.25) translateY(-8px); }
+}
 
 .rise { animation: rise 0.55s ease both; }
 .rise-d1 { animation-delay: 0.07s; }
@@ -1136,7 +1340,7 @@ html[data-theme="dark"] .claude-empty h2 {
   .rise, .float-card, .live-dot .d, .pop-in, .help-fab,
   .acct-row, .chat-sheet .xls, .claude-empty, .app-top, .hero-title,
   .think-dots i, .btn-primary, .health-pill.good, .hero-stage::before, .hero-stage::after,
-  .bg-aurora, .bg-orb, .bg-grid {
+  .bg-aurora, .bg-orb, .bg-grid, .empty-mark, .empty-spark i, .chat-limits li, .chat-composer.pop .composer-box {
     animation: none;
   }
   .hero-stage::before, .hero-stage::after { display: none; }

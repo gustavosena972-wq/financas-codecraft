@@ -31,7 +31,7 @@ export const PLANS: Plan[] = [
     forWho: "Entrar e usar. Pessoa e empresa no mesmo login. IA no assistente. Nada entra sem você aceitar.",
     includes: [
       "Pessoa e empresa, espaços separados",
-      "IA no assistente: pergunta e vê o lançamento",
+      "IA: 8 perguntas por dia, com o lançamento real",
       "Lançamentos ilimitados",
       "Patrimônio, orçamento e o mês de agora",
       "Só muda se você gostar",
@@ -50,7 +50,7 @@ export const PLANS: Plan[] = [
     badge: "Mais usado",
     includes: [
       "Tudo do Grátis — pessoa e empresa",
-      "IA com 50-30-20, corte, moradia, reserva e dívida",
+      "IA: 40 perguntas por dia, 50-30-20, corte e dívida",
       "Exportar planilha",
       "Foto do comprovante (OCR)",
       "Metas, teto do mês e importar extrato",
@@ -71,6 +71,7 @@ export const PLANS: Plan[] = [
     badge: "Empresa",
     includes: [
       "Tudo do Pro",
+      "IA: 80 perguntas por dia na tesouraria",
       "Vários usuários na empresa",
       "Contas a pagar e a receber",
       "Centros de custo",
@@ -91,6 +92,7 @@ export const PLANS: Plan[] = [
     badge: "B2B",
     includes: [
       "Tudo do Business",
+      "IA sem teto de perguntas no dia",
       "Fechar mês e conciliação",
       "Auditoria de quem fez o quê",
       "Vários CNPJs no mesmo login",
@@ -157,6 +159,25 @@ export function recurringLimit(plan: PlanId | string | null | undefined) {
 
 export function goalLimit(plan: PlanId | string | null | undefined) {
   return personPaid(plan) ? Number.POSITIVE_INFINITY : FREE_GOAL_LIMIT;
+}
+
+export function planChatAsksPerDay(plan: PlanId | string | null | undefined) {
+  if (plan === "ENTERPRISE") return Number.POSITIVE_INFINITY;
+  if (plan === "BUSINESS") return 80;
+  if (plan === "PRO" || plan === "PLUS") return 40;
+  return 8;
+}
+
+export function planChatChars(plan: PlanId | string | null | undefined) {
+  if (plan === "ENTERPRISE") return 4000;
+  if (plan === "BUSINESS") return 2000;
+  if (plan === "PRO" || plan === "PLUS") return 1200;
+  return 400;
+}
+
+export function planChatAskLabel(plan: PlanId | string | null | undefined) {
+  const limit = planChatAsksPerDay(plan);
+  return Number.isFinite(limit) ? `${limit} perguntas por dia` : "perguntas ilimitadas no dia";
 }
 
 export function teamLimit(plan: PlanId | string | null | undefined) {

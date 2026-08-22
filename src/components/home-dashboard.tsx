@@ -239,7 +239,7 @@ export function HomeDashboard() {
         <div className="px-5 pt-4">
           <p className="page-kicker">Assistente</p>
           <h2 className="font-semibold mt-1">Pergunta à IA. Ela mostra o lançamento.</h2>
-          <p className="text-sm text-muted mt-1">Ex.: “quanto gastei com iFood?”. Sem senha. Sem mover PIX.</p>
+          <p className="text-sm text-muted mt-1">Ex.: “quanto gastei com iFood?”. Sem senha. Sem PIX. No grátis são 8 perguntas por dia.</p>
         </div>
         <AccountantChat compact />
       </section>
