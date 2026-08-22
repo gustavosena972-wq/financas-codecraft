@@ -82,7 +82,13 @@ export function familyGroupLabel(group: FamilyGroup) {
 
 function skipRow(text: string) {
   const n = fold(text);
-  return /^(total|subtotal|soma|saldo|categoria|item)\b/.test(n) || n.includes("subtotal") || !n;
+  return (
+    /^(total|subtotal|soma|saldo|categoria|item)\b/.test(n) ||
+    n.includes("subtotal") ||
+    n.includes("total de despesa") ||
+    n.includes("total carto") ||
+    !n
+  );
 }
 
 function rowAt(rows: string[][], i: number) {
@@ -177,7 +183,7 @@ function parseResumoIncome(rows: string[][], year: number): MappedRow[] {
 export function parseFamilyControl(tables: NamedSheet[], filename: string): MappedRow[] | null {
   const year = Number(filename.match(/20\d{2}/)?.[0] ?? new Date().getFullYear());
   const monthSheets = tables.filter((sheet) => monthFromSheetName(sheet.name, year) && looksFamilyMonth(sheet.rows));
-  if (monthSheets.length < 3) return null;
+  if (!monthSheets.length) return null;
 
   const rows: MappedRow[] = [];
   const monthIncome: MappedRow[] = [];

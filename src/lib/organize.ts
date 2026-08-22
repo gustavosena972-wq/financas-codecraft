@@ -475,6 +475,8 @@ export async function organizeWorkbook(buffer: ArrayBuffer, filename: string): P
   const rows: MappedRow[] = [];
   const budgets: BudgetCell[] = [];
   for (const table of tables) {
+    const sheetName = normalizeHeader(table.name);
+    if (/resumo|cartoes|instruc|como usar|evolucao/.test(sheetName)) continue;
     const launches = parseLaunchTable(table.rows);
     const grid = parseBudgetGrid(table.rows, year);
     const transposed = grid.length ? [] : parseBudgetTransposed(table.rows, year);

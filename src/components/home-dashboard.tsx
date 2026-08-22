@@ -326,10 +326,9 @@ function FamilyHome({ view }: { view: View }) {
             </article>
             <article className="card p-6 space-y-4">
               <div>
-                <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">No ano</div>
-                <p className="text-sm text-muted mt-2">Vai gastar</p>
-                <div className="text-xl font-semibold">{brl(year.expense)}</div>
-                <p className="text-sm text-muted mt-3">{year.leftover >= 0 ? "Vai sobrar" : "Vai faltar"}</p>
+                <div className="text-[11px] uppercase tracking-wide text-muted font-semibold">No ano · entra menos sai</div>
+                <p className="text-sm text-muted mt-2">Entra {brl(year.income)} · sai {brl(year.expense)}</p>
+                <p className="text-sm text-muted mt-3">{year.leftover >= 0 ? "Sobra do ano" : "Falta no ano"}</p>
                 <div className={`text-3xl font-semibold ${year.leftover >= 0 ? "text-positive" : "text-negative"}`}>
                   {brl(Math.abs(year.leftover))}
                 </div>

@@ -1,4 +1,4 @@
-import { addAccount, addCategory, addTransaction, listAccounts, listCategories, listTransactions, pushAudit, requireSession, upsertBudget } from "@/lib/store";
+import { addAccount, addCategory, addTransaction, deleteTransaction, listAccounts, listCategories, listTransactions, pushAudit, requireSession, upsertBudget } from "@/lib/store";
 import { parseWorkbook, type MappedRow } from "@/lib/excel";
 import { newId, nowIso } from "@/lib/types";
 import { applyCategorySuggestion } from "@/lib/ai";
@@ -128,6 +128,19 @@ export async function applyOrganizeAction(payloadJson: string) {
   let created = 0;
   let budgets = 0;
   if (payload.rows?.length) {
+    const months = new Set(
+      payload.rows
+        .filter((row) => row.amount > 0 && row.date)
+        .map((row) => row.date.slice(0, 7))
+        .filter((month) => month && month !== "sem-da"),
+    );
+    if (session.workspace.type === "PERSONAL" && months.size >= 3) {
+      for (const tx of listTransactions(session.workspace.id)) {
+        if (months.has(tx.date.slice(0, 7))) {
+          await deleteTransaction(tx.id, session.workspace.id);
+        }
+      }
+    }
     const imported = await confirmImportAction(JSON.stringify(payload.rows));
     if ("error" in imported && imported.error && !payload.budgets?.length) return imported;
     created = imported.created ?? 0;
