@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { addAccount, archiveAccount, pushAudit, requireSession } from "@/lib/store";
+import { addAccount, archiveAccount, listBankLinks, pushAudit, requireSession, saveBankLinks } from "@/lib/store";
 import { parseMoneyToCents } from "@/lib/money";
 import { newId, nowIso } from "@/lib/types";
 import type { AccountType } from "@/lib/types";
@@ -43,4 +43,24 @@ export async function archiveAccountAction(accountId: string) {
   const session = await requireSession();
   if (!session) return;
   await archiveAccount(accountId, session.workspace.id);
+}
+
+export async function requestBankLinksAction(names: string[]) {
+  const session = await requireSession();
+  if (!session) return { error: "Sessão expirada." };
+  if (session.workspace.type !== "PERSONAL") return { error: "Ligar banco da casa fica em Pessoa." };
+  const clean = [...new Set(names.map((name) => name.trim()).filter((name) => name.length >= 2))];
+  if (!clean.length) return { error: "Marca pelo menos um banco ou cartão." };
+  const now = nowIso();
+  const existing = listBankLinks(session.workspace.id);
+  const next = clean.map((name) => {
+    const found = existing.find((item) => item.name.toLowerCase() === name.toLowerCase());
+    return found ?? { id: newId(), name, requestedAt: now };
+  });
+  await saveBankLinks(session.workspace.id, next);
+  await pushAudit(session.user.id, "update", "account", {
+    workspaceId: session.workspace.id,
+    detail: `Pediu ligação: ${next.map((item) => item.name).join(", ")}`,
+  });
+  return { ok: "Pedido guardado. O gasto só entra sozinho depois que o banco autorizar no Open Finance. Sem senha aqui." };
 }

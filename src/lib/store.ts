@@ -1,4 +1,4 @@
-import type { Account, AuditLog, Bill, Budget, Category, CostCenter, Goal, Holding, Party, Recurring, TeamSeat, Transaction, User, Workspace, WorkspaceExtras } from "./types";
+import type { Account, AuditLog, BankLink, Bill, Budget, Category, CostCenter, Goal, Holding, Party, Recurring, TeamSeat, Transaction, User, Workspace, WorkspaceExtras } from "./types";
 import { newId, nowIso } from "./types";
 import { getSupabase } from "./supabase";
 import { loadLocalBilling, parseBilling, saveLocalBilling, type Billing } from "./billing";
@@ -144,6 +144,7 @@ function parseExtras(raw: unknown): Record<string, WorkspaceExtras> {
       reconciledIds: Array.isArray(item?.reconciledIds) ? item.reconciledIds : [],
       lockedMonths: Array.isArray(item?.lockedMonths) ? item.lockedMonths : [],
       team: Array.isArray(item?.team) ? item.team : [],
+      bankLinks: Array.isArray(item?.bankLinks) ? item.bankLinks : [],
     };
   }
   return out;
@@ -160,6 +161,7 @@ function emptyExtras(): WorkspaceExtras {
     reconciledIds: [],
     lockedMonths: [],
     team: [],
+    bankLinks: [],
   };
 }
 
@@ -454,6 +456,16 @@ export async function saveTeam(workspaceId: string, items: TeamSeat[]) {
   await persistExtras();
 }
 
+export function listBankLinks(workspaceId: string) {
+  return extrasOf(workspaceId).bankLinks;
+}
+
+export async function saveBankLinks(workspaceId: string, items: BankLink[]) {
+  if (!snapshot) throw new Error("Sessão expirada.");
+  snapshot.extras[workspaceId] = { ...emptyExtras(), ...(snapshot.extras[workspaceId] ?? {}), bankLinks: items };
+  await persistExtras();
+}
+
 export function listWorkspaces(userId: string) {
   return (snapshot?.workspaces ?? [])
     .filter((w) => w.ownerId === userId)
@@ -610,7 +622,8 @@ export async function wipeWorkspaceMoney(workspaceId: string) {
     for (const account of snapshot.accounts) {
       if (account.workspaceId === workspaceId) account.initialBalance = 0;
     }
-    snapshot.extras[workspaceId] = emptyExtras();
+    const keepBanks = snapshot.extras[workspaceId]?.bankLinks ?? [];
+    snapshot.extras[workspaceId] = { ...emptyExtras(), bankLinks: keepBanks };
   }
   await persistExtras();
   return { transactions: txs.length, budgets: budgets.length };

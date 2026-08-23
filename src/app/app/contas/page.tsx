@@ -9,7 +9,8 @@ import { archiveAccountAction, createAccountAction } from "@/app/actions/account
 import { ActionForm } from "@/components/action-form";
 import { ACCOUNT_LABEL } from "@/lib/defaults";
 import { go } from "@/lib/types";
-import { listAccounts } from "@/lib/store";
+import { listAccounts, listBankLinks } from "@/lib/store";
+import { BankConnect } from "@/components/bank-connect";
 
 const HOUSE_LABEL: Record<string, string> = {
   CHECKING: "Banco",
@@ -24,6 +25,7 @@ export default function AccountsPage() {
   const [data, setData] = useState<ReturnType<typeof accountBalances>>([]);
   const [archived, setArchived] = useState(0);
   const [company, setCompany] = useState(false);
+  const [banks, setBanks] = useState<string[]>([]);
 
   useEffect(() => {
     void (async () => {
@@ -35,6 +37,7 @@ export default function AccountsPage() {
       setCompany(session.workspace.type === "BUSINESS");
       setData(accountBalances(session.workspace.id));
       setArchived(listAccounts(session.workspace.id, true).filter((a) => a.archived).length);
+      setBanks(listBankLinks(session.workspace.id).map((item) => item.name));
     })();
   }, [live]);
 
@@ -46,6 +49,7 @@ export default function AccountsPage() {
           <h1 className="text-2xl font-semibold">Onde está</h1>
           <p className="text-sm text-muted mt-1">Só três ideias: banco, dinheiro na mão e cartão. O número é quanto tem agora nesse lugar.</p>
         </div>
+        <BankConnect selected={banks} />
         <div className="space-y-3">
           {data.map((account) => (
             <article key={account.id} className="card p-5">

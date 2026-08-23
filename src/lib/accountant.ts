@@ -356,9 +356,19 @@ export function accountantReply(message: string, workspaceId: string): Accountan
   }
 
   const house = familyOutlook(workspaceId);
+  if (/(giliad|giliard|lava.?carro|lavagem)/.test(t)) {
+    return {
+      body: "Giliard lava o carro. Isso é gasto da casa, some no mês. Não é alguém da família gastando cartão.",
+    };
+  }
+  if (/(open finance|conectar banco|ligar (o )?banco|cadastrar (no |o )?banco|extrato automatico|extrato automático)/.test(t)) {
+    return {
+      body: "O controle fácil é ligar o banco pelo Open Finance. O app não pede senha. Você autoriza no app do Nubank ou do Inter. Abre Onde está e marca os bancos. Quando autorizar, o gasto entra sozinho.",
+    };
+  }
   if (
     !house.empty &&
-    /(quem (esta|está|ta|tá)?\s*(gast|compr|usou)|sandra|hudson|giliad|heitor|ninguem gast|ninguém gast|quem nao|quem não)/.test(t)
+    /(quem (esta|está|ta|tá)?\s*(gast|compr|usou)|sandra|hudson|heitor|ninguem gast|ninguém gast|quem nao|quem não)/.test(t)
   ) {
     return { body: peopleSpeech(house.watch) };
   }

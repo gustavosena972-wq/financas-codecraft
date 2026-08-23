@@ -123,6 +123,12 @@ export type TeamSeat = {
   role: "ADMIN" | "FINANCE" | "VIEW";
 };
 
+export type BankLink = {
+  id: string;
+  name: string;
+  requestedAt: string;
+};
+
 export type WorkspaceExtras = {
   recurring: Recurring[];
   goals: Goal[];
@@ -133,6 +139,7 @@ export type WorkspaceExtras = {
   reconciledIds: string[];
   lockedMonths: string[];
   team: TeamSeat[];
+  bankLinks: BankLink[];
 };
 
 export type AuditLog = {

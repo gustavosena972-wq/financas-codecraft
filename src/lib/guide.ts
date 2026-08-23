@@ -33,7 +33,7 @@ export const GUIDE: GuideItem[] = [
   { href: "/app", title: "O que sobra", does: "Este mês e o ano: o que vai gastar, o que vai sobrar. A IA avalia todo dia e diz o que fazer.", tip: "A planilha entra uma vez. A tela não copia a tabela." },
   { href: "/app/chat", title: "IA", does: "Pergunta o que vai sobrar até dezembro. Ela lê o ano da casa e dá a dica do dia.", tip: "Experimentar: 8/dia. Casa 40. Casa Plus 80. Empresa 120. Completo sem teto. Sem senha. Sem PIX." },
   { href: "/app/lancamentos", title: "Anotar", does: "Se faltou na planilha, anota aqui: o que foi e quanto.", tip: "Um de cada vez. Saiu ou entrou." },
-  { href: "/app/contas", title: "Onde está", does: "Banco, dinheiro na mão e cartão. O número é quanto tem agora.", tip: "Um lugar de cada vez." },
+  { href: "/app/contas", title: "Onde está", does: "Banco, dinheiro na mão e cartão. Dá para pedir a ligação do banco: o gasto entra sozinho, sem senha.", tip: "Open Finance. Você autoriza no app do banco." },
   { href: "/app/agenda", title: "Contas do mês", does: "O que se repete, tipo aluguel ou internet.", tip: "No mês, lance o recorrente. Não sai sozinho do banco." },
   { href: "/app/orcamento", title: "Este mês", does: "Primeiro o resumo: vai gastar e vai sobrar. Embaixo, cartão, contas da casa e o resto, um grupo de cada vez.", tip: "Não é a planilha copiada. É o que ainda sai neste mês." },
   { href: "/app/investimentos", title: "Investimentos", does: "Saldo da carteira, se você tiver. Não é o centro do produto da casa.", tip: "Lance o saldo de hoje. Open Finance vem depois, por agregador." },

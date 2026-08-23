@@ -3,7 +3,7 @@ import { brl, monthKey } from "./money";
 import { listTransactions } from "./store";
 import type { Transaction } from "./types";
 
-export const HOUSE_PEOPLE = ["Sandra", "Hudson", "Giliad", "Heitor"] as const;
+export const HOUSE_PEOPLE = ["Sandra", "Hudson", "Heitor"] as const;
 export type HousePersonName = (typeof HOUSE_PEOPLE)[number] | "A casa";
 
 export type HousePersonRow = {
@@ -30,6 +30,7 @@ function fold(value: string) {
 
 export function personOf(text: string): HousePersonName {
   const n = fold(text);
+  if (/giliad|giliard|lava.?carro|lavagem/.test(n)) return "A casa";
   for (const name of HOUSE_PEOPLE) {
     if (n.includes(fold(name))) return name;
   }

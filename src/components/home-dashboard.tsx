@@ -360,6 +360,10 @@ function FamilyHome({ view }: { view: View }) {
             <p className="page-kicker">Quem está gastando</p>
             <h2 className="font-semibold mt-1">{family.watch.headline}</h2>
             <p className="text-sm text-muted mt-1">{family.watch.body}</p>
+            <p className="text-sm text-muted mt-2">
+              Para o gasto entrar sozinho, liga o banco em <Link href="/app/contas" className="underline">Onde está</Link>
+              . Sem senha. É Open Finance.
+            </p>
             <div className="grid sm:grid-cols-2 gap-3 mt-4">
               {family.watch.people
                 .filter((row) => row.name !== "A casa")
