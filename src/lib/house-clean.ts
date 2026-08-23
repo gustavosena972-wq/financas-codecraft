@@ -67,27 +67,9 @@ export function stackedIdsFrom(list: Transaction[]) {
   return [...remove];
 }
 
-/** Lixo de importação antiga: total do ano jogado no mês (ex.: R$ 194 mil em agosto). */
+/** Só a linha monstro (ex. R$ 194 mil). Nunca apaga o mês inteiro. */
 export function dumpIdsFrom(list: Transaction[]) {
-  const remove = new Set<string>();
-  for (const tx of list) {
-    if (tx.type === "TRANSFER") continue;
-    if (tx.amount >= 50_000_00) remove.add(tx.id);
-  }
-  const months = new Map<string, Transaction[]>();
-  for (const tx of list) {
-    if (remove.has(tx.id) || tx.type === "TRANSFER") continue;
-    const key = monthOf(tx);
-    const rows = months.get(key) ?? [];
-    rows.push(tx);
-    months.set(key, rows);
-  }
-  for (const rows of months.values()) {
-    const expense = rows.filter((tx) => tx.type === "EXPENSE").reduce((s, tx) => s + tx.amount, 0);
-    if (expense < 80_000_00) continue;
-    for (const tx of rows) remove.add(tx.id);
-  }
-  return [...remove];
+  return list.filter((tx) => tx.type !== "TRANSFER" && tx.amount >= 50_000_00).map((tx) => tx.id);
 }
 
 export async function cleanStackedHouse(workspaceId: string) {

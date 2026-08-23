@@ -40,7 +40,7 @@ export function familyYear(workspaceId: string, year = new Date().getFullYear())
     let other = 0;
     for (const tx of summary.txs) {
       if (tx.type === "TRANSFER") continue;
-      // Ignora linha monstro (lixo de importação antiga, ex. R$ 194 mil).
+      // Só ignora linha monstro. O resto do mês continua.
       if (tx.amount >= 50_000_00) continue;
       if (tx.type === "INCOME") {
         income += tx.amount;
@@ -52,15 +52,7 @@ export function familyYear(workspaceId: string, year = new Date().getFullYear())
       else if (group === "fixed") fixed += tx.amount;
       else other += tx.amount;
     }
-    let expense = cards + fixed + other;
-    // Mês inteiro corrompido: não mostra o lixo na tabela.
-    if (expense >= 80_000_00) {
-      income = 0;
-      cards = 0;
-      fixed = 0;
-      other = 0;
-      expense = 0;
-    }
+    const expense = cards + fixed + other;
     return {
       month,
       income,
@@ -77,7 +69,7 @@ export function familyYear(workspaceId: string, year = new Date().getFullYear())
 export function familyMonthItems(workspaceId: string, month: string): FamilyItem[] {
   const summary = monthSummary(workspaceId, month);
   return summary.txs
-    .filter((tx) => tx.type === "EXPENSE")
+    .filter((tx) => tx.type === "EXPENSE" && tx.amount < 50_000_00)
     .map((tx) => ({
       id: tx.id,
       group: groupOf(tx.category?.name ?? "", tx.description),
