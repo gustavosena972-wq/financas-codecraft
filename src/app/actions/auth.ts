@@ -29,6 +29,15 @@ const loginSchema = z.object({
   password: z.string().min(1, "Informe a senha"),
 });
 
+async function openPersonSpace() {
+  const session = await requireSession();
+  if (!session) return;
+  const person = listWorkspaces(session.user.id).find((ws) => ws.type === "PERSONAL");
+  if (!person) return;
+  setSessionWorkspaceId(person.id);
+  await setLastWorkspace(session.user.id, person.id);
+}
+
 function authMessage(message?: string) {
   if (!message) return "Não foi possível entrar.";
   if (message.includes("Invalid login")) return "E-mail ou senha incorretos.";
@@ -85,6 +94,7 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
   });
   if (error) return { error: authMessage(error.message) };
   await refreshSession();
+  await openPersonSpace();
   go("/app");
   return null;
 }
@@ -93,6 +103,7 @@ export async function demoLoginAction(_prev: AuthState, _formData: FormData): Pr
   if (!supabaseConfigured()) return { error: "O banco do Finanças ainda não foi ligado no Supabase." };
   try {
     await ensureDemoUser();
+    await openPersonSpace();
     go("/app");
     return null;
   } catch (err) {

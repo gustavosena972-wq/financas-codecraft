@@ -4,6 +4,7 @@ import { newId, nowIso } from "@/lib/types";
 import { applyCategorySuggestion } from "@/lib/ai";
 import { planHasAi } from "@/lib/plans";
 import type { OrganizeResult } from "@/lib/organize";
+import { cleanStackedHouse } from "@/lib/house-clean";
 
 export type ImportPreview = {
   error?: string;
@@ -178,4 +179,18 @@ export async function applyOrganizeAction(payloadJson: string) {
     detail: `${created} lançamentos, ${budgets} linhas de orçamento`,
   });
   return { ok: `${created} lançamento(s) e ${budgets} valor(es) de orçamento foram para o app.` };
+}
+
+export async function cleanStackedHouseAction() {
+  const session = await requireSession();
+  if (!session) return { error: "Sessão expirada.", removed: 0 };
+  if (session.workspace.type !== "PERSONAL") return { ok: "Empresa fica como está.", removed: 0 };
+  const removed = await cleanStackedHouse(session.workspace.id);
+  if (removed) {
+    await pushAudit(session.user.id, "organize", "transaction", {
+      workspaceId: session.workspace.id,
+      detail: `Tirei ${removed} linha(s) repetida(s) da planilha da casa.`,
+    });
+  }
+  return { ok: removed ? `Tirei ${removed} linha(s) que estavam contando duas vezes.` : "Não achei linha repetida.", removed };
 }

@@ -2,10 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell";
-import { listWorkspaces, requireSession } from "@/lib/store";
+import { listWorkspaces, requireSession, setLastWorkspace } from "@/lib/store";
 import { useLive } from "@/lib/live";
 import { go } from "@/lib/types";
 import { ensureBothWorkspacesAction } from "@/app/actions/auth";
+import { cleanStackedHouseAction } from "@/app/actions/import";
+
+const HOUSE_FIRST_KEY = "fc-house-first-v2";
+const HOUSE_CLEAN_KEY = "fc-house-clean-v1";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const live = useLive();
@@ -23,10 +27,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         return;
       }
       await ensureBothWorkspacesAction();
-      const again = await requireSession();
+      let again = await requireSession();
       if (!again) {
         go("/login");
         return;
+      }
+      const spaces = listWorkspaces(again.user.id);
+      const person = spaces.find((ws) => ws.type === "PERSONAL");
+      if (person && typeof window !== "undefined" && !window.localStorage.getItem(HOUSE_FIRST_KEY)) {
+        window.localStorage.setItem(HOUSE_FIRST_KEY, "1");
+        if (again.workspace.id !== person.id) {
+          await setLastWorkspace(again.user.id, person.id);
+          again = (await requireSession()) ?? again;
+        }
+      }
+      if (
+        again.workspace.type === "PERSONAL" &&
+        typeof window !== "undefined" &&
+        !window.localStorage.getItem(HOUSE_CLEAN_KEY)
+      ) {
+        window.localStorage.setItem(HOUSE_CLEAN_KEY, "1");
+        await cleanStackedHouseAction();
+        again = (await requireSession()) ?? again;
       }
       setName(again.user.name);
       setWorkspaces(listWorkspaces(again.user.id));

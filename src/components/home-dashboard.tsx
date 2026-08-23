@@ -17,6 +17,7 @@ import { AccountantChat } from "@/components/accountant-chat";
 import { AiInsights } from "@/components/ai-insights";
 import { ToolTiles } from "@/components/tool-tiles";
 import { planHasAi } from "@/lib/plans";
+import { cleanStackedHouseAction } from "@/app/actions/import";
 
 type View = {
   company: boolean;
@@ -269,6 +270,7 @@ function FamilyHome({ view }: { view: View }) {
   const { family } = view;
   const now = family.now;
   const year = family.yearTotal;
+  const doubled = year.expense >= 150_000_00;
 
   return (
     <div className="space-y-6">
@@ -333,6 +335,23 @@ function FamilyHome({ view }: { view: View }) {
                   {brl(Math.abs(year.leftover))}
                 </div>
               </div>
+              {doubled ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-negative">Esse número do ano está dobrado. Não é a sobra da casa.</p>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => {
+                      void (async () => {
+                        await cleanStackedHouseAction();
+                        window.location.reload();
+                      })();
+                    }}
+                  >
+                    Arrumar o número agora
+                  </button>
+                </div>
+              ) : null}
               {family.rest.count ? (
                 <p className="text-sm text-muted">
                   Daqui até dezembro ainda sai {brl(family.rest.expense)}.
