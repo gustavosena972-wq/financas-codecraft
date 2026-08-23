@@ -4,7 +4,7 @@ import { newId, nowIso } from "@/lib/types";
 import { applyCategorySuggestion } from "@/lib/ai";
 import { planHasAi } from "@/lib/plans";
 import type { OrganizeResult } from "@/lib/organize";
-import { cleanStackedHouse } from "@/lib/house-clean";
+import { cleanStackedHouse, resetHouseYear } from "@/lib/house-clean";
 
 export type ImportPreview = {
   error?: string;
@@ -46,11 +46,12 @@ export async function confirmImportAction(rowsJson: string) {
   const valid = rows
     .filter((row) => row.amount > 0)
     .map((row) => {
-      const today = new Date();
-      const fallback = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      if (!row.date) {
+        return { ...row, issues: [...row.issues, "Data inválida"] };
+      }
       return {
         ...row,
-        date: row.date || fallback,
+        date: row.date,
         issues: row.issues.filter((i) => i !== "Data inválida" && i !== "Possível duplicata"),
       };
     })
@@ -136,10 +137,11 @@ export async function applyOrganizeAction(payloadJson: string) {
         .filter((month) => month && month !== "sem-da"),
     );
     if (session.workspace.type === "PERSONAL" && months.size >= 3) {
-      for (const tx of listTransactions(session.workspace.id)) {
-        if (months.has(tx.date.slice(0, 7))) {
-          await deleteTransaction(tx.id, session.workspace.id);
-        }
+      const years = new Set(
+        [...months].map((month) => Number(month.slice(0, 4))).filter((year) => year > 2000),
+      );
+      for (const year of years) {
+        await resetHouseYear(session.workspace.id, year);
       }
     }
     const imported = await confirmImportAction(JSON.stringify(payload.rows));
@@ -193,4 +195,17 @@ export async function cleanStackedHouseAction() {
     });
   }
   return { ok: removed ? `Tirei ${removed} linha(s) que estavam contando duas vezes.` : "Não achei linha repetida.", removed };
+}
+
+export async function resetHouseYearAction() {
+  const session = await requireSession();
+  if (!session) return { error: "Sessão expirada.", removed: 0 };
+  if (session.workspace.type !== "PERSONAL") return { ok: "Empresa fica como está.", removed: 0 };
+  const year = new Date().getFullYear();
+  const removed = await resetHouseYear(session.workspace.id, year);
+  await pushAudit(session.user.id, "organize", "transaction", {
+    workspaceId: session.workspace.id,
+    detail: `Apaguei ${removed} lançamento(s) de ${year} da casa para mandar a planilha de novo.`,
+  });
+  return { ok: `Apaguei ${removed} lançamento(s) do ano. Agora manda o Excel da casa.`, removed };
 }

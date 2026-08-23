@@ -17,7 +17,8 @@ import { AccountantChat } from "@/components/accountant-chat";
 import { AiInsights } from "@/components/ai-insights";
 import { ToolTiles } from "@/components/tool-tiles";
 import { planHasAi } from "@/lib/plans";
-import { cleanStackedHouseAction } from "@/app/actions/import";
+import { resetHouseYearAction } from "@/app/actions/import";
+import { houseYearLooksWrong } from "@/lib/house-clean";
 
 type View = {
   company: boolean;
@@ -270,7 +271,7 @@ function FamilyHome({ view }: { view: View }) {
   const { family } = view;
   const now = family.now;
   const year = family.yearTotal;
-  const doubled = year.expense >= 150_000_00;
+  const broken = houseYearLooksWrong(year.expense, now.expense);
 
   return (
     <div className="space-y-6">
@@ -291,6 +292,28 @@ function FamilyHome({ view }: { view: View }) {
           </Link>
         </div>
       </div>
+
+      {broken ? (
+        <article className="card p-6 space-y-3" style={{ borderColor: "#d94b4b" }}>
+          <h2 className="font-semibold">Esse número não é o da casa</h2>
+          <p className="text-sm text-muted max-w-2xl">
+            Agosto está com o ano empilhado em cima do mês — por isso aparece cerca de R$ 196 mil. A planilha da casa
+            gasta R$ 94.140,65 no ano e sobra cerca de R$ 15.859. Vou apagar o ano errado. Depois você manda o Excel de novo.
+          </p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => {
+              void (async () => {
+                await resetHouseYearAction();
+                go("/app/importar");
+              })();
+            }}
+          >
+            Apagar o número errado e mandar a planilha
+          </button>
+        </article>
+      ) : null}
 
       {family.empty ? (
         <article className="card p-6 space-y-3">
@@ -335,23 +358,6 @@ function FamilyHome({ view }: { view: View }) {
                   {brl(Math.abs(year.leftover))}
                 </div>
               </div>
-              {doubled ? (
-                <div className="space-y-2">
-                  <p className="text-sm text-negative">Esse número do ano está dobrado. Não é a sobra da casa.</p>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={() => {
-                      void (async () => {
-                        await cleanStackedHouseAction();
-                        window.location.reload();
-                      })();
-                    }}
-                  >
-                    Arrumar o número agora
-                  </button>
-                </div>
-              ) : null}
               {family.rest.count ? (
                 <p className="text-sm text-muted">
                   Daqui até dezembro ainda sai {brl(family.rest.expense)}.

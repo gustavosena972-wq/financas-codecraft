@@ -123,11 +123,6 @@ function skipSummary(text: string) {
   return /^(total|subtotal|soma|saldo|resultado|geral|acumulado)\b/.test(n);
 }
 
-function todayISO() {
-  const today = new Date();
-  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-}
-
 function guessType(typeRaw: string, description: string, signed: number): "INCOME" | "EXPENSE" {
   if (typeRaw.trim()) return inferType(typeRaw, signed);
   if (signed < 0) return "EXPENSE";
@@ -211,16 +206,16 @@ function toLaunch(
   const amount = Math.abs(signed);
   if (!amount) return null;
   const type = guessType(typeRaw, clean, signed);
-  const isoDate = date || todayISO();
+  if (!date) return null;
   return {
-    date: isoDate,
+    date,
     description: clean,
     amount,
     type,
     category: category?.trim() || undefined,
     account: account?.trim() || undefined,
     notes: notes?.trim() || undefined,
-    hash: hashRow(isoDate, clean, amount, type),
+    hash: hashRow(date, clean, amount, type),
     issues: [],
   };
 }
@@ -256,7 +251,8 @@ function parseLaunchTable(rows: string[][]): MappedRow[] {
     if (signed == null) continue;
     const date = dateIdx >= 0 ? parseDateCell(raw[dateIdx]) : null;
     const monthOnly = dateIdx >= 0 && !date ? monthKeyFromHeader(raw[dateIdx] ?? "", new Date().getFullYear()) : null;
-    const iso = date ?? (monthOnly ? `${monthOnly}-01` : todayISO());
+    const iso = date ?? (monthOnly ? `${monthOnly}-01` : "");
+    if (!iso) continue;
     const row = toLaunch(
       iso,
       description,
@@ -386,7 +382,8 @@ function parseByShape(rows: string[][]): MappedRow[] {
     if (signed == null) continue;
     const monthHint = useDate >= 0 ? monthKeyFromHeader(raw[useDate] ?? "", new Date().getFullYear()) : null;
     const date = useDate >= 0 ? parseDateCell(raw[useDate]) ?? (monthHint ? `${monthHint}-01` : null) : null;
-    const row = toLaunch(date ?? todayISO(), description, signed, "", description);
+    if (!date) continue;
+    const row = toLaunch(date, description, signed, "", description);
     if (row) out.push(row);
   }
   return out;

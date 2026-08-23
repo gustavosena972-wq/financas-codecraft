@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { applyOrganizeAction } from "@/app/actions/import";
 import { brl } from "@/lib/money";
+import { go } from "@/lib/types";
 import { organizeWorkbook, type OrganizeResult } from "@/lib/organize";
 
 export function OrganizeWizard() {
@@ -35,6 +36,7 @@ export function OrganizeWizard() {
     const response = await applyOrganizeAction(JSON.stringify(result));
     setBusy(false);
     setMessage(response.ok ?? response.error ?? "Pronto.");
+    if (response.ok) go("/app");
   }
 
   return (

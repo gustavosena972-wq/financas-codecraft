@@ -75,3 +75,17 @@ export async function cleanStackedHouse(workspaceId: string) {
   }
   return ids.length;
 }
+
+export function houseYearLooksWrong(expense: number, monthExpense: number) {
+  return expense >= 150_000_00 || monthExpense >= 80_000_00;
+}
+
+export async function resetHouseYear(workspaceId: string, year = new Date().getFullYear()) {
+  const { deleteTransaction, listTransactions } = await import("./store");
+  const prefix = `${year}-`;
+  const txs = listTransactions(workspaceId).filter((tx) => tx.date.startsWith(prefix));
+  for (const tx of txs) {
+    await deleteTransaction(tx.id, workspaceId);
+  }
+  return txs.length;
+}
