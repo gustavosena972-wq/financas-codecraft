@@ -40,6 +40,8 @@ export function familyYear(workspaceId: string, year = new Date().getFullYear())
     let other = 0;
     for (const tx of summary.txs) {
       if (tx.type === "TRANSFER") continue;
+      // Ignora linha monstro (lixo de importação antiga, ex. R$ 194 mil).
+      if (tx.amount >= 50_000_00) continue;
       if (tx.type === "INCOME") {
         income += tx.amount;
         continue;
@@ -50,7 +52,15 @@ export function familyYear(workspaceId: string, year = new Date().getFullYear())
       else if (group === "fixed") fixed += tx.amount;
       else other += tx.amount;
     }
-    const expense = cards + fixed + other;
+    let expense = cards + fixed + other;
+    // Mês inteiro corrompido: não mostra o lixo na tabela.
+    if (expense >= 80_000_00) {
+      income = 0;
+      cards = 0;
+      fixed = 0;
+      other = 0;
+      expense = 0;
+    }
     return {
       month,
       income,

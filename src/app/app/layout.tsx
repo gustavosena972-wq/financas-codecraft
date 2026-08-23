@@ -9,7 +9,7 @@ import { ensureBothWorkspacesAction } from "@/app/actions/auth";
 import { cleanStackedHouseAction } from "@/app/actions/import";
 
 const HOUSE_FIRST_KEY = "fc-house-first-v2";
-const HOUSE_CLEAN_KEY = "fc-house-clean-v1";
+const HOUSE_CLEAN_KEY = "fc-house-clean-v3";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const live = useLive();
@@ -41,14 +41,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           again = (await requireSession()) ?? again;
         }
       }
-      if (
-        again.workspace.type === "PERSONAL" &&
-        typeof window !== "undefined" &&
-        !window.localStorage.getItem(HOUSE_CLEAN_KEY)
-      ) {
-        window.localStorage.setItem(HOUSE_CLEAN_KEY, "1");
-        await cleanStackedHouseAction();
-        again = (await requireSession()) ?? again;
+      if (again.workspace.type === "PERSONAL" && typeof window !== "undefined") {
+        const cleaned = await cleanStackedHouseAction();
+        if (cleaned.removed > 0 || !window.localStorage.getItem(HOUSE_CLEAN_KEY)) {
+          window.localStorage.setItem(HOUSE_CLEAN_KEY, "1");
+          again = (await requireSession()) ?? again;
+        }
       }
       setName(again.user.name);
       setWorkspaces(listWorkspaces(again.user.id));
