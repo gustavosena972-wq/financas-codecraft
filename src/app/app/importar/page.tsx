@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { OrganizeWizard } from "@/components/organize-wizard";
+import { DeleteHouseSheet } from "@/components/delete-house-sheet";
 
 export default function ImportPage() {
   return (
@@ -9,9 +10,10 @@ export default function ImportPage() {
       <div>
         <h1 className="text-2xl font-semibold">Mandar planilha</h1>
         <p className="text-sm text-muted max-w-2xl">
-          Manda o Excel da casa. O app apaga o ano velho e conta de novo: o que vai gastar, o que sobra no mês e no ano. Não é para ver a mesma tabela.
+          Manda o Excel da casa. Se já tem um ano velho, apaga ele primeiro: o app zera na hora. Depois entra a planilha nova.
         </p>
       </div>
+      <DeleteHouseSheet />
       <OrganizeWizard />
       <p className="text-sm text-muted">
         Prefere anotar na mão? <Link href="/app/lancamentos" className="underline">Anotar um valor</Link>

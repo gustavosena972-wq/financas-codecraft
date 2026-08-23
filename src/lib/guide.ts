@@ -40,7 +40,7 @@ export const GUIDE: GuideItem[] = [
   { href: "/app/dividas", title: "Cartões", does: "Cada cartão mês a mês. A meta é reduzir a fatura, sem parcela nova.", tip: "Quite o rotativo primeiro.", audience: "personal" },
   { href: "/app/ferramentas", title: "Ferramentas", does: "Extras: dívida, reserva, giro. Não é o centro do app. A casa é sobra + cartão. A empresa é títulos + DRE.", tip: "Casa Plus R$ 200 e Empresa R$ 305 liberam os simuladores." },
   { href: "/app/educacao", title: "Educação", does: "Banco de reserva, cartão, DRE, MEI e o que o chat também usa.", tip: "Aperte Perguntar no chat para cruzar com os seus números." },
-  { href: "/app/importar", title: "Mandar planilha", does: "Manda o Excel da casa: uma aba por mês. O app lê cartão, fixas e o resto.", tip: "Depois abra o Resumo e veja se o mês fecha." },
+  { href: "/app/importar", title: "Mandar planilha", does: "Manda o Excel da casa. Quando o ano acabar, apaga a antiga: o app zera na hora. Depois entra a planilha nova.", tip: "Apagar primeiro. Mandar depois." },
   { href: "/app/titulos", title: "Títulos", does: "O que a empresa ainda vai pagar ou receber.", tip: "Quando pagar, use Baixar. O caixa atualiza.", audience: "company" },
   { href: "/app/dre", title: "DRE", does: "Resultado da empresa: sobrou ou faltou, e por quê.", tip: "Use no fim do mês. Dá para imprimir.", audience: "company" },
   { href: "/app/fluxo", title: "Fluxo de caixa", does: "Saldo de agora e o que ainda entra ou sai.", tip: "Olhe antes de um pagamento grande.", audience: "company" },

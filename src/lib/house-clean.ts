@@ -89,3 +89,8 @@ export async function resetHouseYear(workspaceId: string, year = new Date().getF
   }
   return txs.length;
 }
+
+export async function resetHouseSheet(workspaceId: string) {
+  const { wipeWorkspaceMoney } = await import("./store");
+  return wipeWorkspaceMoney(workspaceId);
+}

@@ -594,6 +594,28 @@ export async function deleteTransaction(id: string, workspaceId: string) {
   bumpStore();
 }
 
+export async function wipeWorkspaceMoney(workspaceId: string) {
+  const supabase = getSupabase();
+  const txs = (snapshot?.transactions ?? []).filter((t) => t.workspaceId === workspaceId);
+  const budgets = (snapshot?.budgets ?? []).filter((b) => b.workspaceId === workspaceId);
+  const { error: txError } = await supabase.from("fc_transactions").delete().eq("workspace_id", workspaceId);
+  if (txError) throw txError;
+  const { error: budgetError } = await supabase.from("fc_budgets").delete().eq("workspace_id", workspaceId);
+  if (budgetError) throw budgetError;
+  const { error: accError } = await supabase.from("fc_accounts").update({ initial_balance: 0 }).eq("workspace_id", workspaceId);
+  if (accError) throw accError;
+  if (snapshot) {
+    snapshot.transactions = snapshot.transactions.filter((t) => t.workspaceId !== workspaceId);
+    snapshot.budgets = snapshot.budgets.filter((b) => b.workspaceId !== workspaceId);
+    for (const account of snapshot.accounts) {
+      if (account.workspaceId === workspaceId) account.initialBalance = 0;
+    }
+    snapshot.extras[workspaceId] = emptyExtras();
+  }
+  await persistExtras();
+  return { transactions: txs.length, budgets: budgets.length };
+}
+
 export async function upsertBudget(row: Budget) {
   const supabase = getSupabase();
   const existing = snapshot?.budgets.find(

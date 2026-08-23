@@ -1,10 +1,10 @@
-import { addAccount, addCategory, addTransaction, deleteTransaction, listAccounts, listCategories, listTransactions, pushAudit, requireSession, upsertBudget } from "@/lib/store";
+import { addAccount, addCategory, addTransaction, listAccounts, listCategories, listTransactions, pushAudit, requireSession, upsertBudget } from "@/lib/store";
 import { parseWorkbook, type MappedRow } from "@/lib/excel";
 import { newId, nowIso } from "@/lib/types";
 import { applyCategorySuggestion } from "@/lib/ai";
 import { planHasAi } from "@/lib/plans";
 import type { OrganizeResult } from "@/lib/organize";
-import { cleanStackedHouse, resetHouseYear } from "@/lib/house-clean";
+import { cleanStackedHouse, resetHouseSheet } from "@/lib/house-clean";
 
 export type ImportPreview = {
   error?: string;
@@ -137,12 +137,7 @@ export async function applyOrganizeAction(payloadJson: string) {
         .filter((month) => month && month !== "sem-da"),
     );
     if (session.workspace.type === "PERSONAL" && months.size >= 3) {
-      const years = new Set(
-        [...months].map((month) => Number(month.slice(0, 4))).filter((year) => year > 2000),
-      );
-      for (const year of years) {
-        await resetHouseYear(session.workspace.id, year);
-      }
+      await resetHouseSheet(session.workspace.id);
     }
     const imported = await confirmImportAction(JSON.stringify(payload.rows));
     if ("error" in imported && imported.error && !payload.budgets?.length) return imported;
@@ -198,14 +193,20 @@ export async function cleanStackedHouseAction() {
 }
 
 export async function resetHouseYearAction() {
+  return deleteHouseSheetAction();
+}
+
+export async function deleteHouseSheetAction() {
   const session = await requireSession();
   if (!session) return { error: "Sessão expirada.", removed: 0 };
   if (session.workspace.type !== "PERSONAL") return { ok: "Empresa fica como está.", removed: 0 };
-  const year = new Date().getFullYear();
-  const removed = await resetHouseYear(session.workspace.id, year);
-  await pushAudit(session.user.id, "organize", "transaction", {
+  const wiped = await resetHouseSheet(session.workspace.id);
+  await pushAudit(session.user.id, "organize", "workbook", {
     workspaceId: session.workspace.id,
-    detail: `Apaguei ${removed} lançamento(s) de ${year} da casa para mandar a planilha de novo.`,
+    detail: `Apaguei a planilha da casa: ${wiped.transactions} lançamento(s). O app zerou.`,
   });
-  return { ok: `Apaguei ${removed} lançamento(s) do ano. Agora manda o Excel da casa.`, removed };
+  return {
+    ok: "A planilha antiga saiu. A casa está zerada. Agora manda a planilha nova.",
+    removed: wiped.transactions,
+  };
 }
