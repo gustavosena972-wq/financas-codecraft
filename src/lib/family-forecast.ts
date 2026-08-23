@@ -1,5 +1,6 @@
 import { brl, formatMonthLabel, monthKey } from "./money";
 import { CARD_CUT_DEFAULT, cardEvolution, familyMonthItems, familyYear, type FamilyMonth } from "./family-budget";
+import { houseSpendWatch, peopleSpeech, type HouseSpendWatch } from "./house-people";
 
 export type OutlookMonth = FamilyMonth & {
   kind: "past" | "now" | "ahead";
@@ -24,6 +25,7 @@ export type FamilyOutlook = {
   cutPath: { leftover: number; extra: number };
   heaviestCard: { name: string; amount: number } | null;
   endingSoon: { description: string; left: number; total: number; current: number }[];
+  watch: HouseSpendWatch;
   review: DailyTip[];
 };
 
@@ -122,13 +124,20 @@ function buildTips(outlook: Omit<FamilyOutlook, "review">): DailyTip[] {
   const tips: DailyTip[] = [];
   const now = outlook.now;
   const year = outlook.yearTotal;
+  const watch = outlook.watch;
+
+  tips.push({
+    title: watch.headline,
+    body: watch.body,
+    tone: watch.tone,
+  });
 
   tips.push({
     title: outlook.daysLeft ? `Hoje · faltam ${outlook.daysLeft} dia(s) no mês` : "Hoje · último dia do mês",
     body:
       now.net >= 0
-        ? `Este mês ainda vai sair ${brl(now.expense)}. Se não entrar gasto novo no cartão, sobra ${brl(now.net)}.`
-        : `Este mês vai sair ${brl(now.expense)}. Falta ${brl(Math.abs(now.net))} para fechar. Sem parcela nova.`,
+        ? `Já saiu ${brl(watch.spent)}. Ainda não saiu ${brl(watch.pending)}. Sem gasto novo no cartão, sobra ${brl(now.net)}.`
+        : `Já saiu ${brl(watch.spent)}. Ainda não saiu ${brl(watch.pending)}. Falta ${brl(Math.abs(now.net))} para fechar. Sem parcela nova.`,
     tone: now.net >= 0 ? "ok" : "warn",
   });
 
@@ -201,7 +210,7 @@ function buildTips(outlook: Omit<FamilyOutlook, "review">): DailyTip[] {
     });
   }
 
-  return tips.slice(0, 5);
+  return tips.slice(0, 6);
 }
 
 function stampReview(workspaceId: string, fingerprint: string) {
@@ -236,6 +245,7 @@ export function familyOutlook(workspaceId: string, now = monthKey()): FamilyOutl
       return { description: item.description, left: inst.left, total: inst.total, current: inst.current };
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const watch = houseSpendWatch(workspaceId, now, today);
 
   const base: Omit<FamilyOutlook, "review"> = {
     empty: !used.length,
@@ -249,6 +259,7 @@ export function familyOutlook(workspaceId: string, now = monthKey()): FamilyOutl
     cutPath: { leftover: cutLeftover, extra: Math.max(0, cutLeftover - plannedLeftover) },
     heaviestCard: heaviest,
     endingSoon,
+    watch,
   };
   const review = base.empty
     ? [
@@ -282,6 +293,7 @@ export function outlookSpeech(outlook: FamilyOutlook) {
     ? `Daqui até dezembro ainda sai ${brl(outlook.rest.expense)}.`
     : "";
   const cutLine = outlook.cutPath.extra > 5000 ? `Se baixar o cartão 10% ao mês, sobra mais ${brl(outlook.cutPath.extra)} no ano.` : "";
+  const who = peopleSpeech(outlook.watch);
   const tips = outlook.review.map((tip) => `${tip.title}: ${tip.body}`).join(" ");
-  return [monthLine, restLine, yearLine, cutLine, `Avaliação de hoje: ${tips}`].filter(Boolean).join(" ");
+  return [monthLine, who, restLine, yearLine, cutLine, `Avaliação de hoje: ${tips}`].filter(Boolean).join(" ");
 }

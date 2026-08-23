@@ -328,6 +328,10 @@ function FamilyHome({ view }: { view: View }) {
                 <Kpi label="Contas da casa" value={brl(now.fixed)} />
                 <Kpi label="Outras" value={brl(now.other)} />
               </div>
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <Kpi label="Já saiu" value={brl(family.watch.spent)} />
+                <Kpi label="Ainda não saiu" value={brl(family.watch.pending)} />
+              </div>
             </article>
             <article className="card p-6 space-y-4">
               <div>
@@ -350,6 +354,27 @@ function FamilyHome({ view }: { view: View }) {
                 Ver este mês no detalhe
               </Link>
             </article>
+          </section>
+
+          <section className="card p-5">
+            <p className="page-kicker">Quem está gastando</p>
+            <h2 className="font-semibold mt-1">{family.watch.headline}</h2>
+            <p className="text-sm text-muted mt-1">{family.watch.body}</p>
+            <div className="grid sm:grid-cols-2 gap-3 mt-4">
+              {family.watch.people
+                .filter((row) => row.name !== "A casa")
+                .map((row) => (
+                  <div key={row.name} className="rounded-lg bg-bg px-4 py-3">
+                    <div className="text-sm font-semibold">{row.name}</div>
+                    <p className={`text-sm mt-1 ${row.status === "spending" ? "text-negative" : "text-muted"}`}>
+                      {row.status === "spending"
+                        ? `Gastou ${brl(row.spent)}${row.lastWhat ? ` · ${row.lastWhat}` : ""}`
+                        : "Não gastou neste mês"}
+                    </p>
+                    {row.pending ? <p className="text-xs text-muted mt-1">Ainda vai sair {brl(row.pending)}</p> : null}
+                  </div>
+                ))}
+            </div>
           </section>
 
           <section className="card p-5">

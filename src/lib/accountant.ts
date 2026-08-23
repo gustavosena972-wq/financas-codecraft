@@ -3,6 +3,7 @@ import { brl, formatMonthLabel, monthKey, parseMoneyToCents } from "./money";
 import { accountBalances, categorySpend, cashflowSeries, monthSummary } from "./queries";
 import { listBudgets, listCategories } from "./store";
 import { familyOutlook, outlookSpeech } from "./family-forecast";
+import { peopleSpeech } from "./house-people";
 
 export type ChatSpend = {
   type: "INCOME" | "EXPENSE";
@@ -355,6 +356,12 @@ export function accountantReply(message: string, workspaceId: string): Accountan
   }
 
   const house = familyOutlook(workspaceId);
+  if (
+    !house.empty &&
+    /(quem (esta|está|ta|tá)?\s*(gast|compr|usou)|sandra|hudson|giliad|heitor|ninguem gast|ninguém gast|quem nao|quem não)/.test(t)
+  ) {
+    return { body: peopleSpeech(house.watch) };
+  }
   if (
     !house.empty &&
     /(sobra|vai gastar|vai sair|ate dezembro|até dezembro|no ano|dica|avali|melhorar|baixar (o )?cartao|baixar (o )?cartão|o que fazer)/.test(t)
