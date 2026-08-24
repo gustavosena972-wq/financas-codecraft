@@ -6,7 +6,7 @@ export function ThemeToggle() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
-    const next = localStorage.getItem("fn-theme") === "dark" ? "dark" : "light";
+    const next = localStorage.getItem("cc-theme") === "dark" ? "dark" : "light";
     setTheme(next);
     document.documentElement.setAttribute("data-theme", next);
   }, []);
@@ -18,7 +18,7 @@ export function ThemeToggle() {
       onClick={() => {
         const next = theme === "dark" ? "light" : "dark";
         setTheme(next);
-        localStorage.setItem("fn-theme", next);
+        localStorage.setItem("cc-theme", next);
         document.documentElement.setAttribute("data-theme", next);
       }}
     >

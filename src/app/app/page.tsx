@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PageHead } from "@/components/shell";
-import { cashBalance, pipelineValue, requireSession, setAutopilot, type Snapshot } from "@/lib/store";
-import { runAutopilot } from "@/lib/pilot";
+import { cashBalance, dreSummary, requireSession, type Snapshot } from "@/lib/store";
 import { useLive } from "@/lib/live";
 import { brl } from "@/lib/money";
 import { DEPARTMENTS, go } from "@/lib/types";
@@ -13,95 +12,70 @@ import { displayCompany, formatCnpj } from "@/lib/company";
 
 const HREF: Record<string, string> = {
   DIRECAO: "/app",
+  FINANCEIRO: "/app/financeiro",
   PESSOAS: "/app/pessoas",
-  VENDAS: "/app/vendas",
-  OPS: "/app/projetos",
-  CAIXA: "/app/caixa",
-  ESTOQUE: "/app/estoque",
-  MARKETING: "/app/vendas",
+  OPERACOES: "/app",
+  COMERCIAL: "/app/financeiro",
   SUPORTE: "/app/pessoas",
 };
 
 export default function PainelPage() {
   const live = useLive();
   const [data, setData] = useState<Snapshot | null>(null);
-  const [applied, setApplied] = useState(0);
 
   useEffect(() => {
-    void (async () => {
-      const session = await requireSession();
-      if (!session) {
-        go("/login");
-        return;
-      }
-      setData(session);
-      if (session.org.autopilot) {
-        const result = await runAutopilot(session);
-        setApplied(result.applied);
-        const again = await requireSession();
-        if (again) setData(again);
-      }
-    })();
+    void requireSession().then((session) => {
+      if (!session) go("/login");
+      else setData(session);
+    });
   }, [live]);
 
   if (!data) return <p className="text-sm text-muted">Carregando o painel…</p>;
   const cash = cashBalance(data);
-  const pipe = pipelineValue(data);
-  const openTasks = data.tasks.filter((task) => task.status !== "DONE").length;
+  const dre = dreSummary(data);
+  const openBills = data.bills.filter((bill) => bill.status === "OPEN").length;
 
   return (
     <div>
       <PageHead
         kicker={displayCompany(data.org)}
-        title="A empresa, agora."
-        subtitle={`${data.org.legalName} · CNPJ ${formatCnpj(data.org.cnpj)}. A IA olha os setores e cria as tarefas seguras sozinha. Pagar e demitir continuam com você.`}
-        extra={
-          <button className="pilot" type="button" onClick={() => void setAutopilot(!data.org.autopilot)}>
-            <i className="dot" />
-            {data.org.autopilot ? "IA ligada · 95%" : "IA pausada"}
-          </button>
-        }
+        title="Painel da empresa"
+        subtitle={`${data.org.legalName} · CNPJ ${formatCnpj(data.org.cnpj)}. Financeiro, pessoas e assinatura no mesmo lugar — sem IA no painel.`}
       />
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Kpi label="Pessoas" value={String(data.people.length)} href="/app/pessoas" />
-        <Kpi label="Pipeline" value={brl(pipe)} href="/app/vendas" />
-        <Kpi label="Caixa" value={brl(cash)} href="/app/caixa" tone={cash < 0 ? "bad" : "ok"} />
-        <Kpi label="Tarefas abertas" value={String(openTasks)} href="/app/projetos" />
+        <Kpi label="Caixa" value={brl(cash)} href="/app/financeiro" tone={cash < 0 ? "bad" : "ok"} />
+        <Kpi label="Resultado (DRE)" value={brl(dre.result)} href="/app/financeiro" tone={dre.result < 0 ? "bad" : undefined} />
+        <Kpi label="Títulos abertos" value={String(openBills)} href="/app/financeiro" />
+        <Kpi label="Colaboradores" value={String(data.people.length)} href="/app/pessoas" />
       </div>
-
-      {applied > 0 ? (
-        <p className="chip ok mb-4">A IA acabou de criar {applied} tarefa(s) sozinha.</p>
-      ) : null}
 
       <div className="grid lg:grid-cols-2 gap-4 mb-6">
         <article className="card p-5">
-          <div className="flex items-center justify-between">
-            <h2 className="font-bold">O que a IA fez</h2>
-            <Link href="/app/ia" className="text-sm underline">
-              Conversar
-            </Link>
-          </div>
-          <ul className="mt-3 space-y-3">
-            {data.logs.slice(0, 5).map((log) => (
-              <li key={log.id}>
-                <div className="flex items-center gap-2">
-                  <span className={`chip ${log.kind === "ask" ? "warn" : log.kind === "done" ? "ok" : ""}`}>
-                    {log.kind === "done" ? "fez" : log.kind === "ask" ? "pede você" : "olhou"}
-                  </span>
-                  <strong className="text-sm">{log.title}</strong>
-                </div>
-                <p className="text-sm text-muted mt-1">{log.body}</p>
-              </li>
-            ))}
-            {!data.logs.length ? <p className="text-sm text-muted">Ainda quieta. Cadastre gente, uma venda ou um boleto.</p> : null}
-          </ul>
+          <h2 className="font-bold">DRE gerencial</h2>
+          <dl className="mt-4 space-y-2 text-sm">
+            <div className="flex justify-between">
+              <dt className="text-muted">Receitas</dt>
+              <dd className="text-positive font-semibold">{brl(dre.revenue)}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-muted">Despesas</dt>
+              <dd className="text-negative font-semibold">{brl(dre.expense)}</dd>
+            </div>
+            <div className="flex justify-between border-t border-line pt-2">
+              <dt className="font-bold">Resultado</dt>
+              <dd className={`font-extrabold ${dre.result < 0 ? "text-negative" : ""}`}>{brl(dre.result)}</dd>
+            </div>
+          </dl>
+          <Link href="/app/financeiro" className="btn btn-ink mt-4 w-fit">
+            Abrir financeiro
+          </Link>
         </article>
         <article className="card p-5">
-          <h2 className="font-bold">Setores</h2>
+          <h2 className="font-bold">Módulos</h2>
           <div className="grid sm:grid-cols-2 gap-3 mt-3">
             {DEPARTMENTS.map((item) => (
-              <Link key={item.id} href={HREF[item.id]} className="rounded-2xl border border-line p-4 hover:border-gold">
+              <Link key={item.id} href={HREF[item.id] ?? "/app"} className="rounded-2xl border border-line p-4 hover:border-[color:var(--gold)]">
                 <div className="font-bold">{item.name}</div>
                 <div className="text-sm text-muted mt-1">{item.does}</div>
               </Link>
@@ -109,7 +83,7 @@ export default function PainelPage() {
           </div>
         </article>
       </div>
-      <p className="text-xs text-muted">{planLabel(data.user)} · Finanças CodeCraft</p>
+      <p className="text-xs text-muted">{planLabel(data.user)} · CodeCraft Gestão</p>
     </div>
   );
 }

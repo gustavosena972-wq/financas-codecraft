@@ -22,7 +22,7 @@ export default function CadastroPage() {
         </div>
         {!supabaseConfigured() ? (
           <p className="text-sm text-negative">
-            Ainda falta o Supabase do Finanças CodeCraft. Projeto só deste app, separado do site.
+            Ainda falta o Supabase do CodeCraft Gestão. Projeto só deste app, separado do site.
           </p>
         ) : null}
         <form

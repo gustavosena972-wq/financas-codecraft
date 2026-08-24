@@ -9,9 +9,9 @@ export function BrandLogo({
 }) {
   return (
     <Link href={href} className={`brand ${tone}`}>
-      <span className="brand-mark">FC</span>
+      <span className="brand-mark" aria-hidden />
       <span>
-        <span className="brand-name block">Finanças CodeCraft</span>
+        <span className="brand-name block">CodeCraft Gestão</span>
         <span className="brand-sub">CodeCraft Solutions</span>
       </span>
     </Link>

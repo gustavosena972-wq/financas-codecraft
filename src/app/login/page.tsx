@@ -21,7 +21,7 @@ export default function LoginPage() {
         </div>
         {!supabaseConfigured() ? (
           <p className="text-sm text-negative">
-            Falta ligar o projeto Supabase do Finanças CodeCraft. Crie um projeto só deste app, rode
+            Falta ligar o Supabase do CodeCraft Gestão. Projeto só deste app, rode
             <code> supabase/schema.sql</code> e cole URL + anon key no <code>.env.local</code>.
           </p>
         ) : null}

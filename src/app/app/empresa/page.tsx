@@ -136,7 +136,7 @@ export default function EmpresaPage() {
       <PageHead
         kicker="Identidade"
         title={linked ? "Empresa ligada" : "Ligar a sua empresa"}
-        subtitle="O Finanças CodeCraft só abre de verdade com CNPJ, razão social e endereço. Assim a conta fica da empresa, não de um nome solto."
+        subtitle="O CodeCraft Gestão só abre de verdade com CNPJ, razão social e endereço. A conta fica da empresa, não de um nome solto."
         extra={linked ? <span className="chip ok">ligada e gravada</span> : <span className="chip warn">falta ligar</span>}
       />
 
@@ -265,7 +265,7 @@ export default function EmpresaPage() {
         ) : null}
         {error ? <p className="text-sm text-negative sm:col-span-2">{error}</p> : null}
         <button className="btn btn-primary sm:col-span-2" disabled={busy}>
-          {busy ? "Ligando…" : linked ? "Atualizar dados da empresa" : "Ligar esta empresa ao Finanças CodeCraft"}
+          {busy ? "Ligando…" : linked ? "Atualizar dados da empresa" : "Ligar esta empresa ao CodeCraft Gestão"}
         </button>
       </form>
     </div>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PageHead } from "@/components/shell";
-import { cancelCardSubscription, requireSession, setAutopilot, type Snapshot } from "@/lib/store";
+import { cancelSubscription, requireSession, type Snapshot } from "@/lib/store";
 import { useLive } from "@/lib/live";
 import { go } from "@/lib/types";
 import { isSubscribed, planLabel } from "@/lib/plans";
@@ -26,7 +26,11 @@ export default function AjustesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHead kicker="Conta" title="Ajustes" subtitle="A conta é sua. A empresa ligada é o CNPJ gravado no Finanças CodeCraft." />
+      <PageHead
+        kicker="Conta"
+        title="Ajustes"
+        subtitle="Conta do responsável e empresa ligada por CNPJ. Sem IA no painel."
+      />
       <article className="card p-6 space-y-2">
         <p className="kicker">Você</p>
         <p className="font-bold text-lg">{data.user.name}</p>
@@ -36,16 +40,19 @@ export default function AjustesPage() {
           <>
             <p className="text-sm text-muted">
               {data.user.billingMethod === "pix"
-                ? "Cobrança da plataforma no PIX"
-                : `Cartão •••• ${data.user.cardLast4} · cobrança automática todo mês`}
+                ? `Primeiro mês no PIX · renovação no cartão •••• ${data.user.cardLast4}`
+                : `Cartão •••• ${data.user.cardLast4} · renovação automática`}
             </p>
             <Link href="/app/planos" className="btn btn-ink w-fit mt-2">
-              Ver cobrança
+              Ver assinatura
             </Link>
             <button
               className="btn btn-ghost w-fit"
               type="button"
-              onClick={() => void cancelCardSubscription()}
+              onClick={async () => {
+                if (!window.confirm("Cancelar a assinatura agora?")) return;
+                await cancelSubscription();
+              }}
             >
               Cancelar assinatura
             </button>
@@ -72,15 +79,11 @@ export default function AjustesPage() {
             <p className="text-sm text-muted">Responsável {org.legalRep}</p>
           </>
         ) : (
-          <p className="text-sm text-muted">Sem CNPJ a plataforma não abre os setores. Ligue a empresa primeiro.</p>
+          <p className="text-sm text-muted">Sem CNPJ a plataforma não abre. Ligue a empresa primeiro.</p>
         )}
         <Link href="/app/empresa" className="btn btn-primary w-fit mt-2">
           {linked ? "Atualizar dados" : "Ligar empresa"}
         </Link>
-        <button className="pilot mt-2" type="button" onClick={() => void setAutopilot(!org.autopilot)}>
-          <i className="dot" />
-          {org.autopilot ? "IA autônoma ligada" : "IA pausada"}
-        </button>
       </article>
     </div>
   );

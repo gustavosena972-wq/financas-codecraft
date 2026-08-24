@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AppShell } from "@/components/shell";
-import { requireSession, type Snapshot } from "@/lib/store";
+import { requireSession, startLiveSync, type Snapshot } from "@/lib/store";
 import { useLive } from "@/lib/live";
 import { go } from "@/lib/types";
 import { supabaseConfigured } from "@/lib/supabase";
@@ -17,6 +17,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    startLiveSync();
     void (async () => {
       if (!supabaseConfigured()) {
         setReady(true);
@@ -33,8 +34,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         go("/app/empresa");
         return;
       }
-      const billingOpen = pathname === "/app/planos" || pathname === "/app/empresa";
-      if (orgIsLinked(data.org) && !isSubscribed(data.user) && !billingOpen) {
+      const open = pathname === "/app/planos" || pathname === "/app/empresa";
+      if (orgIsLinked(data.org) && !isSubscribed(data.user) && !open) {
         go("/app/planos");
       }
     })();
@@ -45,7 +46,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return (
       <div className="p-10 max-w-xl space-y-3">
         <p className="kicker">Banco</p>
-        <h1 className="title">Supabase do Finanças CodeCraft ainda não está ligado</h1>
+        <h1 className="title">Supabase do CodeCraft Gestão ainda não está ligado</h1>
         <p className="text-sm text-muted">
           Rode <code>supabase/schema.sql</code> no projeto deste app e confirme o <code>.env.local</code>.
         </p>

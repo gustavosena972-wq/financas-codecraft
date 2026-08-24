@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, Sparkles } from "lucide-react";
+import { CreditCard, LogOut } from "lucide-react";
 import { BrandLogo } from "./brand-logo";
 import { ThemeToggle } from "./theme-toggle";
 import { AppNav } from "./nav";
@@ -9,13 +9,7 @@ import { logoutAccount } from "@/lib/store";
 import { go, type Org } from "@/lib/types";
 import { displayCompany, formatCnpj, orgIsLinked } from "@/lib/company";
 
-export function AppShell({
-  org,
-  children,
-}: {
-  org: Org;
-  children: React.ReactNode;
-}) {
+export function AppShell({ org, children }: { org: Org; children: React.ReactNode }) {
   const company = displayCompany(org);
   const linked = orgIsLinked(org);
   return (
@@ -31,12 +25,9 @@ export function AppShell({
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/app/ia" className="btn btn-ghost hidden sm:inline-flex">
-            IA
-          </Link>
           <Link href="/app/planos" className="btn btn-primary hidden sm:inline-flex">
-            <Sparkles size={15} />
-            Assinar
+            <CreditCard size={15} />
+            Assinatura
           </Link>
           <ThemeToggle />
           <button
@@ -92,22 +83,14 @@ export function Empty({ title, body }: { title: string; body: string }) {
   );
 }
 
-export function Gate({
-  allowed,
-  title,
-  body,
-}: {
-  allowed: boolean;
-  title: string;
-  body: string;
-}) {
+export function Gate({ allowed, title, body }: { allowed: boolean; title: string; body: string }) {
   if (allowed) return null;
   return (
     <div className="card p-8 text-center space-y-3">
       <h2 className="text-lg font-bold">{title}</h2>
       <p className="text-sm text-muted max-w-lg mx-auto">{body}</p>
       <a href="/app/planos" className="btn btn-primary">
-        Assinar
+        Ver assinatura
       </a>
     </div>
   );

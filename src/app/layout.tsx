@@ -7,9 +7,9 @@ const sans = Inter({ variable: "--font-geist-sans", subsets: ["latin"] });
 const mono = JetBrains_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Finanças CodeCraft — o sistema da sua empresa",
+  title: "CodeCraft Gestão — sistema empresarial",
   description:
-    "Pessoas, vendas, projetos, caixa e estoque num só painel. IA autônoma em 95% do trabalho. Da CodeCraft Solutions.",
+    "Financeiro, RH e operações para empresas. Multi-tenant seguro. Planos de R$ 280 a R$ 500. Da CodeCraft Solutions.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -18,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full">
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{if(localStorage.getItem("fn-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}`,
+            __html: `try{if(localStorage.getItem("cc-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}`,
           }}
         />
         <LiveBg />

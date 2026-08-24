@@ -1,33 +1,26 @@
 import type {
-  AiLog,
   Bill,
-  Deal,
   Move,
   Org,
   Person,
+  PlanId,
   Profile,
-  StockItem,
-  Task,
+  TimePunch,
   Wallet,
-  Work,
 } from "./types";
 import { newId, nowIso, today } from "./types";
 import { getSupabase, supabaseConfigured } from "./supabase";
-import { hasCash, parsePlan, peopleLimit } from "./plans";
-import { readCard } from "./card";
+import { hasFinance, isSubscribed, parsePlan, peopleLimit, planPriceCents } from "./plans";
+import { expiryValid, readCard } from "./card";
 
 export type Snapshot = {
   user: Profile;
   org: Org;
   people: Person[];
-  deals: Deal[];
-  works: Work[];
-  tasks: Task[];
+  punches: TimePunch[];
   wallets: Wallet[];
   moves: Move[];
   bills: Bill[];
-  stock: StockItem[];
-  logs: AiLog[];
 };
 
 let snapshot: Snapshot | null = null;
@@ -58,11 +51,6 @@ function parseBilling(value: unknown): Profile["billingStatus"] {
   return "inactive";
 }
 
-function parseWalletKind(value: unknown): Wallet["kind"] {
-  if (value === "CASH" || value === "CARD" || value === "PIX") return value;
-  return "BANK";
-}
-
 function parseSize(value: unknown): Org["size"] {
   if (value === "mei" || value === "media" || value === "grande") return value;
   return "pequena";
@@ -74,7 +62,6 @@ function mapOrg(row: Record<string, unknown>): Org {
     ownerId: String(row.owner_id),
     name: String(row.name),
     size: parseSize(row.size),
-    autopilot: row.autopilot !== false,
     createdAt: String(row.created_at ?? nowIso()),
     legalName: String(row.legal_name ?? ""),
     tradeName: String(row.trade_name ?? ""),
@@ -92,7 +79,6 @@ function mapOrg(row: Record<string, unknown>): Org {
     legalRep: String(row.legal_rep ?? ""),
     situation: String(row.situation ?? ""),
     linkedAt: row.linked_at ? String(row.linked_at) : null,
-    pixKey: String(row.pix_key ?? ""),
   };
 }
 
@@ -102,50 +88,25 @@ function mapPerson(row: Record<string, unknown>): Person {
     orgId: String(row.org_id),
     name: String(row.name),
     email: String(row.email ?? ""),
-    department: (row.department as Person["department"]) || "PESSOAS",
+    document: String(row.document ?? ""),
+    department: (row.department as Person["department"]) || "OPERACOES",
+    roleTitle: String(row.role_title ?? ""),
     role: (row.role as Person["role"]) || "MEMBER",
     status: (row.status as Person["status"]) || "ACTIVE",
     salary: Number(row.salary ?? 0),
+    benefits: String(row.benefits ?? ""),
     startedAt: String(row.started_at ?? today()),
   };
 }
 
-function mapDeal(row: Record<string, unknown>): Deal {
+function mapPunch(row: Record<string, unknown>): TimePunch {
   return {
     id: String(row.id),
     orgId: String(row.org_id),
-    name: String(row.name),
-    customer: String(row.customer),
-    amount: Number(row.amount ?? 0),
-    stage: (row.stage as Deal["stage"]) || "LEAD",
-    ownerName: String(row.owner_name ?? ""),
-    dueAt: String(row.due_at ?? ""),
-    createdAt: String(row.created_at ?? nowIso()),
-  };
-}
-
-function mapWork(row: Record<string, unknown>): Work {
-  return {
-    id: String(row.id),
-    orgId: String(row.org_id),
-    name: String(row.name),
-    ownerName: String(row.owner_name ?? ""),
-    status: (row.status as Work["status"]) || "PLAN",
-    dueAt: String(row.due_at ?? ""),
-    notes: String(row.notes ?? ""),
-  };
-}
-
-function mapTask(row: Record<string, unknown>): Task {
-  return {
-    id: String(row.id),
-    orgId: String(row.org_id),
-    title: String(row.title),
-    area: String(row.area ?? "GERAL"),
-    status: (row.status as Task["status"]) || "TODO",
-    assignee: String(row.assignee ?? ""),
-    auto: Boolean(row.auto),
-    createdAt: String(row.created_at ?? nowIso()),
+    personId: String(row.person_id),
+    kind: (row.kind as TimePunch["kind"]) || "IN",
+    at: String(row.at ?? nowIso()),
+    note: String(row.note ?? ""),
   };
 }
 
@@ -154,7 +115,7 @@ function mapWallet(row: Record<string, unknown>): Wallet {
     id: String(row.id),
     orgId: String(row.org_id),
     name: String(row.name),
-    kind: parseWalletKind(row.kind),
+    kind: (row.kind as Wallet["kind"]) || "BANK",
     opening: Number(row.opening ?? 0),
   };
 }
@@ -169,6 +130,7 @@ function mapMove(row: Record<string, unknown>): Move {
     date: String(row.date ?? today()),
     description: String(row.description),
     category: String(row.category ?? "Geral"),
+    costCenter: String(row.cost_center ?? "Geral"),
   };
 }
 
@@ -182,28 +144,6 @@ function mapBill(row: Record<string, unknown>): Bill {
     amount: Number(row.amount ?? 0),
     due: String(row.due),
     status: row.status === "PAID" ? "PAID" : "OPEN",
-  };
-}
-
-function mapStock(row: Record<string, unknown>): StockItem {
-  return {
-    id: String(row.id),
-    orgId: String(row.org_id),
-    name: String(row.name),
-    qty: Number(row.qty ?? 0),
-    minQty: Number(row.min_qty ?? 0),
-    unitCost: Number(row.unit_cost ?? 0),
-  };
-}
-
-function mapLog(row: Record<string, unknown>): AiLog {
-  return {
-    id: String(row.id),
-    orgId: String(row.org_id),
-    kind: (row.kind as AiLog["kind"]) || "done",
-    title: String(row.title),
-    body: String(row.body),
-    createdAt: String(row.created_at ?? nowIso()),
   };
 }
 
@@ -234,8 +174,8 @@ async function loadSnapshot(): Promise<Snapshot | null> {
   }
   const auth = authData.user;
   const [{ data: profile }, { data: orgs }] = await Promise.all([
-    supabase.from("fn_profiles").select("*").eq("id", auth.id).maybeSingle(),
-    supabase.from("fn_orgs").select("*").eq("owner_id", auth.id).order("created_at"),
+    supabase.from("cc_profiles").select("*").eq("id", auth.id).maybeSingle(),
+    supabase.from("cc_orgs").select("*").eq("owner_id", auth.id).order("created_at"),
   ]);
   const orgRow = (orgs ?? [])[0];
   if (!orgRow) {
@@ -243,28 +183,13 @@ async function loadSnapshot(): Promise<Snapshot | null> {
     return null;
   }
   const org = mapOrg(orgRow as Record<string, unknown>);
-  const [
-    people,
-    deals,
-    works,
-    tasks,
-    wallets,
-    moves,
-    bills,
-    stock,
-    logs,
-  ] = await Promise.all([
-    supabase.from("fn_people").select("*").eq("org_id", org.id).order("created_at"),
-    supabase.from("fn_deals").select("*").eq("org_id", org.id).order("created_at", { ascending: false }),
-    supabase.from("fn_works").select("*").eq("org_id", org.id).order("created_at", { ascending: false }),
-    supabase.from("fn_tasks").select("*").eq("org_id", org.id).order("created_at", { ascending: false }),
-    supabase.from("fn_wallets").select("*").eq("org_id", org.id).order("created_at"),
-    supabase.from("fn_moves").select("*").eq("org_id", org.id).order("date", { ascending: false }),
-    supabase.from("fn_bills").select("*").eq("org_id", org.id).order("due"),
-    supabase.from("fn_stock").select("*").eq("org_id", org.id).order("name"),
-    supabase.from("fn_ai_log").select("*").eq("org_id", org.id).order("created_at", { ascending: false }).limit(40),
+  const [people, punches, wallets, moves, bills] = await Promise.all([
+    supabase.from("cc_people").select("*").eq("org_id", org.id).order("created_at"),
+    supabase.from("cc_time_clock").select("*").eq("org_id", org.id).order("at", { ascending: false }).limit(200),
+    supabase.from("cc_wallets").select("*").eq("org_id", org.id).order("created_at"),
+    supabase.from("cc_moves").select("*").eq("org_id", org.id).order("date", { ascending: false }),
+    supabase.from("cc_bills").select("*").eq("org_id", org.id).order("due"),
   ]);
-  const walletsMapped = (wallets.data ?? []).map((row) => mapWallet(row as Record<string, unknown>));
 
   let user: Profile = {
     id: auth.id,
@@ -277,6 +202,9 @@ async function loadSnapshot(): Promise<Snapshot | null> {
     cardLast4: String(profile?.card_last4 ?? ""),
     cardBrand: String(profile?.card_brand ?? ""),
     cardExp: String(profile?.card_exp ?? ""),
+    cardHolder: String(profile?.card_holder ?? ""),
+    cardCpf: String(profile?.card_cpf ?? ""),
+    creditCents: Number(profile?.credit_cents ?? 0),
     nextChargeAt: profile?.next_charge_at ? String(profile.next_charge_at) : null,
     billedAt: profile?.billed_at ? String(profile.billed_at) : null,
     createdAt: auth.created_at,
@@ -287,14 +215,10 @@ async function loadSnapshot(): Promise<Snapshot | null> {
     user,
     org,
     people: (people.data ?? []).map((row) => mapPerson(row as Record<string, unknown>)),
-    deals: (deals.data ?? []).map((row) => mapDeal(row as Record<string, unknown>)),
-    works: (works.data ?? []).map((row) => mapWork(row as Record<string, unknown>)),
-    tasks: (tasks.data ?? []).map((row) => mapTask(row as Record<string, unknown>)),
-    wallets: walletsMapped,
+    punches: (punches.data ?? []).map((row) => mapPunch(row as Record<string, unknown>)),
+    wallets: (wallets.data ?? []).map((row) => mapWallet(row as Record<string, unknown>)),
     moves: (moves.data ?? []).map((row) => mapMove(row as Record<string, unknown>)),
     bills: (bills.data ?? []).map((row) => mapBill(row as Record<string, unknown>)),
-    stock: (stock.data ?? []).map((row) => mapStock(row as Record<string, unknown>)),
-    logs: (logs.data ?? []).map((row) => mapLog(row as Record<string, unknown>)),
   };
   return snapshot;
 }
@@ -306,25 +230,53 @@ function addMonth(from: Date) {
 }
 
 async function renewIfDue(user: Profile) {
-  if (user.plan !== "PRO" || !user.nextChargeAt) return user;
+  if (user.plan === "NONE" || !user.nextChargeAt) return user;
   const due = new Date(user.nextChargeAt);
   if (Number.isNaN(due.getTime()) || due > new Date()) return user;
-  if (user.billingMethod === "pix") {
+  const price = planPriceCents(user.plan);
+  const canCard = user.cardLast4.length === 4 && user.cardHolder.length >= 3 && expiryValid(user.cardExp);
+  const useCredit = user.creditCents >= price;
+  if (!canCard && !useCredit) {
     const { error } = await getSupabase()
-      .from("fn_profiles")
+      .from("cc_profiles")
       .update({ billing_status: "past_due" })
       .eq("id", user.id);
     if (error) return user;
     return { ...user, billingStatus: "past_due" as const };
   }
   const billedAt = nowIso();
-  const nextChargeAt = addMonth(new Date()).toISOString();
+  const nextChargeAt = addMonth(due).toISOString();
+  const creditLeft = useCredit ? user.creditCents - price : user.creditCents;
+  const method = useCredit && !canCard ? "pix" : "card";
   const { error } = await getSupabase()
-    .from("fn_profiles")
-    .update({ billed_at: billedAt, next_charge_at: nextChargeAt, billing_status: "active", plan: "PRO" })
+    .from("cc_profiles")
+    .update({
+      billed_at: billedAt,
+      next_charge_at: nextChargeAt,
+      billing_status: "active",
+      billing_method: method,
+      credit_cents: creditLeft,
+      plan: user.plan,
+    })
     .eq("id", user.id);
   if (error) return user;
-  return { ...user, billedAt, nextChargeAt, billingStatus: "active" as const, plan: "PRO" as const };
+  await getSupabase().from("cc_charges").insert({
+    id: newId(),
+    owner_id: user.id,
+    amount: price,
+    method,
+    status: "paid",
+    plan: user.plan,
+    card_last4: user.cardLast4,
+  });
+  return {
+    ...user,
+    billedAt,
+    nextChargeAt,
+    billingStatus: "active" as const,
+    billingMethod: method as "card" | "pix",
+    creditCents: creditLeft,
+  };
 }
 
 export async function requireSession() {
@@ -346,6 +298,15 @@ export function stopLiveSync() {
   liveStarted = false;
 }
 
+function authMessage(message?: string) {
+  if (!message) return "Não deu para autenticar.";
+  if (message.toLowerCase().includes("already")) return "Já existe uma conta com este e-mail.";
+  if (message.toLowerCase().includes("confirm")) {
+    return "No Supabase do CodeCraft Gestão, desligue Confirm email em Authentication → Providers → Email.";
+  }
+  return message;
+}
+
 export async function registerAccount(input: {
   name: string;
   email: string;
@@ -353,7 +314,7 @@ export async function registerAccount(input: {
   company: string;
   size: Org["size"];
 }) {
-  if (!supabaseConfigured()) return { error: "Ligue o Finanças CodeCraft ao próprio projeto Supabase." };
+  if (!supabaseConfigured()) return { error: "Ligue o CodeCraft Gestão ao próprio projeto Supabase." };
   const supabase = getSupabase();
   const { data, error } = await supabase.auth.signUp({
     email: input.email,
@@ -364,33 +325,33 @@ export async function registerAccount(input: {
   const orgId = newId();
   const walletId = newId();
   const personId = newId();
-  const { error: profileError } = await supabase.from("fn_profiles").insert({
+  const { error: profileError } = await supabase.from("cc_profiles").insert({
     id: data.user.id,
     name: input.name,
     last_org_id: orgId,
     plan: "NONE",
   });
   if (profileError) return { error: profileError.message };
-  const { error: orgError } = await supabase.from("fn_orgs").insert({
+  const { error: orgError } = await supabase.from("cc_orgs").insert({
     id: orgId,
     owner_id: data.user.id,
     name: input.company,
     size: input.size,
-    autopilot: true,
   });
   if (orgError) return { error: orgError.message };
-  await supabase.from("fn_people").insert({
+  await supabase.from("cc_people").insert({
     id: personId,
     org_id: orgId,
     name: input.name,
     email: input.email,
     department: "DIRECAO",
+    role_title: "Responsável",
     role: "ADMIN",
     status: "ACTIVE",
     salary: 0,
     started_at: today(),
   });
-  await supabase.from("fn_wallets").insert({
+  await supabase.from("cc_wallets").insert({
     id: walletId,
     org_id: orgId,
     name: "Conta PJ",
@@ -403,9 +364,8 @@ export async function registerAccount(input: {
 }
 
 export async function loginAccount(email: string, password: string) {
-  if (!supabaseConfigured()) return { error: "Ligue o Finanças CodeCraft ao próprio projeto Supabase." };
-  const supabase = getSupabase();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (!supabaseConfigured()) return { error: "Ligue o CodeCraft Gestão ao próprio projeto Supabase." };
+  const { error } = await getSupabase().auth.signInWithPassword({ email, password });
   if (error) return { error: authMessage(error.message) };
   await refreshSession();
   bump();
@@ -413,22 +373,9 @@ export async function loginAccount(email: string, password: string) {
 }
 
 export async function logoutAccount() {
-  stopLiveSync();
-  if (supabaseConfigured()) await getSupabase().auth.signOut();
+  await getSupabase().auth.signOut();
   snapshot = null;
   bump();
-}
-
-function authMessage(message?: string) {
-  if (!message) return "Não foi possível entrar.";
-  if (message.includes("Invalid login")) return "E-mail ou senha incorretos.";
-  if (message.includes("already registered") || message.includes("already been registered")) {
-    return "Já existe uma conta com este e-mail.";
-  }
-  if (message.toLowerCase().includes("confirm")) {
-    return "No Supabase do Finanças CodeCraft, desligue Confirm email em Authentication → Providers → Email.";
-  }
-  return message;
 }
 
 async function need() {
@@ -437,269 +384,71 @@ async function need() {
   return session;
 }
 
-export async function addPerson(input: Omit<Person, "id" | "orgId">) {
-  const session = await need();
-  if (session.people.length >= peopleLimit(session.user)) {
-    throw new Error("Assine para cadastrar o time.");
+function billingColumnError(error: { message: string; code?: string }) {
+  if (error.message.toLowerCase().includes("column") || error.code === "42703") {
+    throw new Error("Rode de novo o arquivo supabase/schema.sql neste projeto. Faltam as colunas da assinatura.");
   }
-  const row: Person = { ...input, id: newId(), orgId: session.org.id };
-  const { error } = await getSupabase().from("fn_people").insert({
-    id: row.id,
-    org_id: row.orgId,
-    name: row.name,
-    email: row.email,
-    department: row.department,
-    role: row.role,
-    status: row.status,
-    salary: row.salary,
-    started_at: row.startedAt,
-  });
-  if (error) throw error;
-  session.people.push(row);
-  bump();
-  return row;
+  throw error;
 }
 
-export async function removePerson(id: string) {
-  const session = await need();
-  const { error } = await getSupabase().from("fn_people").delete().eq("id", id).eq("org_id", session.org.id);
-  if (error) throw error;
-  session.people = session.people.filter((item) => item.id !== id);
-  bump();
-}
-
-export async function addDeal(input: Omit<Deal, "id" | "orgId" | "createdAt">) {
-  const session = await need();
-  const row: Deal = { ...input, id: newId(), orgId: session.org.id, createdAt: nowIso() };
-  const { error } = await getSupabase().from("fn_deals").insert({
-    id: row.id,
-    org_id: row.orgId,
-    name: row.name,
-    customer: row.customer,
-    amount: row.amount,
-    stage: row.stage,
-    owner_name: row.ownerName,
-    due_at: row.dueAt || null,
-  });
-  if (error) throw error;
-  session.deals.unshift(row);
-  bump();
-  return row;
-}
-
-export async function setDealStage(id: string, stage: Deal["stage"]) {
-  const session = await need();
-  const { error } = await getSupabase().from("fn_deals").update({ stage }).eq("id", id).eq("org_id", session.org.id);
-  if (error) throw error;
-  const deal = session.deals.find((item) => item.id === id);
-  if (deal) deal.stage = stage;
-  bump();
-}
-
-export async function removeDeal(id: string) {
-  const session = await need();
-  const { error } = await getSupabase().from("fn_deals").delete().eq("id", id).eq("org_id", session.org.id);
-  if (error) throw error;
-  session.deals = session.deals.filter((item) => item.id !== id);
-  bump();
-}
-
-export async function addWork(input: Omit<Work, "id" | "orgId">) {
-  const session = await need();
-  const row: Work = { ...input, id: newId(), orgId: session.org.id };
-  const { error } = await getSupabase().from("fn_works").insert({
-    id: row.id,
-    org_id: row.orgId,
-    name: row.name,
-    owner_name: row.ownerName,
-    status: row.status,
-    due_at: row.dueAt || null,
-    notes: row.notes,
-  });
-  if (error) throw error;
-  session.works.unshift(row);
-  bump();
-  return row;
-}
-
-export async function setWorkStatus(id: string, status: Work["status"]) {
-  const session = await need();
-  const { error } = await getSupabase().from("fn_works").update({ status }).eq("id", id).eq("org_id", session.org.id);
-  if (error) throw error;
-  const work = session.works.find((item) => item.id === id);
-  if (work) work.status = status;
-  bump();
-}
-
-export async function addTask(input: Omit<Task, "id" | "orgId" | "createdAt">) {
-  const session = await need();
-  const row: Task = { ...input, id: newId(), orgId: session.org.id, createdAt: nowIso() };
-  const { error } = await getSupabase().from("fn_tasks").insert({
-    id: row.id,
-    org_id: row.orgId,
-    title: row.title,
-    area: row.area,
-    status: row.status,
-    assignee: row.assignee,
-    auto: row.auto,
-  });
-  if (error) throw error;
-  session.tasks.unshift(row);
-  bump();
-  return row;
-}
-
-export async function setTaskStatus(id: string, status: Task["status"]) {
-  const session = await need();
-  const { error } = await getSupabase().from("fn_tasks").update({ status }).eq("id", id).eq("org_id", session.org.id);
-  if (error) throw error;
-  const task = session.tasks.find((item) => item.id === id);
-  if (task) task.status = status;
-  bump();
-}
-
-export async function addMove(input: Omit<Move, "id" | "orgId">) {
-  const session = await need();
-  if (!hasCash(session.user)) throw new Error("Assine para lançar no caixa.");
-  const row: Move = { ...input, id: newId(), orgId: session.org.id };
-  const { error } = await getSupabase().from("fn_moves").insert({
-    id: row.id,
-    org_id: row.orgId,
-    wallet_id: row.walletId,
-    type: row.type,
-    amount: row.amount,
-    date: row.date,
-    description: row.description,
-    category: row.category,
-  });
-  if (error) throw error;
-  session.moves.unshift(row);
-  bump();
-  return row;
-}
-
-export async function addBill(input: Omit<Bill, "id" | "orgId">) {
-  const session = await need();
-  if (!hasCash(session.user)) throw new Error("Assine para abrir títulos.");
-  const row: Bill = { ...input, id: newId(), orgId: session.org.id };
-  const { error } = await getSupabase().from("fn_bills").insert({
-    id: row.id,
-    org_id: row.orgId,
-    kind: row.kind,
-    party: row.party,
-    description: row.description,
-    amount: row.amount,
-    due: row.due,
-    status: row.status,
-  });
-  if (error) throw error;
-  session.bills.push(row);
-  bump();
-  return row;
-}
-
-export async function settleBill(id: string) {
-  const session = await need();
-  const bill = session.bills.find((item) => item.id === id);
-  if (!bill || bill.status === "PAID") return;
-  const wallet = session.wallets[0];
-  if (!wallet) throw new Error("Cadastre uma conta primeiro.");
-  await addMove({
-    walletId: wallet.id,
-    type: bill.kind === "GET" ? "IN" : "OUT",
-    amount: bill.amount,
-    date: today(),
-    description: bill.description,
-    category: bill.kind === "GET" ? "Cliente" : "Fornecedor",
-  });
-  const { error } = await getSupabase().from("fn_bills").update({ status: "PAID" }).eq("id", id).eq("org_id", session.org.id);
-  if (error) throw error;
-  bill.status = "PAID";
-  bump();
-}
-
-export async function addStock(input: Omit<StockItem, "id" | "orgId">) {
-  const session = await need();
-  const row: StockItem = { ...input, id: newId(), orgId: session.org.id };
-  const { error } = await getSupabase().from("fn_stock").insert({
-    id: row.id,
-    org_id: row.orgId,
-    name: row.name,
-    qty: row.qty,
-    min_qty: row.minQty,
-    unit_cost: row.unitCost,
-  });
-  if (error) throw error;
-  session.stock.push(row);
-  bump();
-  return row;
-}
-
-export async function bumpStock(id: string, delta: number) {
-  const session = await need();
-  const item = session.stock.find((row) => row.id === id);
-  if (!item) return;
-  const qty = Math.max(0, item.qty + delta);
-  const { error } = await getSupabase().from("fn_stock").update({ qty }).eq("id", id).eq("org_id", session.org.id);
-  if (error) throw error;
-  item.qty = qty;
-  bump();
-}
-
-export async function addAiLog(input: Omit<AiLog, "id" | "orgId" | "createdAt">) {
-  const session = await need();
-  const row: AiLog = { ...input, id: newId(), orgId: session.org.id, createdAt: nowIso() };
-  const { error } = await getSupabase().from("fn_ai_log").insert({
-    id: row.id,
-    org_id: row.orgId,
-    kind: row.kind,
-    title: row.title,
-    body: row.body,
-  });
-  if (error) throw error;
-  session.logs.unshift(row);
-  bump();
-  return row;
-}
-
-export async function startCardSubscription(input: { number: string; name: string; exp: string; cvv: string }) {
+export async function registerCardAndSubscribe(input: {
+  number: string;
+  name: string;
+  exp: string;
+  cvv: string;
+  cpf: string;
+  plan: Exclude<PlanId, "NONE">;
+  firstPay: "card" | "pix";
+}) {
   const session = await need();
   const card = readCard(input);
   if ("error" in card) throw new Error(card.error);
+  const price = planPriceCents(input.plan);
   const billedAt = nowIso();
   const nextChargeAt = addMonth(new Date()).toISOString();
   const payload = {
-    plan: "PRO",
+    plan: input.plan,
     billing_status: "active",
     billing_method: "card",
     card_last4: card.last4,
     card_brand: card.brand,
     card_exp: card.exp,
+    card_holder: card.holder,
+    card_cpf: card.cpf,
     billed_at: billedAt,
     next_charge_at: nextChargeAt,
   };
-  const { error } = await getSupabase().from("fn_profiles").update(payload).eq("id", session.user.id);
-  if (error) {
-    if (error.message.toLowerCase().includes("column") || error.code === "42703") {
-      throw new Error("Rode de novo o arquivo supabase/schema.sql neste projeto. Faltam as colunas da assinatura.");
-    }
-    throw error;
-  }
-  session.user.plan = "PRO";
-  session.user.billingStatus = "active";
-  session.user.billingMethod = "card";
-  session.user.cardLast4 = card.last4;
-  session.user.cardBrand = card.brand;
-  session.user.cardExp = card.exp;
-  session.user.billedAt = billedAt;
-  session.user.nextChargeAt = nextChargeAt;
+  const { error } = await getSupabase().from("cc_profiles").update(payload).eq("id", session.user.id);
+  if (error) billingColumnError(error);
+  await getSupabase().from("cc_charges").insert({
+    id: newId(),
+    owner_id: session.user.id,
+    amount: price,
+    method: input.firstPay,
+    status: "paid",
+    plan: input.plan,
+    card_last4: card.last4,
+  });
+  session.user = {
+    ...session.user,
+    plan: input.plan,
+    billingStatus: "active",
+    billingMethod: "card",
+    cardLast4: card.last4,
+    cardBrand: card.brand,
+    cardExp: card.exp,
+    cardHolder: card.holder,
+    cardCpf: card.cpf,
+    billedAt,
+    nextChargeAt,
+  };
   bump();
 }
 
-export async function cancelCardSubscription() {
+export async function cancelSubscription() {
   const session = await need();
   const { error } = await getSupabase()
-    .from("fn_profiles")
+    .from("cc_profiles")
     .update({
       plan: "NONE",
       billing_status: "inactive",
@@ -712,40 +461,6 @@ export async function cancelCardSubscription() {
   session.user.billingStatus = "inactive";
   session.user.billingMethod = "";
   session.user.nextChargeAt = null;
-  bump();
-}
-
-export async function confirmPixSubscription() {
-  const session = await need();
-  const billedAt = nowIso();
-  const nextChargeAt = addMonth(new Date()).toISOString();
-  const payload = {
-    plan: "PRO",
-    billing_status: "active",
-    billing_method: "pix",
-    billed_at: billedAt,
-    next_charge_at: nextChargeAt,
-  };
-  const { error } = await getSupabase().from("fn_profiles").update(payload).eq("id", session.user.id);
-  if (error) {
-    if (error.message.toLowerCase().includes("column") || error.code === "42703") {
-      throw new Error("Rode de novo o arquivo supabase/schema.sql neste projeto. Faltam as colunas da assinatura.");
-    }
-    throw error;
-  }
-  session.user.plan = "PRO";
-  session.user.billingStatus = "active";
-  session.user.billingMethod = "pix";
-  session.user.billedAt = billedAt;
-  session.user.nextChargeAt = nextChargeAt;
-  bump();
-}
-
-export async function setAutopilot(on: boolean) {
-  const session = await need();
-  const { error } = await getSupabase().from("fn_orgs").update({ autopilot: on }).eq("id", session.org.id);
-  if (error) throw error;
-  session.org.autopilot = on;
   bump();
 }
 
@@ -791,13 +506,13 @@ export async function linkCompany(input: CompanyInput) {
     situation: input.situation.trim(),
     linked_at: nowIso(),
   };
-  const { error } = await getSupabase().from("fn_orgs").update(payload).eq("id", session.org.id);
+  const { error } = await getSupabase().from("cc_orgs").update(payload).eq("id", session.org.id);
   if (error) {
     if (error.message.toLowerCase().includes("duplicate") || error.code === "23505") {
-      throw new Error("Esse CNPJ já está ligado em outra conta do Finanças CodeCraft.");
+      throw new Error("Esse CNPJ já está ligado em outra conta do CodeCraft Gestão.");
     }
     if (error.message.toLowerCase().includes("column") || error.code === "42703") {
-      throw new Error("Rode de novo o arquivo supabase/schema.sql no projeto deste app. Faltam as colunas da empresa.");
+      throw new Error("Rode de novo o arquivo supabase/schema.sql neste projeto. Faltam as colunas da empresa.");
     }
     throw error;
   }
@@ -825,12 +540,140 @@ export async function linkCompany(input: CompanyInput) {
   bump();
 }
 
+export async function addPerson(input: Omit<Person, "id" | "orgId">) {
+  const session = await need();
+  if (session.people.length >= peopleLimit(session.user)) {
+    throw new Error("Neste plano a equipe já está no limite. Suba o plano.");
+  }
+  const row: Person = { ...input, id: newId(), orgId: session.org.id };
+  const { error } = await getSupabase().from("cc_people").insert({
+    id: row.id,
+    org_id: row.orgId,
+    name: row.name,
+    email: row.email,
+    document: row.document,
+    department: row.department,
+    role_title: row.roleTitle,
+    role: row.role,
+    status: row.status,
+    salary: row.salary,
+    benefits: row.benefits,
+    started_at: row.startedAt,
+  });
+  if (error) throw error;
+  session.people.push(row);
+  bump();
+  return row;
+}
+
+export async function removePerson(id: string) {
+  const session = await need();
+  const { error } = await getSupabase().from("cc_people").delete().eq("id", id).eq("org_id", session.org.id);
+  if (error) throw error;
+  session.people = session.people.filter((item) => item.id !== id);
+  session.punches = session.punches.filter((item) => item.personId !== id);
+  bump();
+}
+
+export async function punchClock(input: { personId: string; kind: TimePunch["kind"]; note?: string }) {
+  const session = await need();
+  if (!session.people.some((p) => p.id === input.personId)) throw new Error("Colaborador não encontrado.");
+  const row: TimePunch = {
+    id: newId(),
+    orgId: session.org.id,
+    personId: input.personId,
+    kind: input.kind,
+    at: nowIso(),
+    note: input.note?.trim() || "",
+  };
+  const { error } = await getSupabase().from("cc_time_clock").insert({
+    id: row.id,
+    org_id: row.orgId,
+    person_id: row.personId,
+    kind: row.kind,
+    at: row.at,
+    note: row.note,
+  });
+  if (error) throw error;
+  session.punches.unshift(row);
+  bump();
+  return row;
+}
+
+export async function addMove(input: Omit<Move, "id" | "orgId">) {
+  const session = await need();
+  if (!hasFinance(session.user)) throw new Error("Assine para lançar no financeiro.");
+  const row: Move = { ...input, id: newId(), orgId: session.org.id };
+  const { error } = await getSupabase().from("cc_moves").insert({
+    id: row.id,
+    org_id: row.orgId,
+    wallet_id: row.walletId,
+    type: row.type,
+    amount: row.amount,
+    date: row.date,
+    description: row.description,
+    category: row.category,
+    cost_center: row.costCenter,
+  });
+  if (error) throw error;
+  session.moves.unshift(row);
+  bump();
+  return row;
+}
+
+export async function addBill(input: Omit<Bill, "id" | "orgId">) {
+  const session = await need();
+  if (!hasFinance(session.user)) throw new Error("Assine para abrir títulos.");
+  const row: Bill = { ...input, id: newId(), orgId: session.org.id };
+  const { error } = await getSupabase().from("cc_bills").insert({
+    id: row.id,
+    org_id: row.orgId,
+    kind: row.kind,
+    party: row.party,
+    description: row.description,
+    amount: row.amount,
+    due: row.due,
+    status: row.status,
+  });
+  if (error) throw error;
+  session.bills.push(row);
+  bump();
+  return row;
+}
+
+export async function settleBill(id: string) {
+  const session = await need();
+  const bill = session.bills.find((item) => item.id === id);
+  if (!bill || bill.status === "PAID") return;
+  const wallet = session.wallets[0];
+  if (!wallet) throw new Error("Cadastre uma conta primeiro.");
+  await addMove({
+    walletId: wallet.id,
+    type: bill.kind === "GET" ? "IN" : "OUT",
+    amount: bill.amount,
+    date: today(),
+    description: bill.description,
+    category: bill.kind === "GET" ? "Cliente" : "Fornecedor",
+    costCenter: "Geral",
+  });
+  const { error } = await getSupabase().from("cc_bills").update({ status: "PAID" }).eq("id", id).eq("org_id", session.org.id);
+  if (error) throw error;
+  bill.status = "PAID";
+  bump();
+}
+
 export function cashBalance(data: Snapshot) {
   const opening = data.wallets.reduce((sum, wallet) => sum + wallet.opening, 0);
   const flow = data.moves.reduce((sum, move) => sum + (move.type === "IN" ? move.amount : -move.amount), 0);
   return opening + flow;
 }
 
-export function pipelineValue(data: Snapshot) {
-  return data.deals.filter((deal) => deal.stage === "LEAD" || deal.stage === "PROPOSAL").reduce((sum, deal) => sum + deal.amount, 0);
+export function dreSummary(data: Snapshot) {
+  const revenue = data.moves.filter((m) => m.type === "IN").reduce((s, m) => s + m.amount, 0);
+  const expense = data.moves.filter((m) => m.type === "OUT").reduce((s, m) => s + m.amount, 0);
+  return { revenue, expense, result: revenue - expense };
+}
+
+export function isActive(user: Profile) {
+  return isSubscribed(user);
 }

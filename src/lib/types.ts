@@ -1,14 +1,12 @@
-export type PlanId = "NONE" | "PRO";
+export type PlanId = "NONE" | "START" | "BUSINESS" | "CORP";
 export type BillingStatus = "inactive" | "active" | "past_due";
 export type OrgSize = "mei" | "pequena" | "media" | "grande";
 export type Department =
   | "DIRECAO"
+  | "FINANCEIRO"
   | "PESSOAS"
-  | "VENDAS"
-  | "OPS"
-  | "CAIXA"
-  | "ESTOQUE"
-  | "MARKETING"
+  | "OPERACOES"
+  | "COMERCIAL"
   | "SUPORTE";
 
 export type Profile = {
@@ -22,6 +20,9 @@ export type Profile = {
   cardLast4: string;
   cardBrand: string;
   cardExp: string;
+  cardHolder: string;
+  cardCpf: string;
+  creditCents: number;
   nextChargeAt: string | null;
   billedAt: string | null;
   createdAt: string;
@@ -32,7 +33,6 @@ export type Org = {
   ownerId: string;
   name: string;
   size: OrgSize;
-  autopilot: boolean;
   createdAt: string;
   legalName: string;
   tradeName: string;
@@ -50,7 +50,6 @@ export type Org = {
   legalRep: string;
   situation: string;
   linkedAt: string | null;
-  pixKey: string;
 };
 
 export type Person = {
@@ -58,51 +57,30 @@ export type Person = {
   orgId: string;
   name: string;
   email: string;
+  document: string;
   department: Department;
+  roleTitle: string;
   role: "ADMIN" | "LEAD" | "MEMBER";
   status: "ACTIVE" | "ONBOARDING" | "LEAVE";
   salary: number;
+  benefits: string;
   startedAt: string;
 };
 
-export type Deal = {
+export type TimePunch = {
   id: string;
   orgId: string;
-  name: string;
-  customer: string;
-  amount: number;
-  stage: "LEAD" | "PROPOSAL" | "WON" | "LOST";
-  ownerName: string;
-  dueAt: string;
-  createdAt: string;
-};
-
-export type Work = {
-  id: string;
-  orgId: string;
-  name: string;
-  ownerName: string;
-  status: "PLAN" | "RUN" | "BLOCKED" | "DONE";
-  dueAt: string;
-  notes: string;
-};
-
-export type Task = {
-  id: string;
-  orgId: string;
-  title: string;
-  area: string;
-  status: "TODO" | "DOING" | "DONE";
-  assignee: string;
-  auto: boolean;
-  createdAt: string;
+  personId: string;
+  kind: "IN" | "OUT" | "BREAK_START" | "BREAK_END";
+  at: string;
+  note: string;
 };
 
 export type Wallet = {
   id: string;
   orgId: string;
   name: string;
-  kind: "BANK" | "CASH" | "CARD" | "PIX";
+  kind: "BANK" | "CASH" | "CARD";
   opening: number;
 };
 
@@ -115,6 +93,7 @@ export type Move = {
   date: string;
   description: string;
   category: string;
+  costCenter: string;
 };
 
 export type Bill = {
@@ -128,33 +107,13 @@ export type Bill = {
   status: "OPEN" | "PAID";
 };
 
-export type StockItem = {
-  id: string;
-  orgId: string;
-  name: string;
-  qty: number;
-  minQty: number;
-  unitCost: number;
-};
-
-export type AiLog = {
-  id: string;
-  orgId: string;
-  kind: "done" | "ask" | "watch";
-  title: string;
-  body: string;
-  createdAt: string;
-};
-
 export const DEPARTMENTS: { id: Department; name: string; does: string }[] = [
-  { id: "DIRECAO", name: "Direção", does: "O pulso da empresa, numa tela." },
-  { id: "PESSOAS", name: "Pessoas", does: "Quem trabalha, cargo e status." },
-  { id: "VENDAS", name: "Vendas", does: "Pipeline: lead, proposta, ganho." },
-  { id: "OPS", name: "Projetos", does: "O que está andando e o que travou." },
-  { id: "CAIXA", name: "Caixa", does: "Dinheiro, a pagar e a receber." },
-  { id: "ESTOQUE", name: "Estoque", does: "O que tem, o que falta." },
-  { id: "MARKETING", name: "Marketing", does: "Campanha e captação." },
-  { id: "SUPORTE", name: "Atendimento", does: "Cliente depois da venda." },
+  { id: "DIRECAO", name: "Direção", does: "Visão da empresa e decisões." },
+  { id: "FINANCEIRO", name: "Financeiro", does: "Caixa, títulos e DRE." },
+  { id: "PESSOAS", name: "Pessoas", does: "Colaboradores, ponto e folha." },
+  { id: "OPERACOES", name: "Operações", does: "Rotina e entrega do dia a dia." },
+  { id: "COMERCIAL", name: "Comercial", does: "Clientes e receita." },
+  { id: "SUPORTE", name: "Suporte", does: "Atendimento interno." },
 ];
 
 export function newId() {

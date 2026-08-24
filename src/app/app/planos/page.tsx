@@ -3,52 +3,64 @@
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { PageHead } from "@/components/shell";
-import { confirmPixSubscription, requireSession, startCardSubscription, type Snapshot } from "@/lib/store";
+import { cancelSubscription, registerCardAndSubscribe, requireSession, type Snapshot } from "@/lib/store";
 import { useLive } from "@/lib/live";
-import { go } from "@/lib/types";
-import { PLAN, PLAN_PRICE_CENTS, PIX_KEY, PIX_KEY_EMV, isSubscribed } from "@/lib/plans";
+import { go, type PlanId } from "@/lib/types";
+import { PLANS, PIX_KEY, PIX_KEY_EMV, hasCardOnFile, isSubscribed, planById, planPriceCents } from "@/lib/plans";
 import { pixPayload } from "@/lib/pix";
 import { brandLabel, formatCardExp, formatCardNumber } from "@/lib/card";
+import { formatCpf } from "@/lib/company";
 import { brl } from "@/lib/money";
+
+type PaidPlan = Exclude<PlanId, "NONE">;
 
 export default function AssinaturaPage() {
   const live = useLive();
   const [data, setData] = useState<Snapshot | null>(null);
-  const [tab, setTab] = useState<"card" | "pix">("card");
+  const [plan, setPlan] = useState<PaidPlan>("BUSINESS");
+  const [firstPay, setFirstPay] = useState<"card" | "pix">("card");
   const [number, setNumber] = useState("");
   const [name, setName] = useState("");
   const [exp, setExp] = useState("");
   const [cvv, setCvv] = useState("");
+  const [cpf, setCpf] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [qr, setQr] = useState("");
   const [copied, setCopied] = useState(false);
 
+  const selected = planById(plan);
+  const priceCents = planPriceCents(plan);
+
   const payload = useMemo(
     () =>
       pixPayload({
         key: PIX_KEY_EMV,
-        name: "Financas CodeCraft",
+        name: "CodeCraft Gestao",
         city: "BELO HORIZONTE",
-        amountCents: PLAN_PRICE_CENTS,
-        txid: "FINANCASCC",
+        amountCents: priceCents,
+        txid: `CC${plan}`,
       }),
-    [],
+    [plan, priceCents],
   );
 
   useEffect(() => {
     void requireSession().then((session) => {
       if (!session) go("/login");
-      else setData(session);
+      else {
+        setData(session);
+        if (session.user.plan !== "NONE") setPlan(session.user.plan);
+      }
     });
   }, [live]);
 
   useEffect(() => {
-    void QRCode.toDataURL(payload, { margin: 1, width: 240 }).then(setQr);
+    void QRCode.toDataURL(payload, { margin: 1, width: 220 }).then(setQr);
   }, [payload]);
 
   if (!data) return null;
   const active = isSubscribed(data.user);
+  const cardSaved = hasCardOnFile(data.user);
   const next = data.user.nextChargeAt
     ? new Date(data.user.nextChargeAt).toLocaleDateString("pt-BR")
     : "";
@@ -56,48 +68,76 @@ export default function AssinaturaPage() {
   return (
     <div className="space-y-6">
       <PageHead
-        kicker="Cobrança da plataforma"
+        kicker="Billing SaaS"
         title="Assinatura"
-        subtitle="Um plano. Cartão cobra sozinho todo mês. PIX é a outra forma de pagar o Finanças CodeCraft."
+        subtitle="R$ 280 a R$ 500 por mês. Cartão obrigatório para renovação automática. Cancele quando quiser."
       />
+
+      <div className="grid md:grid-cols-3 gap-4">
+        {PLANS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={`card p-5 text-left ${plan === item.id ? "ring-2 ring-[color:var(--gold)]" : ""} ${item.highlight ? "" : ""}`}
+            onClick={() => setPlan(item.id)}
+            disabled={active}
+          >
+            {item.badge ? <span className="chip warn w-fit">{item.badge}</span> : null}
+            <h2 className="font-bold text-lg mt-2">{item.name}</h2>
+            <div className="text-3xl font-extrabold mt-1">{item.price}</div>
+            <p className="text-xs text-muted">{item.period}</p>
+            <p className="text-sm text-muted mt-2">{item.forWho}</p>
+            <ul className="text-sm mt-3 space-y-1">
+              {item.includes.slice(0, 4).map((line) => (
+                <li key={line}>· {line}</li>
+              ))}
+            </ul>
+          </button>
+        ))}
+      </div>
 
       <div className="grid lg:grid-cols-[.9fr_1.1fr] gap-4">
         <article className="card p-6 space-y-3">
-          <span className="chip ok w-fit">Único plano</span>
-          <h2 className="font-bold text-2xl">{PLAN.name}</h2>
-          <div className="text-4xl font-extrabold">{PLAN.price}</div>
-          <p className="text-sm text-muted">{PLAN.period}</p>
-          <p className="text-sm">{PLAN.forWho}</p>
-          <ul className="text-sm space-y-1.5 pt-2">
-            {PLAN.includes.map((line) => (
-              <li key={line}>· {line}</li>
-            ))}
-          </ul>
+          <p className="kicker">Plano escolhido</p>
+          <h2 className="font-bold text-2xl">{selected.name}</h2>
+          <div className="text-4xl font-extrabold">{selected.price}</div>
+          <p className="text-sm text-muted">{selected.period}</p>
           {active ? (
             <div className="rounded-2xl border border-line p-4 space-y-1">
-              <p className="chip ok w-fit">Assinatura ativa</p>
-              <p className="text-sm">
-                {data.user.billingMethod === "card"
-                  ? `${brandLabel(data.user.cardBrand)} •••• ${data.user.cardLast4} · próxima cobrança ${next}`
-                  : `Pago no PIX da plataforma · próximo vencimento ${next}`}
+              <p className="chip ok w-fit">Assinatura ativa · renovação ligada</p>
+              <p className="text-sm font-bold">
+                {brandLabel(data.user.cardBrand)} •••• {data.user.cardLast4}
               </p>
+              <p className="text-sm text-muted">{data.user.cardHolder}</p>
+              <p className="text-sm text-muted">Validade {data.user.cardExp} · próxima cobrança {next}</p>
+              <button
+                className="btn btn-ghost mt-2"
+                type="button"
+                onClick={async () => {
+                  if (!window.confirm("Cancelar a assinatura agora?")) return;
+                  await cancelSubscription();
+                }}
+              >
+                Cancelar assinatura
+              </button>
             </div>
           ) : data.user.billingStatus === "past_due" ? (
-            <p className="chip warn w-fit">PIX do mês vencido. Pague de novo para reabrir.</p>
+            <p className="chip warn w-fit">Renovação falhou. Cadastre um cartão válido de novo.</p>
+          ) : cardSaved ? (
+            <p className="chip warn w-fit">Cartão salvo, mas a assinatura ainda não está ativa.</p>
           ) : null}
         </article>
 
-        <article className="card p-6 space-y-4">
-          <div className="flex gap-2">
-            <button className={`btn ${tab === "card" ? "btn-primary" : "btn-ghost"}`} type="button" onClick={() => setTab("card")}>
-              Cartão
-            </button>
-            <button className={`btn ${tab === "pix" ? "btn-primary" : "btn-ghost"}`} type="button" onClick={() => setTab("pix")}>
-              PIX
-            </button>
-          </div>
+        {!active ? (
+          <article className="card p-6 space-y-4">
+            <div>
+              <p className="kicker">Cartão obrigatório</p>
+              <h3 className="font-bold text-lg mt-1">Cadastrar e assinar</h3>
+              <p className="text-sm text-muted mt-1">
+                Sem cartão a renovação não roda. O primeiro mês pode ser no cartão ou no PIX.
+              </p>
+            </div>
 
-          {tab === "card" ? (
             <form
               className="grid gap-3"
               onSubmit={async (event) => {
@@ -105,25 +145,30 @@ export default function AssinaturaPage() {
                 setError("");
                 setBusy(true);
                 try {
-                  await startCardSubscription({ number, name, exp, cvv });
+                  await registerCardAndSubscribe({
+                    number,
+                    name,
+                    exp,
+                    cvv,
+                    cpf,
+                    plan,
+                    firstPay,
+                  });
                   setCvv("");
                   go("/app");
                 } catch (err) {
-                  setError(err instanceof Error ? err.message : "Não deu para cobrar o cartão.");
+                  setError(err instanceof Error ? err.message : "Não deu para cadastrar o cartão.");
                 } finally {
                   setBusy(false);
                 }
               }}
             >
-              <p className="text-sm text-muted">
-                {brl(PLAN_PRICE_CENTS)} entra agora e de novo no mesmo dia, todo mês, neste cartão.
-              </p>
               <label className="field">
                 <span>Nome no cartão</span>
                 <input value={name} onChange={(event) => setName(event.target.value)} autoComplete="cc-name" required />
               </label>
               <label className="field">
-                <span>Número</span>
+                <span>Número do cartão</span>
                 <input
                   value={number}
                   onChange={(event) => setNumber(formatCardNumber(event.target.value))}
@@ -156,52 +201,81 @@ export default function AssinaturaPage() {
                   />
                 </label>
               </div>
+              <label className="field">
+                <span>CPF do dono do cartão</span>
+                <input
+                  value={cpf}
+                  onChange={(event) => setCpf(formatCpf(event.target.value))}
+                  inputMode="numeric"
+                  placeholder="000.000.000-00"
+                  required
+                />
+              </label>
+
+              <div className="rounded-2xl border border-line p-4 space-y-3">
+                <p className="kicker">Primeiro mês · {brl(priceCents)}</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    className={`btn ${firstPay === "card" ? "btn-primary" : "btn-ghost"}`}
+                    type="button"
+                    onClick={() => setFirstPay("card")}
+                  >
+                    Cobrar no cartão
+                  </button>
+                  <button
+                    className={`btn ${firstPay === "pix" ? "btn-primary" : "btn-ghost"}`}
+                    type="button"
+                    onClick={() => setFirstPay("pix")}
+                  >
+                    Paguei no PIX
+                  </button>
+                </div>
+                {firstPay === "pix" ? (
+                  <div className="space-y-3 pt-1">
+                    <p className="text-sm">
+                      Pague {brl(priceCents)} no PIX ({PIX_KEY}), depois confirme com o cartão preenchido.
+                    </p>
+                    {qr ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={qr} alt="QR Code PIX da assinatura" className="w-44 h-44 rounded-2xl bg-white p-2" />
+                    ) : null}
+                    <button
+                      className="btn btn-ink"
+                      type="button"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(payload);
+                        setCopied(true);
+                        window.setTimeout(() => setCopied(false), 2000);
+                      }}
+                    >
+                      {copied ? "PIX copiado" : "Copiar PIX"}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+
               {error ? <p className="text-sm text-negative">{error}</p> : null}
               <button className="btn btn-primary" disabled={busy}>
-                {busy ? "Cobrando…" : `Assinar ${PLAN.price}/mês no cartão`}
+                {busy
+                  ? "Salvando…"
+                  : firstPay === "pix"
+                    ? "Já paguei o PIX · ativar renovação"
+                    : `Assinar ${selected.name} · ${selected.price}`}
               </button>
             </form>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-sm text-muted">
-                Pague {brl(PLAN_PRICE_CENTS)} no PIX da plataforma. Chave {PIX_KEY}. Depois confirme aqui para abrir o sistema.
-              </p>
-              {qr ? <img src={qr} alt="QR Code PIX da assinatura" className="w-48 h-48 rounded-2xl bg-white p-2" /> : null}
-              <p className="text-sm font-bold">Chave PIX {PIX_KEY}</p>
-              <button
-                className="btn btn-ink"
-                type="button"
-                onClick={async () => {
-                  await navigator.clipboard.writeText(payload);
-                  setCopied(true);
-                  window.setTimeout(() => setCopied(false), 2000);
-                }}
-              >
-                {copied ? "PIX copiado" : "Copiar PIX da plataforma"}
-              </button>
-              {error ? <p className="text-sm text-negative">{error}</p> : null}
-              <button
-                className="btn btn-primary"
-                type="button"
-                disabled={busy}
-                onClick={async () => {
-                  setError("");
-                  setBusy(true);
-                  try {
-                    await confirmPixSubscription();
-                    go("/app");
-                  } catch (err) {
-                    setError(err instanceof Error ? err.message : "Não deu para confirmar o PIX.");
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-              >
-                {busy ? "Confirmando…" : "Já paguei o PIX da plataforma"}
-              </button>
-            </div>
-          )}
-        </article>
+          </article>
+        ) : (
+          <article className="card p-6 space-y-3">
+            <p className="kicker">Renovação</p>
+            <h3 className="font-bold text-lg">Tudo certo</h3>
+            <p className="text-sm text-muted">
+              Todo mês a plataforma cobra {selected.price} neste cartão. Você cancela sozinho quando quiser.
+            </p>
+            <a href="/app" className="btn btn-primary w-fit">
+              Abrir o painel
+            </a>
+          </article>
+        )}
       </div>
     </div>
   );

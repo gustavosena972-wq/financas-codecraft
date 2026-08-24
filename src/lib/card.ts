@@ -1,3 +1,5 @@
+import { isValidCpf } from "./company";
+
 export type CardBrand = "visa" | "mastercard" | "elo" | "amex" | "hipercard" | "unknown";
 
 export function onlyCardDigits(value: string) {
@@ -75,22 +77,29 @@ export function expiryValid(value: string) {
   return last >= now;
 }
 
-export function readCard(input: { number: string; name: string; exp: string; cvv: string }) {
+export function readCard(input: { number: string; name: string; exp: string; cvv: string; cpf: string }) {
   const number = onlyCardDigits(input.number);
   const brand = detectBrand(number);
-  const name = input.name.trim();
+  const name = input.name.replace(/\s+/g, " ").trim();
   const cvv = onlyCardDigits(input.cvv);
+  const cpf = input.cpf.replace(/\D/g, "");
   const cvvLen = brand === "amex" ? 4 : 3;
   if (name.length < 3) return { error: "Nome impresso no cartão." };
   if (!luhnOk(number) || brand === "unknown") return { error: "Número do cartão inválido." };
   if (!expiryValid(input.exp)) return { error: "Validade do cartão inválida." };
   if (cvv.length !== cvvLen) return { error: "CVV inválido." };
+  if (!isValidCpf(cpf)) return { error: "CPF do dono do cartão inválido." };
   const exp = parseExpiry(input.exp);
   if (!exp) return { error: "Validade do cartão inválida." };
   return {
     last4: number.slice(-4),
     brand,
     exp: exp.label,
-    holder: name,
+    holder: name.toUpperCase(),
+    cpf,
   };
+}
+
+export function cardOnFile(user: { cardLast4?: string; cardExp?: string; cardHolder?: string } | null | undefined) {
+  return Boolean(user?.cardLast4 && user.cardLast4.length === 4 && user.cardExp && user.cardHolder);
 }
