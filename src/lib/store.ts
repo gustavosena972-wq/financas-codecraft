@@ -307,11 +307,63 @@ function authMessage(message?: string) {
   if (lower.includes("invalid login") || lower.includes("invalid credentials")) {
     return "E-mail ou senha incorretos.";
   }
-  if (lower.includes("already")) return "Já existe uma conta com este e-mail.";
-  if (lower.includes("confirm")) {
-    return "No Supabase do CodeCraft Gestão, desligue Confirm email em Authentication → Providers → Email.";
+  if (lower.includes("already")) return "Já existe uma conta com este e-mail. Tente entrar.";
+  if (lower.includes("confirm") || lower.includes("not confirmed")) {
+    return "E-mail ainda não confirmado. No Supabase: SQL Editor → rode o arquivo supabase/fix-auth.sql → depois entre de novo.";
   }
   return message;
+}
+
+const CONFIRM_HINT =
+  "Conta criada, mas o Supabase pediu confirmação de e-mail. Abra o projeto no Supabase → SQL Editor → cole e rode supabase/fix-auth.sql → volte aqui e clique Entrar com o mesmo e-mail e senha.";
+
+async function bootstrapFromAuth(nameHint: string, companyHint: string) {
+  const supabase = getSupabase();
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData.user) return null;
+  const auth = authData.user;
+  const name = nameHint || (auth.user_metadata?.name as string) || auth.email?.split("@")[0] || "Responsável";
+  const company = companyHint || "Sua empresa";
+  const { data: existingOrg } = await supabase.from("cc_orgs").select("id").eq("owner_id", auth.id).maybeSingle();
+  if (existingOrg?.id) return refreshSession();
+
+  const orgId = newId();
+  const walletId = newId();
+  const personId = newId();
+  const { error: profileError } = await supabase.from("cc_profiles").upsert({
+    id: auth.id,
+    name,
+    last_org_id: orgId,
+    plan: "NONE",
+  });
+  if (profileError) return null;
+  const { error: orgError } = await supabase.from("cc_orgs").insert({
+    id: orgId,
+    owner_id: auth.id,
+    name: company,
+    size: "pequena",
+  });
+  if (orgError) return null;
+  await supabase.from("cc_people").insert({
+    id: personId,
+    org_id: orgId,
+    name,
+    email: auth.email ?? "",
+    department: "DIRECAO",
+    role_title: "Responsável",
+    role: "ADMIN",
+    status: "ACTIVE",
+    salary: 0,
+    started_at: today(),
+  });
+  await supabase.from("cc_wallets").insert({
+    id: walletId,
+    org_id: orgId,
+    name: "Conta PJ",
+    kind: "BANK",
+    opening: 0,
+  });
+  return refreshSession();
 }
 
 export async function registerAccount(input: {
@@ -331,10 +383,7 @@ export async function registerAccount(input: {
     });
     if (error || !data.user) return { error: authMessage(error?.message) };
     if (!data.session) {
-      return {
-        error:
-          "Conta criada, mas o e-mail precisa de confirmação. No Supabase: Authentication → Providers → Email → desligue Confirm email.",
-      };
+      return { error: CONFIRM_HINT };
     }
     const orgId = newId();
     const walletId = newId();
@@ -394,11 +443,14 @@ export async function loginAccount(email: string, password: string) {
       password,
     });
     if (error) return { error: authMessage(error.message) };
-    const session = await refreshSession();
+    let session = await refreshSession();
+    if (!session) {
+      session = await bootstrapFromAuth("", "");
+    }
     if (!session) {
       return {
         error:
-          "Login ok no Auth, mas a empresa não carregou. Rode o arquivo supabase/schema.sql neste projeto Supabase e cadastre de novo.",
+          "Entrou no Auth, mas a empresa não carregou. Rode supabase/schema.sql e supabase/fix-auth.sql no SQL Editor → tente de novo.",
       };
     }
     bump();
