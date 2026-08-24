@@ -12,8 +12,8 @@ export default function CadastroPage() {
   const [pending, setPending] = useState(false);
 
   return (
-    <div className="min-h-screen grid place-items-center p-6">
-      <div className="card p-8 w-full max-w-lg space-y-5">
+    <div className="min-h-screen grid place-items-center p-3 sm:p-6">
+      <div className="card p-5 sm:p-8 w-full max-w-lg space-y-4 sm:space-y-5">
         <BrandLogo />
         <div>
           <p className="kicker">Cadastro</p>

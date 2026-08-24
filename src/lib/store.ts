@@ -445,7 +445,7 @@ export async function registerCardAndSubscribe(input: {
   const payload = {
     plan: input.plan,
     billing_status: "active",
-    billing_method: "card",
+    billing_method: input.firstPay,
     card_last4: card.last4,
     card_brand: card.brand,
     card_exp: card.exp,
@@ -469,7 +469,7 @@ export async function registerCardAndSubscribe(input: {
     ...session.user,
     plan: input.plan,
     billingStatus: "active",
-    billingMethod: "card",
+    billingMethod: input.firstPay,
     cardLast4: card.last4,
     cardBrand: card.brand,
     cardExp: card.exp,

@@ -37,13 +37,14 @@ export function pixPayload(input: {
   const txid = (input.txid || "***").replace(/[^a-zA-Z0-9]/g, "").slice(0, 25) || "***";
   let payload =
     emv("00", "01") +
+    emv("01", "11") +
     emv("26", merchant) +
     emv("52", "0000") +
     emv("53", "986") +
     (amount ? emv("54", amount) : "") +
     emv("58", "BR") +
-    emv("59", clean(input.name, 25)) +
-    emv("60", clean(input.city, 15)) +
+    emv("59", clean(input.name, 25).toUpperCase()) +
+    emv("60", clean(input.city, 15).toUpperCase()) +
     emv("62", emv("05", txid));
   payload += "6304";
   return payload + crc16(payload);
