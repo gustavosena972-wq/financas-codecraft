@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
-const basePath = process.env.GITHUB_PAGES === "true" ? "/financas-codecraft/docs" : "";
+// Pages publishes the /docs folder as the site root → basePath is only the repo name.
+const basePath = process.env.GITHUB_PAGES === "true" ? "/financas-codecraft" : "";
 
 const nextConfig: NextConfig = {
   output: "export",
