@@ -1,75 +1,37 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { LogOut, Sparkles, MessageCircle } from "lucide-react";
-import { logoutAction, switchWorkspaceAction } from "@/app/actions/auth";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { HelpFab } from "@/components/help-fab";
-import { WelcomeGuide } from "@/components/welcome-guide";
-import { ScreenTip } from "@/components/screen-tip";
-import { AppNav } from "@/components/app-nav";
-import { BrandLogo } from "@/components/brand-logo";
-import { isCompanyPath, isPersonPath, type WorkspaceKind } from "@/lib/nav";
-
-type Workspace = { id: string; name: string; type: WorkspaceKind };
+import { LogOut, Sparkles } from "lucide-react";
+import { BrandLogo } from "./brand-logo";
+import { ThemeToggle } from "./theme-toggle";
+import { AppNav } from "./nav";
+import { logoutAccount } from "@/lib/store";
+import { go, type Org } from "@/lib/types";
+import { displayCompany, formatCnpj, orgIsLinked } from "@/lib/company";
 
 export function AppShell({
-  workspaces,
-  activeId,
+  org,
   children,
 }: {
-  userName?: string;
-  workspaces: Workspace[];
-  activeId: string;
+  org: Org;
   children: React.ReactNode;
 }) {
-  const pathname = (usePathname() || "").replace(/\/$/, "") || "/";
-  const active = workspaces.find((w) => w.id === activeId);
-  const kind: WorkspaceKind = active?.type === "BUSINESS" ? "BUSINESS" : "PERSONAL";
-  const blockedCompany = isCompanyPath(pathname) && kind !== "BUSINESS";
-  const blockedPerson = isPersonPath(pathname) && kind !== "PERSONAL";
-  const studio = pathname === "/app/chat";
-  const person = workspaces.find((w) => w.type === "PERSONAL");
-  const company = workspaces.find((w) => w.type === "BUSINESS");
-
+  const company = displayCompany(org);
+  const linked = orgIsLinked(org);
   return (
     <div className="min-h-screen">
-      <header className="h-14 border-b border-line bg-paper/90 backdrop-blur px-4 sm:px-6 flex items-center justify-between gap-3 app-top">
+      <header className="app-top">
         <div className="flex items-center gap-3 min-w-0">
           <BrandLogo href="/app" />
-          <div className="flex rounded-lg border border-line overflow-hidden">
-            {person ? (
-              <form action={switchWorkspaceAction}>
-                <input type="hidden" name="workspaceId" value={person.id} />
-                <button
-                  type="submit"
-                  className={`px-3 py-1.5 text-sm ${
-                    person.id === activeId ? "bg-ink text-white" : "bg-paper text-muted hover:bg-bg-2"
-                  }`}
-                >
-                  Pessoa
-                </button>
-              </form>
-            ) : null}
-            {company ? (
-              <form action={switchWorkspaceAction}>
-                <input type="hidden" name="workspaceId" value={company.id} />
-                <button
-                  type="submit"
-                  className={`px-3 py-1.5 text-sm ${
-                    company.id === activeId ? "bg-ink text-white" : "bg-paper text-muted hover:bg-bg-2"
-                  }`}
-                >
-                  Empresa
-                </button>
-              </form>
-            ) : null}
-          </div>
+          <span className="chip hidden sm:inline-flex">{company}</span>
+          {linked ? (
+            <span className="chip ok hidden md:inline-flex">CNPJ {formatCnpj(org.cnpj)}</span>
+          ) : (
+            <span className="chip warn hidden md:inline-flex">empresa não ligada</span>
+          )}
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/app/chat" className="btn btn-ghost hidden sm:inline-flex">
-            <MessageCircle size={15} />
+          <Link href="/app/ia" className="btn btn-ghost hidden sm:inline-flex">
             IA
           </Link>
           <Link href="/app/planos" className="btn btn-primary hidden sm:inline-flex">
@@ -77,38 +39,76 @@ export function AppShell({
             Planos
           </Link>
           <ThemeToggle />
-          <form action={logoutAction}>
-            <button className="btn btn-ghost" type="submit" title="Sair">
-              <LogOut size={15} />
-            </button>
-          </form>
+          <button
+            className="btn btn-ghost"
+            type="button"
+            title="Sair"
+            onClick={async () => {
+              await logoutAccount();
+              go("/login");
+            }}
+          >
+            <LogOut size={15} />
+          </button>
         </div>
       </header>
-      <div className={`app-frame ${studio ? "studio" : ""}`}>
-        <AppNav kind={kind} />
-        <div className="app-body min-w-0">
-          {studio ? null : <ScreenTip mode={kind} />}
-          <main className={studio ? "studio-main" : "p-6 lg:p-8 max-w-6xl"}>
-            {blockedCompany ? (
-              <div className="card p-8 max-w-lg space-y-3">
-                <p className="page-kicker">Espaço pessoal</p>
-                <h1 className="text-xl font-semibold">Isso aqui é da empresa</h1>
-                <p className="text-sm text-muted">Troque para Empresa no topo. O dinheiro da pessoa não mistura com o caixa.</p>
-              </div>
-            ) : blockedPerson ? (
-              <div className="card p-8 max-w-lg space-y-3">
-                <p className="page-kicker">Espaço empresa</p>
-                <h1 className="text-xl font-semibold">Isso aqui é da pessoa</h1>
-                <p className="text-sm text-muted">Troque para Pessoa no topo. Aqui a empresa cuida do caixa.</p>
-              </div>
-            ) : (
-              children
-            )}
-          </main>
-        </div>
+      <div className="app-frame">
+        <AppNav />
+        <main className="p-6 lg:p-8 max-w-6xl min-w-0">{children}</main>
       </div>
-      {studio ? null : <HelpFab />}
-      {studio ? null : <WelcomeGuide />}
+    </div>
+  );
+}
+
+export function PageHead({
+  kicker,
+  title,
+  subtitle,
+  extra,
+}: {
+  kicker: string;
+  title: string;
+  subtitle: string;
+  extra?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-end justify-between gap-4 flex-wrap mb-6">
+      <div>
+        <p className="kicker">{kicker}</p>
+        <h1 className="title">{title}</h1>
+        <p className="text-sm text-muted mt-1 max-w-2xl">{subtitle}</p>
+      </div>
+      {extra}
+    </div>
+  );
+}
+
+export function Empty({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="card p-8 text-center">
+      <h2 className="font-bold">{title}</h2>
+      <p className="text-sm text-muted mt-2">{body}</p>
+    </div>
+  );
+}
+
+export function Gate({
+  allowed,
+  title,
+  body,
+}: {
+  allowed: boolean;
+  title: string;
+  body: string;
+}) {
+  if (allowed) return null;
+  return (
+    <div className="card p-8 text-center space-y-3">
+      <h2 className="text-lg font-bold">{title}</h2>
+      <p className="text-sm text-muted max-w-lg mx-auto">{body}</p>
+      <a href="/app/planos" className="btn btn-primary">
+        Ver planos
+      </a>
     </div>
   );
 }

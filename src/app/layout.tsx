@@ -3,32 +3,22 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { LiveBg } from "@/components/live-bg";
 import "./globals.css";
 
-const geistSans = Inter({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = JetBrains_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const sans = Inter({ variable: "--font-geist-sans", subsets: ["latin"] });
+const mono = JetBrains_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Finanças CodeCraft — Gestão financeira inteligente",
+  title: "Finanças CodeCraft — o sistema da sua empresa",
   description:
-    "Plataforma de gestão financeira para pessoas e empresas: controle, previsão e clareza para decidir melhor.",
+    "Pessoas, vendas, projetos, caixa e estoque num só painel. IA autônoma em 95% do trabalho. Da CodeCraft Solutions.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="pt-BR"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
+    <html lang="pt-BR" className={`${sans.variable} ${mono.variable} h-full antialiased`}>
+      <body className="min-h-full">
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem("fc-theme");if(t==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}`,
+            __html: `try{if(localStorage.getItem("fn-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}`,
           }}
         />
         <LiveBg />

@@ -1,95 +1,163 @@
--- Banco isolado do Finanças CodeCraft.
--- Não usa as tabelas do site da empresa (projects, messages, chat, etc).
--- Rode este arquivo num PROJETO SUPABASE NOVO, só deste app.
+-- Finanças CodeCraft — banco SÓ deste produto.
+-- NÃO rode isto no projeto do site (projects, messages, chat, etc).
+-- Crie um projeto novo no Supabase: nome "financas-codecraft".
+-- SQL Editor → cole este arquivo → RUN.
 
-create table if not exists public.fc_profiles (
+create table if not exists public.fn_profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   name text not null,
-  last_workspace_id uuid,
+  last_org_id uuid,
+  plan text not null default 'FREE',
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.fc_workspaces (
+create table if not exists public.fn_orgs (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users (id) on delete cascade,
   name text not null,
-  type text not null check (type in ('PERSONAL', 'BUSINESS')),
+  size text not null default 'pequena' check (size in ('mei', 'pequena', 'media', 'grande')),
+  autopilot boolean not null default true,
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.fc_accounts (
+alter table public.fn_orgs add column if not exists legal_name text not null default '';
+alter table public.fn_orgs add column if not exists trade_name text not null default '';
+alter table public.fn_orgs add column if not exists cnpj text not null default '';
+alter table public.fn_orgs add column if not exists ie text not null default '';
+alter table public.fn_orgs add column if not exists phone text not null default '';
+alter table public.fn_orgs add column if not exists email text not null default '';
+alter table public.fn_orgs add column if not exists cep text not null default '';
+alter table public.fn_orgs add column if not exists street text not null default '';
+alter table public.fn_orgs add column if not exists number text not null default '';
+alter table public.fn_orgs add column if not exists district text not null default '';
+alter table public.fn_orgs add column if not exists city text not null default '';
+alter table public.fn_orgs add column if not exists state text not null default '';
+alter table public.fn_orgs add column if not exists activity text not null default '';
+alter table public.fn_orgs add column if not exists legal_rep text not null default '';
+alter table public.fn_orgs add column if not exists situation text not null default '';
+alter table public.fn_orgs add column if not exists linked_at timestamptz;
+
+create unique index if not exists fn_orgs_cnpj_uidx
+  on public.fn_orgs (cnpj)
+  where length(cnpj) = 14;
+
+alter table public.fn_profiles
+  drop constraint if exists fn_profiles_last_org_fk;
+alter table public.fn_profiles
+  add constraint fn_profiles_last_org_fk
+  foreign key (last_org_id) references public.fn_orgs (id) on delete set null;
+
+create table if not exists public.fn_people (
   id uuid primary key default gen_random_uuid(),
-  workspace_id uuid not null references public.fc_workspaces (id) on delete cascade,
+  org_id uuid not null references public.fn_orgs (id) on delete cascade,
   name text not null,
-  type text not null check (type in ('CHECKING', 'SAVINGS', 'WALLET', 'CASH', 'CREDIT')),
-  initial_balance integer not null default 0,
-  archived boolean not null default false,
+  email text not null default '',
+  department text not null default 'PESSOAS',
+  role text not null default 'MEMBER',
+  status text not null default 'ACTIVE',
+  salary integer not null default 0,
+  started_at date not null default current_date,
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.fc_categories (
+create table if not exists public.fn_deals (
   id uuid primary key default gen_random_uuid(),
-  workspace_id uuid not null references public.fc_workspaces (id) on delete cascade,
+  org_id uuid not null references public.fn_orgs (id) on delete cascade,
   name text not null,
-  kind text not null,
-  color text not null
+  customer text not null,
+  amount integer not null default 0,
+  stage text not null default 'LEAD',
+  owner_name text not null default '',
+  due_at date,
+  created_at timestamptz not null default now()
 );
 
-create table if not exists public.fc_transactions (
+create table if not exists public.fn_works (
   id uuid primary key default gen_random_uuid(),
-  workspace_id uuid not null references public.fc_workspaces (id) on delete cascade,
-  account_id uuid not null references public.fc_accounts (id) on delete cascade,
-  category_id uuid references public.fc_categories (id) on delete set null,
-  type text not null check (type in ('INCOME', 'EXPENSE', 'TRANSFER')),
+  org_id uuid not null references public.fn_orgs (id) on delete cascade,
+  name text not null,
+  owner_name text not null default '',
+  status text not null default 'PLAN',
+  due_at date,
+  notes text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.fn_tasks (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid not null references public.fn_orgs (id) on delete cascade,
+  title text not null,
+  area text not null default 'GERAL',
+  status text not null default 'TODO',
+  assignee text not null default '',
+  auto boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.fn_wallets (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid not null references public.fn_orgs (id) on delete cascade,
+  name text not null,
+  kind text not null default 'BANK',
+  opening integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.fn_moves (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid not null references public.fn_orgs (id) on delete cascade,
+  wallet_id uuid not null references public.fn_wallets (id) on delete cascade,
+  type text not null check (type in ('IN', 'OUT')),
   amount integer not null,
-  date timestamptz not null,
+  date date not null default current_date,
   description text not null,
-  notes text,
-  transfer_to_account_id uuid references public.fc_accounts (id) on delete set null,
-  import_hash text,
+  category text not null default 'Geral',
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.fc_budgets (
+create table if not exists public.fn_bills (
   id uuid primary key default gen_random_uuid(),
-  workspace_id uuid not null references public.fc_workspaces (id) on delete cascade,
-  category_id uuid not null references public.fc_categories (id) on delete cascade,
-  month text not null,
+  org_id uuid not null references public.fn_orgs (id) on delete cascade,
+  kind text not null check (kind in ('PAY', 'GET')),
+  party text not null,
+  description text not null,
   amount integer not null,
-  unique (workspace_id, category_id, month)
-);
-
-create table if not exists public.fc_audit_logs (
-  id uuid primary key default gen_random_uuid(),
-  workspace_id uuid references public.fc_workspaces (id) on delete set null,
-  user_id uuid not null references auth.users (id) on delete cascade,
-  action text not null,
-  entity text not null,
-  entity_id text,
-  detail text,
+  due date not null,
+  status text not null default 'OPEN',
   created_at timestamptz not null default now()
 );
 
-alter table public.fc_profiles
-  add constraint fc_profiles_last_workspace_fk
-  foreign key (last_workspace_id) references public.fc_workspaces (id) on delete set null;
+create table if not exists public.fn_stock (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid not null references public.fn_orgs (id) on delete cascade,
+  name text not null,
+  qty integer not null default 0,
+  min_qty integer not null default 0,
+  unit_cost integer not null default 0,
+  created_at timestamptz not null default now()
+);
 
-create index if not exists fc_workspaces_owner_idx on public.fc_workspaces (owner_id);
-create index if not exists fc_accounts_ws_idx on public.fc_accounts (workspace_id);
-create index if not exists fc_categories_ws_idx on public.fc_categories (workspace_id);
-create index if not exists fc_transactions_ws_idx on public.fc_transactions (workspace_id);
-create index if not exists fc_budgets_ws_idx on public.fc_budgets (workspace_id, month);
-create index if not exists fc_audit_user_idx on public.fc_audit_logs (user_id, created_at desc);
+create table if not exists public.fn_ai_log (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid not null references public.fn_orgs (id) on delete cascade,
+  kind text not null default 'done',
+  title text not null,
+  body text not null,
+  created_at timestamptz not null default now()
+);
 
-alter table public.fc_profiles enable row level security;
-alter table public.fc_workspaces enable row level security;
-alter table public.fc_accounts enable row level security;
-alter table public.fc_categories enable row level security;
-alter table public.fc_budgets enable row level security;
-alter table public.fc_transactions enable row level security;
-alter table public.fc_audit_logs enable row level security;
+create index if not exists fn_orgs_owner_idx on public.fn_orgs (owner_id);
+create index if not exists fn_people_org_idx on public.fn_people (org_id);
+create index if not exists fn_deals_org_idx on public.fn_deals (org_id);
+create index if not exists fn_works_org_idx on public.fn_works (org_id);
+create index if not exists fn_tasks_org_idx on public.fn_tasks (org_id);
+create index if not exists fn_wallets_org_idx on public.fn_wallets (org_id);
+create index if not exists fn_moves_org_idx on public.fn_moves (org_id);
+create index if not exists fn_bills_org_idx on public.fn_bills (org_id);
+create index if not exists fn_stock_org_idx on public.fn_stock (org_id);
+create index if not exists fn_ai_org_idx on public.fn_ai_log (org_id, created_at desc);
 
-create or replace function public.fc_owns_workspace(ws uuid)
+create or replace function public.fn_owns_org(oid uuid)
 returns boolean
 language sql
 stable
@@ -97,58 +165,89 @@ security definer
 set search_path = public
 as $$
   select exists (
-    select 1 from public.fc_workspaces
-    where id = ws and owner_id = auth.uid()
+    select 1 from public.fn_orgs
+    where id = oid and owner_id = auth.uid()
   );
 $$;
 
-drop policy if exists "fc_profiles_own" on public.fc_profiles;
-create policy "fc_profiles_own" on public.fc_profiles
+alter table public.fn_profiles enable row level security;
+alter table public.fn_orgs enable row level security;
+alter table public.fn_people enable row level security;
+alter table public.fn_deals enable row level security;
+alter table public.fn_works enable row level security;
+alter table public.fn_tasks enable row level security;
+alter table public.fn_wallets enable row level security;
+alter table public.fn_moves enable row level security;
+alter table public.fn_bills enable row level security;
+alter table public.fn_stock enable row level security;
+alter table public.fn_ai_log enable row level security;
+
+drop policy if exists "fn_profiles_own" on public.fn_profiles;
+create policy "fn_profiles_own" on public.fn_profiles
   for all using (id = auth.uid()) with check (id = auth.uid());
 
-drop policy if exists "fc_workspaces_own" on public.fc_workspaces;
-create policy "fc_workspaces_own" on public.fc_workspaces
+drop policy if exists "fn_orgs_own" on public.fn_orgs;
+create policy "fn_orgs_own" on public.fn_orgs
   for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
 
-drop policy if exists "fc_accounts_own" on public.fc_accounts;
-create policy "fc_accounts_own" on public.fc_accounts
-  for all using (public.fc_owns_workspace(workspace_id))
-  with check (public.fc_owns_workspace(workspace_id));
+drop policy if exists "fn_people_own" on public.fn_people;
+create policy "fn_people_own" on public.fn_people
+  for all using (public.fn_owns_org(org_id)) with check (public.fn_owns_org(org_id));
 
-drop policy if exists "fc_categories_own" on public.fc_categories;
-create policy "fc_categories_own" on public.fc_categories
-  for all using (public.fc_owns_workspace(workspace_id))
-  with check (public.fc_owns_workspace(workspace_id));
+drop policy if exists "fn_deals_own" on public.fn_deals;
+create policy "fn_deals_own" on public.fn_deals
+  for all using (public.fn_owns_org(org_id)) with check (public.fn_owns_org(org_id));
 
-drop policy if exists "fc_transactions_own" on public.fc_transactions;
-create policy "fc_transactions_own" on public.fc_transactions
-  for all using (public.fc_owns_workspace(workspace_id))
-  with check (public.fc_owns_workspace(workspace_id));
+drop policy if exists "fn_works_own" on public.fn_works;
+create policy "fn_works_own" on public.fn_works
+  for all using (public.fn_owns_org(org_id)) with check (public.fn_owns_org(org_id));
 
-drop policy if exists "fc_budgets_own" on public.fc_budgets;
-create policy "fc_budgets_own" on public.fc_budgets
-  for all using (public.fc_owns_workspace(workspace_id))
-  with check (public.fc_owns_workspace(workspace_id));
+drop policy if exists "fn_tasks_own" on public.fn_tasks;
+create policy "fn_tasks_own" on public.fn_tasks
+  for all using (public.fn_owns_org(org_id)) with check (public.fn_owns_org(org_id));
 
-drop policy if exists "fc_audit_own" on public.fc_audit_logs;
-create policy "fc_audit_own" on public.fc_audit_logs
-  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists "fn_wallets_own" on public.fn_wallets;
+create policy "fn_wallets_own" on public.fn_wallets
+  for all using (public.fn_owns_org(org_id)) with check (public.fn_owns_org(org_id));
 
-alter table public.fc_profiles replica identity full;
-alter table public.fc_workspaces replica identity full;
-alter table public.fc_accounts replica identity full;
-alter table public.fc_categories replica identity full;
-alter table public.fc_transactions replica identity full;
-alter table public.fc_budgets replica identity full;
-alter table public.fc_audit_logs replica identity full;
+drop policy if exists "fn_moves_own" on public.fn_moves;
+create policy "fn_moves_own" on public.fn_moves
+  for all using (public.fn_owns_org(org_id)) with check (public.fn_owns_org(org_id));
+
+drop policy if exists "fn_bills_own" on public.fn_bills;
+create policy "fn_bills_own" on public.fn_bills
+  for all using (public.fn_owns_org(org_id)) with check (public.fn_owns_org(org_id));
+
+drop policy if exists "fn_stock_own" on public.fn_stock;
+create policy "fn_stock_own" on public.fn_stock
+  for all using (public.fn_owns_org(org_id)) with check (public.fn_owns_org(org_id));
+
+drop policy if exists "fn_ai_own" on public.fn_ai_log;
+create policy "fn_ai_own" on public.fn_ai_log
+  for all using (public.fn_owns_org(org_id)) with check (public.fn_owns_org(org_id));
+
+alter table public.fn_profiles replica identity full;
+alter table public.fn_orgs replica identity full;
+alter table public.fn_people replica identity full;
+alter table public.fn_deals replica identity full;
+alter table public.fn_works replica identity full;
+alter table public.fn_tasks replica identity full;
+alter table public.fn_wallets replica identity full;
+alter table public.fn_moves replica identity full;
+alter table public.fn_bills replica identity full;
+alter table public.fn_stock replica identity full;
+alter table public.fn_ai_log replica identity full;
 
 do $$
 begin
-  begin execute 'alter publication supabase_realtime add table public.fc_profiles'; exception when duplicate_object then null; end;
-  begin execute 'alter publication supabase_realtime add table public.fc_workspaces'; exception when duplicate_object then null; end;
-  begin execute 'alter publication supabase_realtime add table public.fc_accounts'; exception when duplicate_object then null; end;
-  begin execute 'alter publication supabase_realtime add table public.fc_categories'; exception when duplicate_object then null; end;
-  begin execute 'alter publication supabase_realtime add table public.fc_transactions'; exception when duplicate_object then null; end;
-  begin execute 'alter publication supabase_realtime add table public.fc_budgets'; exception when duplicate_object then null; end;
-  begin execute 'alter publication supabase_realtime add table public.fc_audit_logs'; exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table public.fn_orgs'; exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table public.fn_people'; exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table public.fn_deals'; exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table public.fn_works'; exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table public.fn_tasks'; exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table public.fn_wallets'; exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table public.fn_moves'; exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table public.fn_bills'; exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table public.fn_stock'; exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table public.fn_ai_log'; exception when duplicate_object then null; end;
 end $$;

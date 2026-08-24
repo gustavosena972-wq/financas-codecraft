@@ -1,1 +1,0 @@
-(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,89783,t=>{"use strict";var e=t.i(43476),i=t.i(71645),o=t.i(27639);t.s(["default",0,function(){return(0,i.useEffect)(()=>{(0,o.go)("/app/dre")},[]),(0,e.jsx)("p",{className:"text-sm text-muted",children:"Abrindo o DRE…"})}])}]);

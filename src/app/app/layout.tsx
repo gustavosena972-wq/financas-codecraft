@@ -1,65 +1,52 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { AppShell } from "@/components/shell";
-import { listWorkspaces, requireSession, setLastWorkspace } from "@/lib/store";
+import { requireSession, type Snapshot } from "@/lib/store";
 import { useLive } from "@/lib/live";
 import { go } from "@/lib/types";
-import { ensureBothWorkspacesAction } from "@/app/actions/auth";
-import { cleanStackedHouseAction } from "@/app/actions/import";
-
-const HOUSE_FIRST_KEY = "fc-house-first-v2";
-const HOUSE_CLEAN_KEY = "fc-house-clean-v3";
+import { supabaseConfigured } from "@/lib/supabase";
+import { orgIsLinked } from "@/lib/company";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const live = useLive();
+  const pathname = (usePathname() || "").replace(/\/$/, "") || "/app";
+  const [session, setSession] = useState<Snapshot | null>(null);
   const [ready, setReady] = useState(false);
-  const [name, setName] = useState("");
-  const [workspaces, setWorkspaces] = useState<{ id: string; name: string; type: "PERSONAL" | "BUSINESS" }[]>([]);
-  const [activeId, setActiveId] = useState("");
 
   useEffect(() => {
     void (async () => {
-      const session = await requireSession();
-      const user = session?.user;
-      if (!user || !session) {
+      if (!supabaseConfigured()) {
+        setReady(true);
+        return;
+      }
+      const data = await requireSession();
+      if (!data) {
         go("/login");
         return;
       }
-      await ensureBothWorkspacesAction();
-      let again = await requireSession();
-      if (!again) {
-        go("/login");
-        return;
-      }
-      const spaces = listWorkspaces(again.user.id);
-      const person = spaces.find((ws) => ws.type === "PERSONAL");
-      if (person && typeof window !== "undefined" && !window.localStorage.getItem(HOUSE_FIRST_KEY)) {
-        window.localStorage.setItem(HOUSE_FIRST_KEY, "1");
-        if (again.workspace.id !== person.id) {
-          await setLastWorkspace(again.user.id, person.id);
-          again = (await requireSession()) ?? again;
-        }
-      }
-      if (again.workspace.type === "PERSONAL" && typeof window !== "undefined") {
-        const cleaned = await cleanStackedHouseAction();
-        if (cleaned.removed > 0 || !window.localStorage.getItem(HOUSE_CLEAN_KEY)) {
-          window.localStorage.setItem(HOUSE_CLEAN_KEY, "1");
-          again = (await requireSession()) ?? again;
-        }
-      }
-      setName(again.user.name);
-      setWorkspaces(listWorkspaces(again.user.id));
-      setActiveId(again.workspace.id);
+      setSession(data);
       setReady(true);
+      if (!orgIsLinked(data.org) && pathname !== "/app/empresa") {
+        go("/app/empresa");
+      }
     })();
-  }, [live]);
+  }, [live, pathname]);
 
-  if (!ready) return <div className="p-10 text-muted">Carregando…</div>;
+  if (!ready) return <p className="p-10 text-muted">Abrindo a empresa…</p>;
+  if (!supabaseConfigured()) {
+    return (
+      <div className="p-10 max-w-xl space-y-3">
+        <p className="kicker">Banco</p>
+        <h1 className="title">Supabase do Finanças CodeCraft ainda não está ligado</h1>
+        <p className="text-sm text-muted">
+          Rode <code>supabase/schema.sql</code> no projeto deste app e confirme o <code>.env.local</code>.
+        </p>
+      </div>
+    );
+  }
+  if (!session) return null;
 
-  return (
-    <AppShell userName={name} workspaces={workspaces} activeId={activeId}>
-      {children}
-    </AppShell>
-  );
+  return <AppShell org={session.org}>{children}</AppShell>;
 }

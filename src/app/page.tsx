@@ -1,110 +1,121 @@
 import Link from "next/link";
-import { PlansGrid } from "@/components/plans-grid";
-import { PIX_PLAN_KEY } from "@/lib/plans";
-import { HeroPreview } from "@/components/hero-preview";
 import { BrandLogo } from "@/components/brand-logo";
+import { DEPARTMENTS } from "@/lib/types";
+import { PLANS, PIX_KEY } from "@/lib/plans";
 
 export default function HomePage() {
   return (
-    <div className="land min-h-screen">
-      <header className="ccs-top">
-        <BrandLogo tone="dark" />
-        <nav className="flex items-center gap-6 text-sm text-muted flex-wrap justify-end">
-          <a href="#produto">Pessoa e empresa</a>
+    <div className="min-h-screen">
+      <header className="land-top">
+        <BrandLogo tone="light" />
+        <nav className="flex items-center gap-4 text-sm text-[#c5cce0]">
+          <a href="#setores">Setores</a>
           <a href="#planos">Planos</a>
           <Link href="/login">Entrar</Link>
-          <a href="#planos" className="btn btn-ghost">
-            Ver planos
-          </a>
           <Link href="/cadastro" className="btn btn-primary">
             Começar
           </Link>
         </nav>
       </header>
 
-      <section className="ccs-hero">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-[1.1fr_.9fr] gap-14 items-center">
+      <section className="land-hero">
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-[1.1fr_.9fr] gap-12 items-center">
           <div className="rise">
-            <p className="page-kicker">Finanças CodeCraft · o que vai sobrar</p>
-            <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.12] text-white max-w-3xl hero-title mt-3">
-              O que vai gastar.
+            <p className="kicker">Finanças CodeCraft · sistema da empresa</p>
+            <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] mt-3">
+              Todos os setores.
               <br />
-              <span className="text-gold">O que vai sobrar.</span> Todo dia.
+              Uma IA que <span style={{ color: "var(--gold)" }}>trabalha.</span>
             </h1>
-            <p className="mt-5 text-[#B9BEDB] text-lg max-w-2xl">
-              A planilha entra uma vez. O app não copia a tabela: conta o mês, o ano, e avalia sozinho o que cortar — principalmente o cartão.
+            <p className="mt-5 text-[#c5cce0] text-lg max-w-xl">
+              Você cadastra a conta. Depois liga o CNPJ da empresa. Só então o painel abre: pessoas, vendas, projetos, caixa e estoque.
+              A IA cuida de 95% sozinha. Os 5% que mexem dinheiro ou gente, você confirma.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/cadastro" className="btn btn-primary">
-                Criar conta
+                Criar empresa
               </Link>
-              <Link href="/login" className="btn btn-ghost" style={{ color: "#fff", borderColor: "#2C3358" }}>
+              <Link href="/login" className="btn btn-ghost" style={{ color: "#fff", borderColor: "#3a4160" }}>
                 Já tenho conta
               </Link>
             </div>
           </div>
-          <HeroPreview />
+          <div className="float-card card p-6 bg-[#1b2140] border-[#2c3358] text-white">
+            <div className="flex items-center justify-between">
+              <span className="kicker" style={{ color: "var(--gold)" }}>
+                Painel ao vivo
+              </span>
+              <span className="pilot">
+                <i className="dot" /> IA 95% autônoma
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-5">
+              {[
+                ["Pessoas", "12 ativas"],
+                ["Pipeline", "R$ 84 mil"],
+                ["Caixa", "R$ 31 mil"],
+                ["Tarefas da IA", "7 hoje"],
+              ].map(([k, v]) => (
+                <div key={k} className="rounded-2xl p-4" style={{ background: "#14182a" }}>
+                  <div className="text-[11px] text-[#9aa3b8]">{k}</div>
+                  <div className="text-lg font-bold mt-1">{v}</div>
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-[#9aa3b8] mt-4">Não é planilha. É a empresa inteira, com a IA no volante.</p>
+          </div>
         </div>
       </section>
 
-      <section id="produto" className="bg-bg text-ink py-20 px-8">
+      <section id="setores" className="py-20 px-8">
         <div className="max-w-6xl mx-auto">
-          <p className="page-kicker">O que o app faz</p>
-          <h2 className="text-3xl font-extrabold mt-2">Não é para ver a mesma planilha.</h2>
+          <p className="kicker">Ferramentas que fazem sentido</p>
+          <h2 className="text-3xl font-extrabold mt-2">Cada setor no seu lugar.</h2>
           <p className="text-muted mt-3 max-w-2xl">
-            Você manda o Excel da casa. O app diz o que ainda vai sair, o que sobra, e o que fazer hoje. Empresa fica em outro espaço.
+            Fácil de entender. Sério no caixa. Um pouco divertido no resto — para a equipe querer abrir todo dia.
           </p>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-10">
-            {[
-              ["01", "Este mês", "Vai gastar X. Vai sobrar Y. Faltam N dias. Sem gasto novo no cartão, o número se segura."],
-              ["02", "Mês a mês", "Janeiro a dezembro: o que já saiu, o que ainda vem, e o que sobra em cada um."],
-              ["03", "No ano", "Quanto vai gastar no total e quanto sobra no fim. Se o cartão cair 10%, quanto a mais sobra."],
-              ["04", "Avaliação todo dia", "A IA lê o ano da casa de novo cada dia. Dica concreta: amortizar, não abrir parcela."],
-              ["05", "Cartões", "Qual fatura mais come. A meta é baixar. Sem parcela nova enquanto as atuais não acabam."],
-              ["06", "Manda o Excel uma vez", "Ponto de partida, não a tela. Depois o app trabalha em cima dos números."],
-            ].map(([num, title, body]) => (
-              <article key={title} className="card p-6">
-                <div className="page-kicker text-gold">{num}</div>
-                <h3 className="font-bold mt-2">{title}</h3>
-                <p className="text-sm text-muted mt-2">{body}</p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
+            {DEPARTMENTS.map((item, i) => (
+              <article key={item.id} className="card sector p-6" style={{ animationDelay: `${i * 0.05}s` }}>
+                <p className="kicker">{String(i + 1).padStart(2, "0")}</p>
+                <h3 className="font-bold mt-2">{item.name}</h3>
+                <p className="text-sm text-muted mt-2">{item.does}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="bg-bg-2 text-ink py-20 px-8">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16">
-          <div>
-            <p className="page-kicker">Pessoa</p>
-            <h2 className="text-2xl font-extrabold mt-2">O que vai sobrar na casa.</h2>
-            <p className="text-muted mt-3">Mês, ano e dica do dia. Pessoa e empresa não se misturam.</p>
-          </div>
-          <div className="lg:border-l lg:border-line lg:pl-16">
-            <p className="page-kicker">Empresa</p>
-            <h2 className="text-2xl font-extrabold mt-2">MEI, prestador, caixa.</h2>
-            <p className="text-muted mt-3">Títulos, DRE e fluxo. O mesmo login, outro espaço.</p>
-          </div>
-        </div>
-      </section>
-
-      <section id="planos" className="bg-bg text-ink py-20 px-8">
+      <section id="planos" className="py-20 px-8 bg-bg-2">
         <div className="max-w-6xl mx-auto">
-          <p className="page-kicker">Assinatura</p>
-          <h2 className="text-3xl font-extrabold mt-2">Planos</h2>
-          <p className="text-muted mt-2 max-w-2xl">
-            Experimentar grátis. Casa R$ 107, Casa Plus R$ 200, Empresa R$ 305, Completo R$ 400 — por mês.
-            Renovação automática. PIX cai na conta da CodeCraft. Cartão pelo WhatsApp, como nos projetos da empresa.
-          </p>
-          <div className="mt-10">
-            <PlansGrid mode="public" />
+          <p className="kicker">Assinatura</p>
+          <h2 className="text-3xl font-extrabold mt-2">Planos claros.</h2>
+          <p className="text-muted mt-2">PIX {PIX_KEY}. Renova todo mês. A IA não pede senha e não move dinheiro.</p>
+          <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4 mt-10">
+            {PLANS.map((plan) => (
+              <article key={plan.id} className={`card p-6 flex flex-col ${plan.highlight ? "ring-2 ring-[color:var(--gold)]" : ""}`}>
+                {plan.badge ? <span className="chip warn w-fit">{plan.badge}</span> : null}
+                <h3 className="font-bold text-lg mt-2">{plan.name}</h3>
+                <div className="text-3xl font-extrabold mt-2">{plan.price}</div>
+                <p className="text-xs text-muted">{plan.period}</p>
+                <p className="text-sm text-muted mt-3">{plan.forWho}</p>
+                <ul className="text-sm mt-4 space-y-1.5 flex-1">
+                  {plan.includes.map((line) => (
+                    <li key={line}>· {line}</li>
+                  ))}
+                </ul>
+                <Link href="/cadastro" className={`btn mt-5 ${plan.highlight ? "btn-primary" : "btn-ink"}`}>
+                  {plan.cta}
+                </Link>
+              </article>
+            ))}
           </div>
         </div>
       </section>
 
-      <footer className="px-10 py-8 text-sm text-muted flex justify-between border-t border-line bg-bg flex-wrap gap-3">
+      <footer className="px-10 py-8 text-sm text-muted flex justify-between border-t border-line flex-wrap gap-3">
         <span>Finanças CodeCraft · CodeCraft Solutions</span>
-        <span>PIX {PIX_PLAN_KEY}</span>
+        <span>PIX {PIX_KEY}</span>
       </footer>
     </div>
   );

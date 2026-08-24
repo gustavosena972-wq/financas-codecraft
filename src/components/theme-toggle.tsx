@@ -2,14 +2,11 @@
 
 import { useEffect, useState } from "react";
 
-const KEY = "fc-theme";
-
 export function ThemeToggle() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
-    const stored = localStorage.getItem(KEY);
-    const next = stored === "dark" ? "dark" : "light";
+    const next = localStorage.getItem("fn-theme") === "dark" ? "dark" : "light";
     setTheme(next);
     document.documentElement.setAttribute("data-theme", next);
   }, []);
@@ -21,7 +18,7 @@ export function ThemeToggle() {
       onClick={() => {
         const next = theme === "dark" ? "light" : "dark";
         setTheme(next);
-        localStorage.setItem(KEY, next);
+        localStorage.setItem("fn-theme", next);
         document.documentElement.setAttribute("data-theme", next);
       }}
     >
