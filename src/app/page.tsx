@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
 import { DEPARTMENTS } from "@/lib/types";
-import { PLANS, PIX_KEY } from "@/lib/plans";
+import { PLAN, PIX_KEY } from "@/lib/plans";
 
 export default function HomePage() {
   return (
@@ -10,7 +10,7 @@ export default function HomePage() {
         <BrandLogo tone="light" />
         <nav className="flex items-center gap-4 text-sm text-[#c5cce0]">
           <a href="#setores">Setores</a>
-          <a href="#planos">Planos</a>
+          <a href="#assinatura">Assinatura</a>
           <Link href="/login">Entrar</Link>
           <Link href="/cadastro" className="btn btn-primary">
             Começar
@@ -86,36 +86,42 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="planos" className="py-20 px-8 bg-bg-2">
-        <div className="max-w-6xl mx-auto">
-          <p className="kicker">Assinatura</p>
-          <h2 className="text-3xl font-extrabold mt-2">Planos claros.</h2>
-          <p className="text-muted mt-2">PIX {PIX_KEY}. Renova todo mês. A IA não pede senha e não move dinheiro.</p>
-          <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4 mt-10">
-            {PLANS.map((plan) => (
-              <article key={plan.id} className={`card p-6 flex flex-col ${plan.highlight ? "ring-2 ring-[color:var(--gold)]" : ""}`}>
-                {plan.badge ? <span className="chip warn w-fit">{plan.badge}</span> : null}
-                <h3 className="font-bold text-lg mt-2">{plan.name}</h3>
-                <div className="text-3xl font-extrabold mt-2">{plan.price}</div>
-                <p className="text-xs text-muted">{plan.period}</p>
-                <p className="text-sm text-muted mt-3">{plan.forWho}</p>
-                <ul className="text-sm mt-4 space-y-1.5 flex-1">
-                  {plan.includes.map((line) => (
-                    <li key={line}>· {line}</li>
-                  ))}
-                </ul>
-                <Link href="/cadastro" className={`btn mt-5 ${plan.highlight ? "btn-primary" : "btn-ink"}`}>
-                  {plan.cta}
-                </Link>
-              </article>
-            ))}
+      <section id="assinatura" className="py-20 px-8 bg-bg-2">
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-[1fr_1fr] gap-8 items-start">
+          <div>
+            <p className="kicker">Cobrança da plataforma</p>
+            <h2 className="text-3xl font-extrabold mt-2">Um plano. R$ 249 por mês.</h2>
+            <p className="text-muted mt-3 max-w-xl">{PLAN.forWho}</p>
+            <ul className="mt-6 space-y-2 text-sm">
+              {PLAN.includes.map((line) => (
+                <li key={line}>· {line}</li>
+              ))}
+            </ul>
           </div>
+          <article className="card p-8 space-y-4">
+            <p className="chip ok w-fit">Assinatura única</p>
+            <div className="text-5xl font-extrabold">{PLAN.price}</div>
+            <p className="text-sm text-muted">{PLAN.period}</p>
+            <div className="grid sm:grid-cols-2 gap-3 pt-2">
+              <div className="rounded-2xl border border-line p-4">
+                <p className="font-bold">Cartão</p>
+                <p className="text-sm text-muted mt-1">Cobra sozinho todo mês.</p>
+              </div>
+              <div className="rounded-2xl border border-line p-4">
+                <p className="font-bold">PIX</p>
+                <p className="text-sm text-muted mt-1">Chave da plataforma {PIX_KEY}.</p>
+              </div>
+            </div>
+            <Link href="/cadastro" className="btn btn-primary">
+              Assinar agora
+            </Link>
+          </article>
         </div>
       </section>
 
       <footer className="px-10 py-8 text-sm text-muted flex justify-between border-t border-line flex-wrap gap-3">
         <span>Finanças CodeCraft · CodeCraft Solutions</span>
-        <span>PIX {PIX_KEY}</span>
+        <span>PIX da plataforma {PIX_KEY}</span>
       </footer>
     </div>
   );

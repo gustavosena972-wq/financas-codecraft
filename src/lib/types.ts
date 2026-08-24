@@ -1,4 +1,5 @@
-export type PlanId = "FREE" | "TEAM" | "BUSINESS" | "ENTERPRISE";
+export type PlanId = "NONE" | "PRO";
+export type BillingStatus = "inactive" | "active" | "past_due";
 export type OrgSize = "mei" | "pequena" | "media" | "grande";
 export type Department =
   | "DIRECAO"
@@ -16,6 +17,13 @@ export type Profile = {
   email: string;
   lastOrgId: string | null;
   plan: PlanId;
+  billingStatus: BillingStatus;
+  billingMethod: "" | "card" | "pix";
+  cardLast4: string;
+  cardBrand: string;
+  cardExp: string;
+  nextChargeAt: string | null;
+  billedAt: string | null;
   createdAt: string;
 };
 
@@ -42,6 +50,7 @@ export type Org = {
   legalRep: string;
   situation: string;
   linkedAt: string | null;
+  pixKey: string;
 };
 
 export type Person = {
@@ -93,7 +102,7 @@ export type Wallet = {
   id: string;
   orgId: string;
   name: string;
-  kind: "BANK" | "CASH" | "CARD";
+  kind: "BANK" | "CASH" | "CARD" | "PIX";
   opening: number;
 };
 

@@ -21,7 +21,7 @@ export default function CaixaPage() {
   }, [live]);
 
   if (!data) return null;
-  const ok = hasCash(data.user.plan);
+  const ok = hasCash(data.user);
   const cash = cashBalance(data);
 
   return (
@@ -32,7 +32,7 @@ export default function CaixaPage() {
         subtitle="O dinheiro da empresa. A IA avisa atraso e abre tarefa. Pagar ainda é o 5% — você confirma."
         extra={<div className={`text-2xl font-extrabold ${cash < 0 ? "text-negative" : ""}`}>{brl(cash)}</div>}
       />
-      <Gate allowed={ok} title="Caixa entra no plano Empresa" body="No plano Empresa (R$ 305) você lança, cobra e baixa título. A IA não transfere sozinha." />
+      <Gate allowed={ok} title="Assine para abrir o caixa" body="R$ 249 por mês no cartão automático, ou PIX da plataforma. Aí o caixa abre." />
       {ok ? (
         <>
           <div className="grid lg:grid-cols-2 gap-4">

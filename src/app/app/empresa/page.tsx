@@ -13,6 +13,7 @@ import {
   onlyDigits,
   orgIsLinked,
 } from "@/lib/company";
+import { isSubscribed } from "@/lib/plans";
 
 type Form = {
   cnpj: string;
@@ -190,7 +191,7 @@ export default function EmpresaPage() {
               cep: onlyDigits(form.cep),
               state: form.state.trim().toUpperCase(),
             });
-            go("/app");
+            go(isSubscribed(data.user) ? "/app" : "/app/planos");
           } catch (err) {
             setError(err instanceof Error ? err.message : "Não deu para ligar a empresa.");
           } finally {

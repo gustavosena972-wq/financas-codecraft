@@ -36,7 +36,7 @@ export function AppShell({
           </Link>
           <Link href="/app/planos" className="btn btn-primary hidden sm:inline-flex">
             <Sparkles size={15} />
-            Planos
+            Assinar
           </Link>
           <ThemeToggle />
           <button
@@ -107,7 +107,7 @@ export function Gate({
       <h2 className="text-lg font-bold">{title}</h2>
       <p className="text-sm text-muted max-w-lg mx-auto">{body}</p>
       <a href="/app/planos" className="btn btn-primary">
-        Ver planos
+        Assinar
       </a>
     </div>
   );

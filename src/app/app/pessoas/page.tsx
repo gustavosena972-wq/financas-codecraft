@@ -24,7 +24,7 @@ export default function PessoasPage() {
   }, [live]);
 
   if (!data) return null;
-  const limit = peopleLimit(data.user.plan);
+  const limit = peopleLimit(data.user);
 
   return (
     <div className="space-y-6">
@@ -35,7 +35,7 @@ export default function PessoasPage() {
       />
       <p className="text-sm text-muted">
         {data.people.length}
-        {Number.isFinite(limit) ? ` de ${limit}` : ""} pessoas neste plano.
+        {Number.isFinite(limit) ? ` de ${limit}` : ""} pessoas.
       </p>
       <form
         className="card p-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-3"

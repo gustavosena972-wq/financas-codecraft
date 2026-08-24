@@ -20,12 +20,12 @@ export default function EstoquePage() {
   }, [live]);
 
   if (!data) return null;
-  const ok = hasCash(data.user.plan);
+  const ok = hasCash(data.user);
 
   return (
     <div className="space-y-6">
       <PageHead kicker="Setor" title="Estoque" subtitle="O que tem na prateleira. A IA avisa quando chega no mínimo. Comprar ainda é com você." />
-      <Gate allowed={ok} title="Estoque entra no plano Empresa" body="Empresa ou Completo. Sem inventário fantasma: quantidade real, mínimo, custo." />
+      <Gate allowed={ok} title="Assine para abrir o estoque" body="A assinatura da plataforma libera quantidade, mínimo e custo." />
       {ok ? (
         <>
           <form

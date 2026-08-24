@@ -37,6 +37,14 @@ alter table public.fn_orgs add column if not exists legal_rep text not null defa
 alter table public.fn_orgs add column if not exists situation text not null default '';
 alter table public.fn_orgs add column if not exists linked_at timestamptz;
 
+alter table public.fn_profiles add column if not exists billing_status text not null default 'inactive';
+alter table public.fn_profiles add column if not exists billing_method text not null default '';
+alter table public.fn_profiles add column if not exists card_last4 text not null default '';
+alter table public.fn_profiles add column if not exists card_brand text not null default '';
+alter table public.fn_profiles add column if not exists card_exp text not null default '';
+alter table public.fn_profiles add column if not exists billed_at timestamptz;
+alter table public.fn_profiles add column if not exists next_charge_at timestamptz;
+
 create unique index if not exists fn_orgs_cnpj_uidx
   on public.fn_orgs (cnpj)
   where length(cnpj) = 14;

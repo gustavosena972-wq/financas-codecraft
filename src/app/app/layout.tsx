@@ -8,6 +8,7 @@ import { useLive } from "@/lib/live";
 import { go } from "@/lib/types";
 import { supabaseConfigured } from "@/lib/supabase";
 import { orgIsLinked } from "@/lib/company";
+import { isSubscribed } from "@/lib/plans";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const live = useLive();
@@ -30,6 +31,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       setReady(true);
       if (!orgIsLinked(data.org) && pathname !== "/app/empresa") {
         go("/app/empresa");
+        return;
+      }
+      const billingOpen = pathname === "/app/planos" || pathname === "/app/empresa";
+      if (orgIsLinked(data.org) && !isSubscribed(data.user) && !billingOpen) {
+        go("/app/planos");
       }
     })();
   }, [live, pathname]);

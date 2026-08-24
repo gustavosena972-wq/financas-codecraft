@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PageHead } from "@/components/shell";
-import { requireSession, setAutopilot, type Snapshot } from "@/lib/store";
+import { cancelCardSubscription, requireSession, setAutopilot, type Snapshot } from "@/lib/store";
 import { useLive } from "@/lib/live";
 import { go } from "@/lib/types";
-import { planLabel } from "@/lib/plans";
+import { isSubscribed, planLabel } from "@/lib/plans";
 import { displayCompany, formatCnpj, orgIsLinked } from "@/lib/company";
 
 export default function AjustesPage() {
@@ -31,7 +31,30 @@ export default function AjustesPage() {
         <p className="kicker">Você</p>
         <p className="font-bold text-lg">{data.user.name}</p>
         <p className="text-sm text-muted">{data.user.email}</p>
-        <p className="text-sm">Plano {planLabel(data.user.plan)}</p>
+        <p className="text-sm">{planLabel(data.user)}</p>
+        {isSubscribed(data.user) ? (
+          <>
+            <p className="text-sm text-muted">
+              {data.user.billingMethod === "pix"
+                ? "Cobrança da plataforma no PIX"
+                : `Cartão •••• ${data.user.cardLast4} · cobrança automática todo mês`}
+            </p>
+            <Link href="/app/planos" className="btn btn-ink w-fit mt-2">
+              Ver cobrança
+            </Link>
+            <button
+              className="btn btn-ghost w-fit"
+              type="button"
+              onClick={() => void cancelCardSubscription()}
+            >
+              Cancelar assinatura
+            </button>
+          </>
+        ) : (
+          <Link href="/app/planos" className="btn btn-primary w-fit mt-2">
+            Assinar a plataforma
+          </Link>
+        )}
       </article>
       <article className="card p-6 space-y-2">
         <div className="flex items-center justify-between gap-3 flex-wrap">

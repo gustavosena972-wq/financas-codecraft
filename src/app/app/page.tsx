@@ -109,7 +109,7 @@ export default function PainelPage() {
           </div>
         </article>
       </div>
-      <p className="text-xs text-muted">Plano {planLabel(data.user.plan)} · Finanças CodeCraft</p>
+      <p className="text-xs text-muted">{planLabel(data.user)} · Finanças CodeCraft</p>
     </div>
   );
 }

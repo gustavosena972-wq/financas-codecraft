@@ -28,12 +28,12 @@ export default function VendasPage() {
   }, [live]);
 
   if (!data) return null;
-  const ok = hasOps(data.user.plan);
+  const ok = hasOps(data.user);
 
   return (
     <div className="space-y-6">
       <PageHead kicker="Setor" title="Vendas" subtitle="Do primeiro oi até o ganho. A IA cobra lead parado. Fechar o negócio é com você." />
-      <Gate allowed={ok} title="Vendas entra no plano Time" body="No Time (R$ 197) você já tem pipeline. Na Empresa, a IA acompanha sozinha." />
+      <Gate allowed={ok} title="Assine para abrir vendas" body="A assinatura da plataforma libera o pipeline inteiro." />
       {ok ? (
         <>
           <form

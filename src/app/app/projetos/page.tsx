@@ -23,12 +23,12 @@ export default function ProjetosPage() {
   }, [live]);
 
   if (!data) return null;
-  const ok = hasOps(data.user.plan);
+  const ok = hasOps(data.user);
 
   return (
     <div className="space-y-6">
       <PageHead kicker="Setor" title="Projetos" subtitle="O que está andando. A IA cria tarefa quando algo trava. Você só desbloqueia." />
-      <Gate allowed={ok} title="Projetos entram no plano Time" body="Time ou Empresa. A IA não entrega o projeto — ela não deixa ele sumir." />
+      <Gate allowed={ok} title="Assine para abrir projetos" body="A assinatura da plataforma libera obras, tarefas e o acompanhamento da IA." />
       {ok ? (
         <>
           <form

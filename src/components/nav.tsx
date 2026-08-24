@@ -24,7 +24,7 @@ const ITEMS = [
   { href: "/app/projetos", label: "Projetos", icon: Workflow },
   { href: "/app/caixa", label: "Caixa", icon: Wallet },
   { href: "/app/estoque", label: "Estoque", icon: Boxes },
-  { href: "/app/planos", label: "Planos", icon: Sparkles },
+  { href: "/app/planos", label: "Assinatura", icon: Sparkles },
   { href: "/app/ajustes", label: "Ajustes", icon: Settings },
 ];
 
