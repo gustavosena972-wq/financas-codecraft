@@ -300,8 +300,15 @@ export function stopLiveSync() {
 
 function authMessage(message?: string) {
   if (!message) return "Não deu para autenticar.";
-  if (message.toLowerCase().includes("already")) return "Já existe uma conta com este e-mail.";
-  if (message.toLowerCase().includes("confirm")) {
+  const lower = message.toLowerCase();
+  if (lower.includes("failed to fetch") || lower.includes("networkerror") || lower.includes("fetch failed")) {
+    return "Não foi possível conectar ao Supabase. O projeto do app está fora do ar ou a URL/chave está errada.";
+  }
+  if (lower.includes("invalid login") || lower.includes("invalid credentials")) {
+    return "E-mail ou senha incorretos.";
+  }
+  if (lower.includes("already")) return "Já existe uma conta com este e-mail.";
+  if (lower.includes("confirm")) {
     return "No Supabase do CodeCraft Gestão, desligue Confirm email em Authentication → Providers → Email.";
   }
   return message;
@@ -316,60 +323,89 @@ export async function registerAccount(input: {
 }) {
   if (!supabaseConfigured()) return { error: "Ligue o CodeCraft Gestão ao próprio projeto Supabase." };
   const supabase = getSupabase();
-  const { data, error } = await supabase.auth.signUp({
-    email: input.email,
-    password: input.password,
-    options: { data: { name: input.name } },
-  });
-  if (error || !data.user) return { error: authMessage(error?.message) };
-  const orgId = newId();
-  const walletId = newId();
-  const personId = newId();
-  const { error: profileError } = await supabase.from("cc_profiles").insert({
-    id: data.user.id,
-    name: input.name,
-    last_org_id: orgId,
-    plan: "NONE",
-  });
-  if (profileError) return { error: profileError.message };
-  const { error: orgError } = await supabase.from("cc_orgs").insert({
-    id: orgId,
-    owner_id: data.user.id,
-    name: input.company,
-    size: input.size,
-  });
-  if (orgError) return { error: orgError.message };
-  await supabase.from("cc_people").insert({
-    id: personId,
-    org_id: orgId,
-    name: input.name,
-    email: input.email,
-    department: "DIRECAO",
-    role_title: "Responsável",
-    role: "ADMIN",
-    status: "ACTIVE",
-    salary: 0,
-    started_at: today(),
-  });
-  await supabase.from("cc_wallets").insert({
-    id: walletId,
-    org_id: orgId,
-    name: "Conta PJ",
-    kind: "BANK",
-    opening: 0,
-  });
-  await refreshSession();
-  bump();
-  return { error: null };
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email: input.email.trim().toLowerCase(),
+      password: input.password,
+      options: { data: { name: input.name } },
+    });
+    if (error || !data.user) return { error: authMessage(error?.message) };
+    if (!data.session) {
+      return {
+        error:
+          "Conta criada, mas o e-mail precisa de confirmação. No Supabase: Authentication → Providers → Email → desligue Confirm email.",
+      };
+    }
+    const orgId = newId();
+    const walletId = newId();
+    const personId = newId();
+    const { error: profileError } = await supabase.from("cc_profiles").insert({
+      id: data.user.id,
+      name: input.name,
+      last_org_id: orgId,
+      plan: "NONE",
+    });
+    if (profileError) {
+      return {
+        error: profileError.message.toLowerCase().includes("relation")
+          ? "Faltam as tabelas. Rode supabase/schema.sql no SQL Editor deste projeto Supabase."
+          : profileError.message,
+      };
+    }
+    const { error: orgError } = await supabase.from("cc_orgs").insert({
+      id: orgId,
+      owner_id: data.user.id,
+      name: input.company,
+      size: input.size,
+    });
+    if (orgError) return { error: orgError.message };
+    await supabase.from("cc_people").insert({
+      id: personId,
+      org_id: orgId,
+      name: input.name,
+      email: input.email.trim().toLowerCase(),
+      department: "DIRECAO",
+      role_title: "Responsável",
+      role: "ADMIN",
+      status: "ACTIVE",
+      salary: 0,
+      started_at: today(),
+    });
+    await supabase.from("cc_wallets").insert({
+      id: walletId,
+      org_id: orgId,
+      name: "Conta PJ",
+      kind: "BANK",
+      opening: 0,
+    });
+    await refreshSession();
+    bump();
+    return { error: null };
+  } catch (err) {
+    return { error: authMessage(err instanceof Error ? err.message : "Falha de rede no cadastro.") };
+  }
 }
 
 export async function loginAccount(email: string, password: string) {
   if (!supabaseConfigured()) return { error: "Ligue o CodeCraft Gestão ao próprio projeto Supabase." };
-  const { error } = await getSupabase().auth.signInWithPassword({ email, password });
-  if (error) return { error: authMessage(error.message) };
-  await refreshSession();
-  bump();
-  return { error: null };
+  try {
+    const { error } = await getSupabase().auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+    if (error) return { error: authMessage(error.message) };
+    const session = await refreshSession();
+    if (!session) {
+      return {
+        error:
+          "Login ok no Auth, mas a empresa não carregou. Rode o arquivo supabase/schema.sql neste projeto Supabase e cadastre de novo.",
+      };
+    }
+    bump();
+    return { error: null };
+  } catch (err) {
+    return { error: authMessage(err instanceof Error ? err.message : "Falha de rede no login.") };
+  }
 }
 
 export async function logoutAccount() {

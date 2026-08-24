@@ -18,6 +18,8 @@ export function getSupabase() {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
+      // Evita conflito com o site CodeCraft no mesmo domínio github.io
+      storageKey: "cc-gestao-auth-v1",
     },
   });
   return client;
