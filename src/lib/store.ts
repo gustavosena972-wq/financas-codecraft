@@ -317,15 +317,34 @@ function authMessage(message?: string) {
 const CONFIRM_HINT =
   "Conta criada, mas o Supabase pediu confirmação de e-mail. Abra o projeto no Supabase → SQL Editor → cole e rode supabase/fix-auth.sql → volte aqui e clique Entrar com o mesmo e-mail e senha.";
 
-async function bootstrapFromAuth(nameHint: string, companyHint: string) {
+async function bootstrapFromAuth(nameHint: string, companyHint: string, sizeHint?: Org["size"]) {
   const supabase = getSupabase();
   const { data: authData, error: authError } = await supabase.auth.getUser();
-  if (authError || !authData.user) return null;
+  if (authError || !authData.user) return { session: null as Snapshot | null, error: authError?.message || "Sem usuário Auth." };
   const auth = authData.user;
   const name = nameHint || (auth.user_metadata?.name as string) || auth.email?.split("@")[0] || "Responsável";
   const company = companyHint || "Sua empresa";
-  const { data: existingOrg } = await supabase.from("cc_orgs").select("id").eq("owner_id", auth.id).maybeSingle();
-  if (existingOrg?.id) return refreshSession();
+  const size = sizeHint || "pequena";
+
+  const { data: existingOrg, error: orgLookupError } = await supabase
+    .from("cc_orgs")
+    .select("id")
+    .eq("owner_id", auth.id)
+    .maybeSingle();
+  if (orgLookupError) {
+    const msg = orgLookupError.message.toLowerCase();
+    if (msg.includes("relation") || msg.includes("does not exist") || orgLookupError.code === "42P01") {
+      return {
+        session: null,
+        error: "Faltam as tabelas do CodeCraft Gestão. No Supabase → SQL Editor, rode o arquivo supabase/schema.sql e tente entrar de novo.",
+      };
+    }
+    return { session: null, error: orgLookupError.message };
+  }
+  if (existingOrg?.id) {
+    const session = await refreshSession();
+    return { session, error: session ? null : "Empresa encontrada, mas a sessão não carregou." };
+  }
 
   const orgId = newId();
   const walletId = newId();
@@ -336,14 +355,21 @@ async function bootstrapFromAuth(nameHint: string, companyHint: string) {
     last_org_id: orgId,
     plan: "NONE",
   });
-  if (profileError) return null;
+  if (profileError) {
+    return {
+      session: null,
+      error: profileError.message.toLowerCase().includes("relation")
+        ? "Faltam as tabelas. Rode supabase/schema.sql no SQL Editor do Supabase."
+        : profileError.message,
+    };
+  }
   const { error: orgError } = await supabase.from("cc_orgs").insert({
     id: orgId,
     owner_id: auth.id,
     name: company,
-    size: "pequena",
+    size,
   });
-  if (orgError) return null;
+  if (orgError) return { session: null, error: orgError.message };
   await supabase.from("cc_people").insert({
     id: personId,
     org_id: orgId,
@@ -363,7 +389,8 @@ async function bootstrapFromAuth(nameHint: string, companyHint: string) {
     kind: "BANK",
     opening: 0,
   });
-  return refreshSession();
+  const session = await refreshSession();
+  return { session, error: session ? null : "Empresa criada, mas a sessão não carregou. Tente entrar de novo." };
 }
 
 export async function registerAccount(input: {
@@ -375,59 +402,32 @@ export async function registerAccount(input: {
 }) {
   if (!supabaseConfigured()) return { error: "Ligue o CodeCraft Gestão ao próprio projeto Supabase." };
   const supabase = getSupabase();
+  const email = input.email.trim().toLowerCase();
   try {
     const { data, error } = await supabase.auth.signUp({
-      email: input.email.trim().toLowerCase(),
+      email,
       password: input.password,
       options: { data: { name: input.name } },
     });
-    if (error || !data.user) return { error: authMessage(error?.message) };
+    if (error) {
+      const lower = error.message.toLowerCase();
+      if (lower.includes("already") || lower.includes("registered") || lower.includes("exists")) {
+        const login = await loginAccount(email, input.password);
+        if (!login.error) return { error: null };
+        return {
+          error:
+            "Este e-mail já tem conta. Use Entrar com a mesma senha. Se esqueceu a senha, troque no Supabase → Authentication → Users.",
+        };
+      }
+      return { error: authMessage(error.message) };
+    }
+    if (!data.user) return { error: "Não deu para criar a conta." };
     if (!data.session) {
-      return { error: CONFIRM_HINT };
+      const signed = await supabase.auth.signInWithPassword({ email, password: input.password });
+      if (signed.error || !signed.data.session) return { error: CONFIRM_HINT };
     }
-    const orgId = newId();
-    const walletId = newId();
-    const personId = newId();
-    const { error: profileError } = await supabase.from("cc_profiles").insert({
-      id: data.user.id,
-      name: input.name,
-      last_org_id: orgId,
-      plan: "NONE",
-    });
-    if (profileError) {
-      return {
-        error: profileError.message.toLowerCase().includes("relation")
-          ? "Faltam as tabelas. Rode supabase/schema.sql no SQL Editor deste projeto Supabase."
-          : profileError.message,
-      };
-    }
-    const { error: orgError } = await supabase.from("cc_orgs").insert({
-      id: orgId,
-      owner_id: data.user.id,
-      name: input.company,
-      size: input.size,
-    });
-    if (orgError) return { error: orgError.message };
-    await supabase.from("cc_people").insert({
-      id: personId,
-      org_id: orgId,
-      name: input.name,
-      email: input.email.trim().toLowerCase(),
-      department: "DIRECAO",
-      role_title: "Responsável",
-      role: "ADMIN",
-      status: "ACTIVE",
-      salary: 0,
-      started_at: today(),
-    });
-    await supabase.from("cc_wallets").insert({
-      id: walletId,
-      org_id: orgId,
-      name: "Conta PJ",
-      kind: "BANK",
-      opening: 0,
-    });
-    await refreshSession();
+    const boot = await bootstrapFromAuth(input.name, input.company, input.size);
+    if (boot.error || !boot.session) return { error: boot.error || "Conta criada, mas a empresa não foi salva." };
     bump();
     return { error: null };
   } catch (err) {
@@ -445,13 +445,13 @@ export async function loginAccount(email: string, password: string) {
     if (error) return { error: authMessage(error.message) };
     let session = await refreshSession();
     if (!session) {
-      session = await bootstrapFromAuth("", "");
-    }
-    if (!session) {
-      return {
-        error:
-          "Entrou no Auth, mas a empresa não carregou. Rode supabase/schema.sql e supabase/fix-auth.sql no SQL Editor → tente de novo.",
-      };
+      const boot = await bootstrapFromAuth("", "");
+      session = boot.session;
+      if (!session) {
+        return {
+          error: boot.error || "Entrou no Auth, mas a empresa não carregou. Tente de novo em alguns segundos.",
+        };
+      }
     }
     bump();
     return { error: null };
