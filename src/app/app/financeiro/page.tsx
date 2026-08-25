@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Empty, Gate, PageHead } from "@/components/shell";
-import { addBill, addMove, cashBalance, dreSummary, requireSession, settleBill, type Snapshot } from "@/lib/store";
+import { addBill, addCostCenter, addMove, cashBalance, dreSummary, requireSession, settleBill, type Snapshot } from "@/lib/store";
 import { useLive } from "@/lib/live";
 import { go, today } from "@/lib/types";
 import { hasFinance } from "@/lib/plans";
@@ -33,7 +33,7 @@ export default function FinanceiroPage() {
         subtitle="Caixa, contas a pagar e a receber, e DRE gerencial da empresa."
         extra={<div className={`text-2xl font-extrabold ${cash < 0 ? "text-negative" : ""}`}>{brl(cash)}</div>}
       />
-      <Gate allowed={ok} title="Assine para abrir o financeiro" body="Planos de R$ 280 a R$ 500. Com cartão cadastrado a renovação é automática." />
+      <Gate allowed={ok} title="Assine para abrir o financeiro" body="Planos de R$ 280 a R$ 500. Cadastre o cartão para renovação mensal no painel." />
       {ok ? (
         <>
           <div className="grid sm:grid-cols-3 gap-4">
@@ -50,6 +50,36 @@ export default function FinanceiroPage() {
               <p className={`text-xl font-extrabold mt-1 ${dre.result < 0 ? "text-negative" : ""}`}>{brl(dre.result)}</p>
             </article>
           </div>
+
+          <form
+            className="card p-4 flex flex-wrap gap-3 items-end"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              setError("");
+              const form = new FormData(event.currentTarget);
+              try {
+                await addCostCenter(String(form.get("name") || ""));
+                event.currentTarget.reset();
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "Não deu para salvar o centro.");
+              }
+            }}
+          >
+            <label className="field flex-1 min-w-[12rem]">
+              <span>Novo centro de custo</span>
+              <input name="name" placeholder="Ex.: Comercial" required />
+            </label>
+            <button className="btn btn-ink" type="submit">
+              Adicionar
+            </button>
+            {data.costCenters.length ? (
+              <p className="text-xs text-muted w-full">
+                Ativos: {data.costCenters.map((c) => c.name).join(" · ")}
+              </p>
+            ) : (
+              <p className="text-xs text-muted w-full">Rode upgrade-product.sql se a lista não aparecer.</p>
+            )}
+          </form>
 
           <div className="grid lg:grid-cols-2 gap-4">
             <form
@@ -104,7 +134,13 @@ export default function FinanceiroPage() {
                 </label>
                 <label className="field">
                   <span>Centro de custo</span>
-                  <input name="costCenter" placeholder="Geral" />
+                  <select name="costCenter" defaultValue={data.costCenters[0]?.name || "Geral"}>
+                    {(data.costCenters.length ? data.costCenters : [{ id: "g", name: "Geral" }]).map((c) => (
+                      <option key={c.id} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               </div>
               <label className="field">

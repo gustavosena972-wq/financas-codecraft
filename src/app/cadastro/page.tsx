@@ -3,9 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
-import { registerAccount } from "@/lib/store";
+import { claimInvite, registerAccount } from "@/lib/store";
 import { go } from "@/lib/types";
 import { supabaseConfigured } from "@/lib/supabase";
+
+function inviteToken() {
+  if (typeof window === "undefined") return "";
+  return new URLSearchParams(window.location.search).get("invite") || "";
+}
 
 export default function CadastroPage() {
   const [error, setError] = useState("");
@@ -32,6 +37,7 @@ export default function CadastroPage() {
             setPending(true);
             setError("");
             const form = new FormData(event.currentTarget);
+            const token = inviteToken();
             const result = await registerAccount({
               name: String(form.get("name")),
               email: String(form.get("email")),
@@ -39,11 +45,22 @@ export default function CadastroPage() {
               company: String(form.get("company")),
               size: String(form.get("size")) as "mei" | "pequena" | "media" | "grande",
             });
-            setPending(false);
             if (result.error) {
+              setPending(false);
               setError(result.error);
               return;
             }
+            if (token) {
+              const claim = await claimInvite(token);
+              setPending(false);
+              if (claim.error) {
+                setError(claim.error);
+                return;
+              }
+              go("/app");
+              return;
+            }
+            setPending(false);
             go("/app/empresa");
           }}
         >
@@ -73,6 +90,12 @@ export default function CadastroPage() {
             </select>
           </label>
           {error ? <p className="text-sm text-negative sm:col-span-2">{error}</p> : null}
+          <label className="flex gap-2 items-start text-xs text-muted sm:col-span-2">
+            <input name="terms" type="checkbox" required className="mt-0.5" />
+            <span>
+              Li e aceito os <Link href="/termos">Termos</Link> e a <Link href="/privacidade">Privacidade</Link>.
+            </span>
+          </label>
           <button className="btn btn-primary sm:col-span-2" disabled={pending}>
             {pending ? "Criando conta…" : "Continuar para a empresa"}
           </button>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PageHead } from "@/components/shell";
-import { cancelSubscription, requireSession, updatePassword, type Snapshot } from "@/lib/store";
+import { cancelSubscription, createInvite, inviteUrl, requireSession, revokeInvite, updatePassword, type Snapshot } from "@/lib/store";
 import { useLive } from "@/lib/live";
 import { go } from "@/lib/types";
 import { isSubscribed, planLabel } from "@/lib/plans";
@@ -136,6 +136,116 @@ export default function AjustesPage() {
           {linked ? "Atualizar dados" : "Ligar empresa"}
         </Link>
       </article>
+
+      {data.isOwner ? (
+        <InvitesCard invites={data.invites} />
+      ) : (
+        <article className="card p-6">
+          <p className="kicker">Acesso</p>
+          <p className="text-sm text-muted mt-2">Você entrou por convite. Só o dono gerencia membros.</p>
+        </article>
+      )}
     </div>
+  );
+}
+
+function InvitesCard({ invites }: { invites: Snapshot["invites"] }) {
+  const [error, setError] = useState("");
+  const [ok, setOk] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [link, setLink] = useState("");
+
+  return (
+    <article className="card p-6 space-y-3">
+      <p className="kicker">Equipe</p>
+      <h2 className="font-bold">Convidar usuários</h2>
+      <p className="text-sm text-muted">Gera um link. A pessoa cria conta (ou entra) e aceita o convite.</p>
+      <form
+        className="grid sm:grid-cols-[1fr_auto_auto] gap-3 items-end"
+        onSubmit={async (event) => {
+          event.preventDefault();
+          setBusy(true);
+          setError("");
+          setOk("");
+          setLink("");
+          const form = new FormData(event.currentTarget);
+          try {
+            const invite = await createInvite(
+              String(form.get("email")),
+              String(form.get("role")) === "MEMBER" ? "MEMBER" : "ADMIN",
+            );
+            setLink(inviteUrl(invite.token));
+            setOk("Convite criado.");
+            event.currentTarget.reset();
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Falha ao convidar.");
+          }
+          setBusy(false);
+        }}
+      >
+        <label className="field">
+          <span>E-mail</span>
+          <input name="email" type="email" required />
+        </label>
+        <label className="field">
+          <span>Papel</span>
+          <select name="role" defaultValue="ADMIN">
+            <option value="ADMIN">Admin</option>
+            <option value="MEMBER">Membro</option>
+          </select>
+        </label>
+        <button className="btn btn-ink" disabled={busy}>
+          {busy ? "…" : "Convidar"}
+        </button>
+      </form>
+      {error ? <p className="text-sm text-negative">{error}</p> : null}
+      {ok ? <p className="text-sm text-positive">{ok}</p> : null}
+      {link ? (
+        <p className="text-xs break-all bg-bg-2 p-3 rounded-lg">
+          Link: <a href={link}>{link}</a>
+        </p>
+      ) : null}
+      {invites.length ? (
+        <div className="overflow-x-auto">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>E-mail</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {invites.map((invite) => (
+                <tr key={invite.id}>
+                  <td>
+                    {invite.email}
+                    <div className="text-xs text-muted">{invite.role}</div>
+                  </td>
+                  <td>
+                    {invite.claimedAt ? (
+                      <span className="chip ok">aceito</span>
+                    ) : (
+                      <span className="chip warn">pendente</span>
+                    )}
+                  </td>
+                  <td>
+                    {!invite.claimedAt ? (
+                      <button
+                        className="text-xs text-muted"
+                        type="button"
+                        onClick={() => void revokeInvite(invite.id)}
+                      >
+                        Revogar
+                      </button>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+    </article>
   );
 }

@@ -7,6 +7,12 @@ import { loginAccount } from "@/lib/store";
 import { go } from "@/lib/types";
 import { supabaseConfigured } from "@/lib/supabase";
 
+function nextPath() {
+  if (typeof window === "undefined") return "/app";
+  const next = new URLSearchParams(window.location.search).get("next");
+  return next && next.startsWith("/") ? next : "/app";
+}
+
 export default function LoginPage() {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -38,7 +44,7 @@ export default function LoginPage() {
               setError(result.error);
               return;
             }
-            go("/app");
+            go(nextPath());
           }}
         >
           <label className="field">

@@ -107,6 +107,44 @@ export type Bill = {
   status: "OPEN" | "PAID";
 };
 
+export type CostCenter = {
+  id: string;
+  orgId: string;
+  name: string;
+};
+
+export type OrgInvite = {
+  id: string;
+  orgId: string;
+  email: string;
+  token: string;
+  role: "ADMIN" | "MEMBER";
+  expiresAt: string;
+  claimedAt: string | null;
+  createdAt: string;
+};
+
+export type PayrollLine = {
+  id: string;
+  runId: string;
+  orgId: string;
+  personId: string;
+  personName: string;
+  salaryCents: number;
+  hoursMinutes: number;
+};
+
+export type PayrollRun = {
+  id: string;
+  orgId: string;
+  competence: string;
+  status: "OPEN" | "PAID";
+  totalCents: number;
+  paidAt: string | null;
+  createdAt: string;
+  lines: PayrollLine[];
+};
+
 export const DEPARTMENTS: { id: Department; name: string; does: string }[] = [
   { id: "DIRECAO", name: "Direção", does: "Visão da empresa e decisões." },
   { id: "FINANCEIRO", name: "Financeiro", does: "Caixa, títulos e DRE." },

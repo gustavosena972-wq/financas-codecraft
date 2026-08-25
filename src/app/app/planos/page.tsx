@@ -260,9 +260,14 @@ export default function AssinaturaPage() {
                 {busy
                   ? "Salvando…"
                   : firstPay === "pix"
-                    ? "Já paguei o PIX · ativar renovação"
+                    ? "Confirmei o PIX · ativar plano"
                     : `Assinar ${selected.name} · ${selected.price}`}
               </button>
+              {firstPay === "pix" ? (
+                <p className="text-xs text-muted">
+                  A confirmação do PIX é sua responsabilidade neste momento (sem gateway externo no Pages).
+                </p>
+              ) : null}
             </form>
           </article>
         ) : (

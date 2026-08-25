@@ -1,7 +1,11 @@
 import type {
   Bill,
+  CostCenter,
   Move,
   Org,
+  OrgInvite,
+  PayrollLine,
+  PayrollRun,
   Person,
   PlanId,
   Profile,
@@ -10,17 +14,22 @@ import type {
 } from "./types";
 import { newId, nowIso, today } from "./types";
 import { getSupabase, supabaseConfigured } from "./supabase";
-import { hasFinance, isSubscribed, parsePlan, peopleLimit, planPriceCents } from "./plans";
-import { expiryValid, readCard } from "./card";
+import { hasFinance, isSubscribed, parsePlan, peopleLimit } from "./plans";
+import { readCard } from "./card";
+import { competenceBounds, competenceNow, workedMinutes } from "./payroll";
 
 export type Snapshot = {
   user: Profile;
   org: Org;
+  isOwner: boolean;
   people: Person[];
   punches: TimePunch[];
   wallets: Wallet[];
   moves: Move[];
   bills: Bill[];
+  costCenters: CostCenter[];
+  invites: OrgInvite[];
+  payrollRuns: PayrollRun[];
 };
 
 let snapshot: Snapshot | null = null;
@@ -147,6 +156,62 @@ function mapBill(row: Record<string, unknown>): Bill {
   };
 }
 
+function mapCostCenter(row: Record<string, unknown>): CostCenter {
+  return {
+    id: String(row.id),
+    orgId: String(row.org_id),
+    name: String(row.name),
+  };
+}
+
+function mapInvite(row: Record<string, unknown>): OrgInvite {
+  return {
+    id: String(row.id),
+    orgId: String(row.org_id),
+    email: String(row.email),
+    token: String(row.token),
+    role: row.role === "MEMBER" ? "MEMBER" : "ADMIN",
+    expiresAt: String(row.expires_at),
+    claimedAt: row.claimed_at ? String(row.claimed_at) : null,
+    createdAt: String(row.created_at ?? nowIso()),
+  };
+}
+
+function mapPayrollLine(row: Record<string, unknown>): PayrollLine {
+  return {
+    id: String(row.id),
+    runId: String(row.run_id),
+    orgId: String(row.org_id),
+    personId: String(row.person_id),
+    personName: String(row.person_name),
+    salaryCents: Number(row.salary_cents ?? 0),
+    hoursMinutes: Number(row.hours_minutes ?? 0),
+  };
+}
+
+async function resolveOrgRow(supabase: ReturnType<typeof getSupabase>, userId: string, lastOrgId: string | null) {
+  if (lastOrgId) {
+    const owned = await supabase.from("cc_orgs").select("*").eq("id", lastOrgId).eq("owner_id", userId).maybeSingle();
+    if (owned.data) return owned.data as Record<string, unknown>;
+    const member = await supabase.from("cc_org_members").select("org_id").eq("org_id", lastOrgId).eq("user_id", userId).maybeSingle();
+    if (member.data) {
+      const org = await supabase.from("cc_orgs").select("*").eq("id", lastOrgId).maybeSingle();
+      if (org.data) return org.data as Record<string, unknown>;
+    }
+  }
+  const { data: ownedList } = await supabase.from("cc_orgs").select("*").eq("owner_id", userId).order("created_at");
+  if (ownedList?.[0]) return ownedList[0] as Record<string, unknown>;
+  const { data: memberships } = await supabase
+    .from("cc_org_members")
+    .select("org_id")
+    .eq("user_id", userId)
+    .order("created_at");
+  const mid = memberships?.[0]?.org_id;
+  if (!mid) return null;
+  const { data: org } = await supabase.from("cc_orgs").select("*").eq("id", mid).maybeSingle();
+  return (org as Record<string, unknown>) ?? null;
+}
+
 export function current(): Snapshot | null {
   return snapshot;
 }
@@ -173,23 +238,50 @@ async function loadSnapshot(): Promise<Snapshot | null> {
     return null;
   }
   const auth = authData.user;
-  const [{ data: profile }, { data: orgs }] = await Promise.all([
-    supabase.from("cc_profiles").select("*").eq("id", auth.id).maybeSingle(),
-    supabase.from("cc_orgs").select("*").eq("owner_id", auth.id).order("created_at"),
-  ]);
-  const orgRow = (orgs ?? [])[0];
+  const { data: profile } = await supabase.from("cc_profiles").select("*").eq("id", auth.id).maybeSingle();
+  const orgRow = await resolveOrgRow(supabase, auth.id, (profile?.last_org_id as string) ?? null);
   if (!orgRow) {
     snapshot = null;
     return null;
   }
-  const org = mapOrg(orgRow as Record<string, unknown>);
-  const [people, punches, wallets, moves, bills] = await Promise.all([
+  const org = mapOrg(orgRow);
+  const isOwner = org.ownerId === auth.id;
+  const [people, punches, wallets, moves, bills, costCenters, invites, runs, lines] = await Promise.all([
     supabase.from("cc_people").select("*").eq("org_id", org.id).order("created_at"),
-    supabase.from("cc_time_clock").select("*").eq("org_id", org.id).order("at", { ascending: false }).limit(200),
+    supabase.from("cc_time_clock").select("*").eq("org_id", org.id).order("at", { ascending: false }).limit(400),
     supabase.from("cc_wallets").select("*").eq("org_id", org.id).order("created_at"),
     supabase.from("cc_moves").select("*").eq("org_id", org.id).order("date", { ascending: false }),
     supabase.from("cc_bills").select("*").eq("org_id", org.id).order("due"),
+    supabase.from("cc_cost_centers").select("*").eq("org_id", org.id).order("name"),
+    isOwner
+      ? supabase.from("cc_invites").select("*").eq("org_id", org.id).order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] as Record<string, unknown>[], error: null }),
+    supabase.from("cc_payroll_runs").select("*").eq("org_id", org.id).order("competence", { ascending: false }).limit(12),
+    supabase.from("cc_payroll_lines").select("*").eq("org_id", org.id),
   ]);
+
+  const safeCost = costCenters.error ? [] : costCenters.data ?? [];
+  const safeInvites = (invites as { data?: Record<string, unknown>[]; error?: unknown }).error
+    ? []
+    : ((invites as { data?: Record<string, unknown>[] }).data ?? []);
+  const safeRuns = runs.error ? [] : runs.data ?? [];
+  const safeLines = lines.error ? [] : lines.data ?? [];
+
+  const lineRows = safeLines.map((row) => mapPayrollLine(row as Record<string, unknown>));
+  const payrollRuns: PayrollRun[] = safeRuns.map((row) => {
+    const run = row as Record<string, unknown>;
+    const id = String(run.id);
+    return {
+      id,
+      orgId: String(run.org_id),
+      competence: String(run.competence),
+      status: run.status === "PAID" ? "PAID" : "OPEN",
+      totalCents: Number(run.total_cents ?? 0),
+      paidAt: run.paid_at ? String(run.paid_at) : null,
+      createdAt: String(run.created_at ?? nowIso()),
+      lines: lineRows.filter((line) => line.runId === id),
+    };
+  });
 
   let user: Profile = {
     id: auth.id,
@@ -214,68 +306,33 @@ async function loadSnapshot(): Promise<Snapshot | null> {
   snapshot = {
     user,
     org,
+    isOwner,
     people: (people.data ?? []).map((row) => mapPerson(row as Record<string, unknown>)),
     punches: (punches.data ?? []).map((row) => mapPunch(row as Record<string, unknown>)),
     wallets: (wallets.data ?? []).map((row) => mapWallet(row as Record<string, unknown>)),
     moves: (moves.data ?? []).map((row) => mapMove(row as Record<string, unknown>)),
     bills: (bills.data ?? []).map((row) => mapBill(row as Record<string, unknown>)),
+    costCenters: safeCost.map((row) => mapCostCenter(row as Record<string, unknown>)),
+    invites: safeInvites.map((row) => mapInvite(row)),
+    payrollRuns,
   };
   return snapshot;
-}
-
-function addMonth(from: Date) {
-  const next = new Date(from);
-  next.setMonth(next.getMonth() + 1);
-  return next;
 }
 
 async function renewIfDue(user: Profile) {
   if (user.plan === "NONE" || !user.nextChargeAt) return user;
   const due = new Date(user.nextChargeAt);
   if (Number.isNaN(due.getTime()) || due > new Date()) return user;
-  const price = planPriceCents(user.plan);
-  const canCard = user.cardLast4.length === 4 && user.cardHolder.length >= 3 && expiryValid(user.cardExp);
-  const useCredit = user.creditCents >= price;
-  if (!canCard && !useCredit) {
-    const { error } = await getSupabase()
-      .from("cc_profiles")
-      .update({ billing_status: "past_due" })
-      .eq("id", user.id);
-    if (error) return user;
-    return { ...user, billingStatus: "past_due" as const };
-  }
-  const billedAt = nowIso();
-  const nextChargeAt = addMonth(due).toISOString();
-  const creditLeft = useCredit ? user.creditCents - price : user.creditCents;
-  const method = useCredit && !canCard ? "pix" : "card";
-  const { error } = await getSupabase()
-    .from("cc_profiles")
-    .update({
-      billed_at: billedAt,
-      next_charge_at: nextChargeAt,
-      billing_status: "active",
-      billing_method: method,
-      credit_cents: creditLeft,
-      plan: user.plan,
-    })
-    .eq("id", user.id);
-  if (error) return user;
-  await getSupabase().from("cc_charges").insert({
-    id: newId(),
-    owner_id: user.id,
-    amount: price,
-    method,
-    status: "paid",
-    plan: user.plan,
-    card_last4: user.cardLast4,
-  });
+  const { data, error } = await getSupabase().rpc("cc_renew_if_due");
+  if (error || !data) return user;
+  const row = data as Record<string, unknown>;
   return {
     ...user,
-    billedAt,
-    nextChargeAt,
-    billingStatus: "active" as const,
-    billingMethod: method as "card" | "pix",
-    creditCents: creditLeft,
+    billingStatus: parseBilling(row.billing_status),
+    billingMethod: row.billing_method === "pix" || row.billing_method === "card" ? row.billing_method : user.billingMethod,
+    creditCents: Number(row.credit_cents ?? user.creditCents),
+    billedAt: row.billed_at ? String(row.billed_at) : user.billedAt,
+    nextChargeAt: row.next_charge_at ? String(row.next_charge_at) : user.nextChargeAt,
   };
 }
 
@@ -370,6 +427,8 @@ async function bootstrapFromAuth(nameHint: string, companyHint: string, sizeHint
     size,
   });
   if (orgError) return { session: null, error: orgError.message };
+  await supabase.from("cc_org_members").upsert({ org_id: orgId, user_id: auth.id, role: "OWNER" });
+  await supabase.from("cc_cost_centers").upsert({ id: newId(), org_id: orgId, name: "Geral" }, { onConflict: "org_id,name" });
   await supabase.from("cc_people").insert({
     id: personId,
     org_id: orgId,
@@ -534,64 +593,27 @@ export async function registerCardAndSubscribe(input: {
   const session = await need();
   const card = readCard(input);
   if ("error" in card) throw new Error(card.error);
-  const price = planPriceCents(input.plan);
-  const billedAt = nowIso();
-  const nextChargeAt = addMonth(new Date()).toISOString();
-  const payload = {
-    plan: input.plan,
-    billing_status: "active",
-    billing_method: input.firstPay,
-    card_last4: card.last4,
-    card_brand: card.brand,
-    card_exp: card.exp,
-    card_holder: card.holder,
-    card_cpf: card.cpf,
-    billed_at: billedAt,
-    next_charge_at: nextChargeAt,
-  };
-  const { error } = await getSupabase().from("cc_profiles").update(payload).eq("id", session.user.id);
-  if (error) billingColumnError(error);
-  await getSupabase().from("cc_charges").insert({
-    id: newId(),
-    owner_id: session.user.id,
-    amount: price,
-    method: input.firstPay,
-    status: "paid",
-    plan: input.plan,
-    card_last4: card.last4,
+  const { error } = await getSupabase().rpc("cc_subscribe", {
+    p_plan: input.plan,
+    p_method: input.firstPay,
+    p_card_last4: card.last4,
+    p_card_brand: card.brand,
+    p_card_exp: card.exp,
+    p_card_holder: card.holder,
+    p_card_cpf: card.cpf,
   });
-  session.user = {
-    ...session.user,
-    plan: input.plan,
-    billingStatus: "active",
-    billingMethod: input.firstPay,
-    cardLast4: card.last4,
-    cardBrand: card.brand,
-    cardExp: card.exp,
-    cardHolder: card.holder,
-    cardCpf: card.cpf,
-    billedAt,
-    nextChargeAt,
-  };
+  if (error) billingColumnError(error);
+  const refreshed = await refreshSession();
+  if (refreshed) Object.assign(session, refreshed);
   bump();
 }
 
 export async function cancelSubscription() {
   const session = await need();
-  const { error } = await getSupabase()
-    .from("cc_profiles")
-    .update({
-      plan: "NONE",
-      billing_status: "inactive",
-      billing_method: "",
-      next_charge_at: null,
-    })
-    .eq("id", session.user.id);
+  const { error } = await getSupabase().rpc("cc_cancel_subscription");
   if (error) throw error;
-  session.user.plan = "NONE";
-  session.user.billingStatus = "inactive";
-  session.user.billingMethod = "";
-  session.user.nextChargeAt = null;
+  const refreshed = await refreshSession();
+  if (refreshed) Object.assign(session, refreshed);
   bump();
 }
 
@@ -807,4 +829,179 @@ export function dreSummary(data: Snapshot) {
 
 export function isActive(user: Profile) {
   return isSubscribed(user);
+}
+
+export async function addCostCenter(name: string) {
+  const session = await need();
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("Informe o nome do centro de custo.");
+  if (session.costCenters.some((c) => c.name.toLowerCase() === trimmed.toLowerCase())) {
+    throw new Error("Esse centro de custo já existe.");
+  }
+  const row: CostCenter = { id: newId(), orgId: session.org.id, name: trimmed };
+  const { error } = await getSupabase().from("cc_cost_centers").insert({
+    id: row.id,
+    org_id: row.orgId,
+    name: row.name,
+  });
+  if (error) {
+    if (error.message.toLowerCase().includes("relation") || error.code === "42P01") {
+      throw new Error("Rode supabase/upgrade-product.sql no SQL Editor do Supabase.");
+    }
+    throw error;
+  }
+  session.costCenters.push(row);
+  session.costCenters.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  bump();
+  return row;
+}
+
+export async function createInvite(email: string, role: "ADMIN" | "MEMBER" = "ADMIN") {
+  const session = await need();
+  if (!session.isOwner) throw new Error("Só o dono da empresa pode convidar.");
+  const clean = email.trim().toLowerCase();
+  if (!clean.includes("@")) throw new Error("E-mail inválido.");
+  const token = crypto.randomUUID().replace(/-/g, "");
+  const row = {
+    id: newId(),
+    org_id: session.org.id,
+    email: clean,
+    token,
+    role,
+    invited_by: session.user.id,
+  };
+  const { data, error } = await getSupabase().from("cc_invites").insert(row).select("*").single();
+  if (error) {
+    if (error.message.toLowerCase().includes("relation") || error.code === "42P01") {
+      throw new Error("Rode supabase/upgrade-product.sql no SQL Editor do Supabase.");
+    }
+    throw error;
+  }
+  const invite = mapInvite(data as Record<string, unknown>);
+  session.invites.unshift(invite);
+  bump();
+  return invite;
+}
+
+export async function revokeInvite(id: string) {
+  const session = await need();
+  if (!session.isOwner) throw new Error("Só o dono pode remover convites.");
+  const { error } = await getSupabase().from("cc_invites").delete().eq("id", id).eq("org_id", session.org.id);
+  if (error) throw error;
+  session.invites = session.invites.filter((item) => item.id !== id);
+  bump();
+}
+
+export async function peekInvite(token: string) {
+  const { data, error } = await getSupabase().rpc("cc_peek_invite", { p_token: token });
+  if (error) return { ok: false as const, error: error.message };
+  const row = data as Record<string, unknown>;
+  if (!row?.ok) return { ok: false as const, error: String(row?.error || "Convite inválido") };
+  return {
+    ok: true as const,
+    email: String(row.email),
+    orgName: String(row.org_name),
+    role: String(row.role),
+    expiresAt: String(row.expires_at),
+  };
+}
+
+export async function claimInvite(token: string) {
+  const { error } = await getSupabase().rpc("cc_claim_invite", { p_token: token });
+  if (error) return { error: error.message };
+  await refreshSession();
+  bump();
+  return { error: null };
+}
+
+export function inviteUrl(token: string) {
+  if (typeof window === "undefined") return "";
+  const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
+  return `${window.location.origin}${base}/convite/?t=${encodeURIComponent(token)}`;
+}
+
+export async function generatePayroll(competence = competenceNow()) {
+  const session = await need();
+  if (!hasFinance(session.user) && !session.people.length) {
+    throw new Error("Cadastre colaboradores antes de gerar a folha.");
+  }
+  const existing = session.payrollRuns.find((r) => r.competence === competence);
+  if (existing?.status === "PAID") throw new Error("Esta competência já foi paga.");
+  const { fromIso, toIso } = competenceBounds(competence);
+  const actives = session.people.filter((p) => p.status === "ACTIVE" && p.salary > 0);
+  if (!actives.length) throw new Error("Nenhum colaborador ativo com salário.");
+
+  const runId = existing?.id ?? newId();
+  const lines = actives.map((person) => {
+    const mins = workedMinutes(
+      session.punches.filter((p) => p.personId === person.id),
+      fromIso,
+      toIso,
+    );
+    return {
+      id: newId(),
+      run_id: runId,
+      org_id: session.org.id,
+      person_id: person.id,
+      person_name: person.name,
+      salary_cents: person.salary,
+      hours_minutes: mins,
+    };
+  });
+  const total = lines.reduce((s, line) => s + line.salary_cents, 0);
+
+  if (existing) {
+    await getSupabase().from("cc_payroll_lines").delete().eq("run_id", runId);
+    const { error } = await getSupabase()
+      .from("cc_payroll_runs")
+      .update({ total_cents: total, status: "OPEN", paid_at: null })
+      .eq("id", runId);
+    if (error) throw error;
+  } else {
+    const { error } = await getSupabase().from("cc_payroll_runs").insert({
+      id: runId,
+      org_id: session.org.id,
+      competence,
+      status: "OPEN",
+      total_cents: total,
+    });
+    if (error) {
+      if (error.message.toLowerCase().includes("relation") || error.code === "42P01") {
+        throw new Error("Rode supabase/upgrade-product.sql no SQL Editor do Supabase.");
+      }
+      throw error;
+    }
+  }
+  const { error: lineError } = await getSupabase().from("cc_payroll_lines").insert(lines);
+  if (lineError) throw lineError;
+
+  await refreshSession();
+  bump();
+  return competence;
+}
+
+export async function payPayroll(runId: string) {
+  const session = await need();
+  const run = session.payrollRuns.find((r) => r.id === runId);
+  if (!run) throw new Error("Folha não encontrada.");
+  if (run.status === "PAID") return;
+  const wallet = session.wallets[0];
+  if (!wallet) throw new Error("Cadastre uma conta no financeiro.");
+  await addMove({
+    walletId: wallet.id,
+    type: "OUT",
+    amount: run.totalCents,
+    date: today(),
+    description: `Folha ${run.competence}`,
+    category: "Folha",
+    costCenter: "Geral",
+  });
+  const { error } = await getSupabase()
+    .from("cc_payroll_runs")
+    .update({ status: "PAID", paid_at: nowIso() })
+    .eq("id", runId)
+    .eq("org_id", session.org.id);
+  if (error) throw error;
+  await refreshSession();
+  bump();
 }

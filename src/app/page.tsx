@@ -122,7 +122,10 @@ export default function HomePage() {
 
       <footer className="px-4 sm:px-10 py-6 text-xs sm:text-sm text-muted flex justify-between border-t border-line flex-wrap gap-2">
         <span>CodeCraft Gestão · CodeCraft Solutions</span>
-        <span>Só empresas · sem IA no painel</span>
+        <span className="flex gap-3">
+          <Link href="/termos">Termos</Link>
+          <Link href="/privacidade">Privacidade</Link>
+        </span>
       </footer>
     </div>
   );

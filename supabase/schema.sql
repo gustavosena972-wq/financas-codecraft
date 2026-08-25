@@ -229,3 +229,6 @@ create trigger cc_auth_auto_confirm
 update auth.users
 set email_confirmed_at = coalesce(email_confirmed_at, now())
 where email_confirmed_at is null;
+
+-- Features extras (billing RPC, membros, folha, centros): rode também
+-- supabase/upgrade-product.sql no SQL Editor (idempotente).

@@ -1,12 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Empty, Gate, PageHead } from "@/components/shell";
-import { addPerson, punchClock, removePerson, requireSession, type Snapshot } from "@/lib/store";
+import {
+  addPerson,
+  generatePayroll,
+  payPayroll,
+  punchClock,
+  removePerson,
+  requireSession,
+  type Snapshot,
+} from "@/lib/store";
 import { useLive } from "@/lib/live";
 import { PEOPLE_DEPARTMENTS, go, today, type Department, type TimePunch } from "@/lib/types";
 import { hasHr, peopleLimit } from "@/lib/plans";
 import { brl, parseMoneyToCents } from "@/lib/money";
+import { competenceNow, formatHours, mirrorRows } from "@/lib/payroll";
 
 const ROLE = { ADMIN: "Admin", LEAD: "Líder", MEMBER: "Colaborador" };
 const STATUS = { ACTIVE: "Ativo", ONBOARDING: "Admissão", LEAVE: "Afastado" };
@@ -22,6 +31,8 @@ export default function PessoasPage() {
   const [data, setData] = useState<Snapshot | null>(null);
   const [error, setError] = useState("");
   const [punchPerson, setPunchPerson] = useState("");
+  const [competence, setCompetence] = useState(competenceNow());
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     void requireSession().then((session) => {
@@ -33,6 +44,12 @@ export default function PessoasPage() {
     });
   }, [live]);
 
+  const mirror = useMemo(
+    () => (data ? mirrorRows(data.people, data.punches, competence) : []),
+    [data, competence],
+  );
+  const currentRun = data?.payrollRuns.find((r) => r.competence === competence) ?? null;
+
   if (!data) return null;
   const ok = hasHr(data.user);
   const limit = peopleLimit(data.user);
@@ -43,8 +60,13 @@ export default function PessoasPage() {
       <PageHead
         kicker="RH"
         title="Pessoas"
-        subtitle="Cadastro de colaboradores, ponto eletrônico e visão de folha."
-        extra={<div className="text-right"><p className="kicker">Folha</p><p className="text-xl font-extrabold">{brl(payroll)}</p></div>}
+        subtitle="Cadastro, ponto eletrônico, espelho de horas e folha do mês."
+        extra={
+          <div className="text-right">
+            <p className="kicker">Folha base</p>
+            <p className="text-xl font-extrabold">{brl(payroll)}</p>
+          </div>
+        }
       />
       <Gate allowed={ok} title="Assine para abrir o RH" body="Cadastro, ponto e folha entram com a assinatura da empresa." />
       {ok ? (
@@ -171,6 +193,116 @@ export default function PessoasPage() {
           ) : (
             <Empty title="Sem colaboradores" body="Cadastre o time para bater ponto e acompanhar a folha." />
           )}
+
+          {data.people.length ? (
+            <article className="card p-6 space-y-4">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="font-bold">Espelho de ponto</h2>
+                  <p className="text-sm text-muted">Horas do mês a partir das batidas IN/OUT.</p>
+                </div>
+                <label className="field w-40">
+                  <span>Competência</span>
+                  <input type="month" value={competence} onChange={(e) => setCompetence(e.target.value)} />
+                </label>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Colaborador</th>
+                      <th>Horas</th>
+                      <th>Salário</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mirror.map(({ person, minutes }) => (
+                      <tr key={person.id}>
+                        <td>{person.name}</td>
+                        <td>{formatHours(minutes)}</td>
+                        <td>{person.salary ? brl(person.salary) : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          ) : null}
+
+          {data.people.length ? (
+            <article className="card p-6 space-y-4">
+              <h2 className="font-bold">Folha do mês</h2>
+              <p className="text-sm text-muted">
+                Gera a folha com salário dos ativos e horas do espelho. Ao pagar, lança a saída no Financeiro.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  className="btn btn-ink"
+                  type="button"
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    setError("");
+                    try {
+                      await generatePayroll(competence);
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "Falha na folha.");
+                    }
+                    setBusy(false);
+                  }}
+                >
+                  {busy ? "Gerando…" : "Gerar / atualizar folha"}
+                </button>
+                {currentRun && currentRun.status === "OPEN" ? (
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    disabled={busy}
+                    onClick={async () => {
+                      if (!window.confirm(`Pagar folha ${currentRun.competence} (${brl(currentRun.totalCents)})?`)) return;
+                      setBusy(true);
+                      setError("");
+                      try {
+                        await payPayroll(currentRun.id);
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : "Falha ao pagar.");
+                      }
+                      setBusy(false);
+                    }}
+                  >
+                    Marcar como paga · {brl(currentRun.totalCents)}
+                  </button>
+                ) : null}
+                {currentRun?.status === "PAID" ? (
+                  <span className="chip ok">Paga em {currentRun.paidAt ? new Date(currentRun.paidAt).toLocaleDateString("pt-BR") : "—"}</span>
+                ) : null}
+              </div>
+              {currentRun?.lines.length ? (
+                <div className="overflow-x-auto">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Colaborador</th>
+                        <th>Horas</th>
+                        <th>Salário</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentRun.lines.map((line) => (
+                        <tr key={line.id}>
+                          <td>{line.personName}</td>
+                          <td>{formatHours(line.hoursMinutes)}</td>
+                          <td>{brl(line.salaryCents)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-sm text-muted">Ainda sem folha nesta competência.</p>
+              )}
+            </article>
+          ) : null}
 
           {data.people.length ? (
             <article className="card p-6 space-y-4">
