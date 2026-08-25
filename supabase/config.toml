@@ -8,6 +8,9 @@ enabled = true
 [functions.billing-subscribe]
 verify_jwt = true
 
+[functions.billing-cancel]
+verify_jwt = true
+
 [functions.billing-webhook]
 verify_jwt = false
 

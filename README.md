@@ -39,16 +39,20 @@ Commit + push em `main` (Pages aponta para `/docs`).
 
 Sem gateway, a assinatura usa RPC `cc_subscribe` (honor + cartão só last4).
 
-Para cobrar de verdade:
+Para cobrar de verdade (1º mês + renovação mensal no cartão):
 
 1. Crie conta [Asaas](https://www.asaas.com/) e pegue a API key de **produção**.
 2. Secrets no Supabase (Edge Functions → Secrets): `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN`.
-3. Deploy: `billing-subscribe` (JWT on) e `billing-webhook` (JWT **off**).
-4. No Asaas → Integrações → Webhook:
-   - URL: `https://eqaoanbanhryhbldlbhc.supabase.co/functions/v1/billing-webhook`
+3. Rode `supabase/upgrade-asaas-recurring.sql` no SQL Editor.
+4. Deploy: `billing-subscribe`, `billing-cancel` (JWT on) e `billing-webhook` (JWT **off**).
+5. No Asaas → Integrações → Webhook:
+   - URL: `https://eqaoanbanhryhbldlbhc.supabase.co/functions/v1/billing-webhook?apikey=ANON_KEY`
    - Header `asaas-access-token` = valor de `ASAAS_WEBHOOK_TOKEN`
    - Eventos: `PAYMENT_CONFIRMED`, `PAYMENT_RECEIVED`
-5. Defina `NEXT_PUBLIC_BILLING_PROVIDER=asaas` no `.env.local` e no build Pages.
+6. Defina `NEXT_PUBLIC_BILLING_PROVIDER=asaas` no `.env.local` e no build Pages.
+
+Com Asaas, o app cria **subscription MONTHLY** no cartão. PIX cobre só o 1º mês;
+os meses seguintes o Asaas cobra sozinho e o webhook renova `next_charge_at`.
 
 **Sem dinheiro / testes:** use `NEXT_PUBLIC_BILLING_PROVIDER=local` (ativa plano sem cobrança)
 ou Asaas **sandbox** (chave `$aact_hmlg_…` + secret `ASAAS_ENV=sandbox`). A function escolhe

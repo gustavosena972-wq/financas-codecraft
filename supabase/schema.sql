@@ -17,6 +17,8 @@ create table if not exists public.cc_profiles (
   credit_cents integer not null default 0,
   billed_at timestamptz,
   next_charge_at timestamptz,
+  asaas_customer_id text not null default '',
+  asaas_subscription_id text not null default '',
   created_at timestamptz not null default now()
 );
 
@@ -62,8 +64,13 @@ create table if not exists public.cc_charges (
   status text not null default 'paid',
   plan text not null default 'BUSINESS',
   card_last4 text not null default '',
+  asaas_payment_id text,
   created_at timestamptz not null default now()
 );
+
+create unique index if not exists cc_charges_asaas_payment_uidx
+  on public.cc_charges (asaas_payment_id)
+  where asaas_payment_id is not null and length(asaas_payment_id) > 0;
 
 create table if not exists public.cc_people (
   id uuid primary key default gen_random_uuid(),
@@ -471,7 +478,8 @@ begin
     plan = 'NONE',
     billing_status = 'inactive',
     billing_method = '',
-    next_charge_at = null
+    next_charge_at = null,
+    asaas_subscription_id = ''
   where id = auth.uid();
 end;
 $$;
@@ -504,6 +512,17 @@ begin
     return null;
   end if;
 
+  perform set_config('cc.allow_billing', 'on', true);
+
+  -- Gateway Asaas cuida da recorrência via webhook
+  if length(coalesce(r.asaas_subscription_id, '')) > 0 then
+    if r.next_charge_at + interval '3 days' < now() then
+      update public.cc_profiles set billing_status = 'past_due' where id = r.id;
+      return jsonb_build_object('billing_status', 'past_due');
+    end if;
+    return null;
+  end if;
+
   v_price := case r.plan
     when 'START' then 28000
     when 'BUSINESS' then 39000
@@ -513,8 +532,6 @@ begin
 
   v_can_card := length(coalesce(r.card_last4, '')) = 4 and length(coalesce(r.card_holder, '')) >= 3;
   v_use_credit := coalesce(r.credit_cents, 0) >= v_price;
-
-  perform set_config('cc.allow_billing', 'on', true);
 
   if not v_can_card and not v_use_credit then
     update public.cc_profiles set billing_status = 'past_due' where id = r.id;

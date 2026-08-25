@@ -1,10 +1,11 @@
-// Webhook Asaas → ativa assinatura quando pagamento CONFIRMADO/RECEIVED
-// Configure no Asaas: URL + header asaas-access-token = ASAAS_WEBHOOK_TOKEN
+// Webhook Asaas → ativa/renova assinatura quando pagamento CONFIRMADO/RECEIVED
+// Configure no Asaas: URL (+ ?apikey=ANON) + header asaas-access-token = ASAAS_WEBHOOK_TOKEN
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, asaas-access-token",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, asaas-access-token",
 };
 
 Deno.serve(async (req) => {
@@ -45,18 +46,37 @@ Deno.serve(async (req) => {
     });
   }
 
+  const paymentId = String(payment.id || "");
+  if (paymentId) {
+    const { data: existing } = await admin
+      .from("cc_charges")
+      .select("id")
+      .eq("owner_id", userId)
+      .eq("asaas_payment_id", paymentId)
+      .maybeSingle();
+    if (existing) {
+      return new Response(JSON.stringify({ ok: true, duplicate: true }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+  }
+
   const next = new Date();
   next.setMonth(next.getMonth() + 1);
   const method = String(payment.billingType || "").toUpperCase() === "PIX" ? "pix" : "card";
   const amountCents = Math.round(Number(payment.value || 0) * 100);
+  const subscriptionId = String(payment.subscription || "");
 
-  const { error } = await admin.from("cc_profiles").update({
+  const patch: Record<string, unknown> = {
     plan,
     billing_status: "active",
     billing_method: method,
     billed_at: new Date().toISOString(),
     next_charge_at: next.toISOString(),
-  }).eq("id", userId);
+  };
+  if (subscriptionId) patch.asaas_subscription_id = subscriptionId;
+
+  const { error } = await admin.from("cc_profiles").update(patch).eq("id", userId);
 
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), {
@@ -72,9 +92,10 @@ Deno.serve(async (req) => {
     status: "paid",
     plan,
     card_last4: "",
+    asaas_payment_id: paymentId || null,
   });
 
-  return new Response(JSON.stringify({ ok: true }), {
+  return new Response(JSON.stringify({ ok: true, renewed: true }), {
     headers: { ...cors, "Content-Type": "application/json" },
   });
 });

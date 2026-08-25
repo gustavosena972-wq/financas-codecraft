@@ -103,7 +103,7 @@ export default function AssinaturaPage() {
       <PageHead
         kicker="Billing SaaS"
         title="Assinatura"
-        subtitle="R$ 280 a R$ 500 por mês. Cartão cadastrado para renovação mensal. Cancele quando quiser."
+        subtitle="R$ 280 a R$ 500 por mês via Asaas. 1º mês no PIX ou cartão; renovação automática no cartão. Cancele quando quiser."
       />
 
       <div className="grid md:grid-cols-3 gap-4">
@@ -167,7 +167,7 @@ export default function AssinaturaPage() {
               <p className="kicker">Cartão obrigatório</p>
               <h3 className="font-bold text-lg mt-1">Cadastrar e assinar</h3>
               <p className="text-sm text-muted mt-1">
-                Sem cartão a renovação não roda. O primeiro mês pode ser no cartão ou no PIX.
+                O cartão fica na assinatura mensal do Asaas. Sem cartão a renovação não roda; o 1º mês pode ser PIX ou cartão.
               </p>
             </div>
 

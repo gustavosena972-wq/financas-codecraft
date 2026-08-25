@@ -643,6 +643,11 @@ export async function registerCardAndSubscribe(input: {
           cvv: input.cvv,
           cpf: card.cpf,
         },
+        holderInfo: {
+          postalCode: session.org.cep,
+          addressNumber: session.org.number || "100",
+          phone: session.org.phone,
+        },
       }),
     });
     const body = (await res.json().catch(() => ({}))) as {
@@ -689,8 +694,27 @@ export async function registerCardAndSubscribe(input: {
 
 export async function cancelSubscription() {
   const session = await need();
-  const { error } = await getSupabase().rpc("cc_cancel_subscription");
-  if (error) throw error;
+  const provider = (process.env.NEXT_PUBLIC_BILLING_PROVIDER || "local").toLowerCase();
+  if (provider === "asaas") {
+    const { data: sess } = await getSupabase().auth.getSession();
+    const token = sess.session?.access_token;
+    if (!token) throw new Error("Sessão expirada.");
+    const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+    const res = await fetch(`${base}/functions/v1/billing-cancel`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+    });
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) throw new Error(body.error || "Não deu para cancelar no Asaas.");
+  } else {
+    const { error } = await getSupabase().rpc("cc_cancel_subscription");
+    if (error) throw error;
+  }
   const refreshed = await refreshSession();
   if (refreshed) Object.assign(session, refreshed);
   bump();

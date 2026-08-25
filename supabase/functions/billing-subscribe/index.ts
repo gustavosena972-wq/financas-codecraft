@@ -1,5 +1,6 @@
-// Cobrança Asaas. Secrets: ASAAS_API_KEY (+ opcional ASAAS_ENV=sandbox|production)
-// Sandbox: chave $aact_hmlg_… → https://sandbox.asaas.com/api/v3 (sem dinheiro real)
+// Cobrança Asaas com assinatura mensal recorrente.
+// Secrets: ASAAS_API_KEY (+ opcional ASAAS_ENV=sandbox|production)
+// Sandbox: chave $aact_hmlg_… → https://sandbox.asaas.com/api/v3
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const cors = {
@@ -15,6 +16,25 @@ function asaasBase(key: string) {
     return "https://sandbox.asaas.com/api/v3";
   }
   return "https://api.asaas.com/v3";
+}
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+
+function addMonthsIso(date: Date, months: number) {
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().slice(0, 10);
+}
+
+function clientIp(req: Request) {
+  const fwd = req.headers.get("x-forwarded-for") || "";
+  const first = fwd.split(",")[0]?.trim();
+  return first || req.headers.get("cf-connecting-ip") || "127.0.0.1";
 }
 
 Deno.serve(async (req) => {
@@ -47,89 +67,199 @@ Deno.serve(async (req) => {
       return json({ error: "Informe um CPF válido do pagador." }, 400);
     }
 
+    const admin = createClient(supabaseUrl, serviceKey);
+    const { data: profile } = await admin
+      .from("cc_profiles")
+      .select("last_org_id, asaas_customer_id, asaas_subscription_id")
+      .eq("id", userData.user.id)
+      .maybeSingle();
+
+    let org: { cep?: string; phone?: string; number?: string } | null = null;
+    if (profile?.last_org_id) {
+      const orgRes = await admin
+        .from("cc_orgs")
+        .select("cep, phone, number")
+        .eq("id", profile.last_org_id)
+        .maybeSingle();
+      org = orgRes.data;
+    }
+
+    const postalCode =
+      String(body.holderInfo?.postalCode || org?.cep || "").replace(/\D/g, "").slice(0, 8) || "30130100";
+    const addressNumber =
+      String(body.holderInfo?.addressNumber || org?.number || "").trim() || "100";
+    const phoneDigits =
+      String(body.holderInfo?.phone || org?.phone || "").replace(/\D/g, "") || "31999999999";
+
     const headers = {
       access_token: asaasKey,
       "Content-Type": "application/json",
       "User-Agent": "CodeCraftGestao/1.0",
     };
 
-    let customerId = "";
-    const search = await fetch(`${ASAAS}/customers?email=${encodeURIComponent(email)}&limit=1`, { headers });
-    const searchBody = await search.json();
-    if (search.ok && searchBody?.data?.[0]?.id) {
-      customerId = searchBody.data[0].id;
-    } else {
-      const customerRes = await fetch(`${ASAAS}/customers`, {
-        method: "POST",
+    let customerId = String(profile?.asaas_customer_id || "");
+    if (!customerId) {
+      const search = await fetch(`${ASAAS}/customers?email=${encodeURIComponent(email)}&limit=1`, {
         headers,
-        body: JSON.stringify({ name: holder, email, cpfCnpj: cpf }),
       });
-      const customer = await customerRes.json();
-      if (!customerRes.ok) {
-        return json({ error: customer.errors?.[0]?.description || "Falha ao criar cliente Asaas" }, 400);
+      const searchBody = await search.json();
+      if (search.ok && searchBody?.data?.[0]?.id) {
+        customerId = searchBody.data[0].id;
+      } else {
+        const customerRes = await fetch(`${ASAAS}/customers`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            name: holder,
+            email,
+            cpfCnpj: cpf,
+            phone: phoneDigits,
+            mobilePhone: phoneDigits,
+            postalCode,
+            addressNumber,
+          }),
+        });
+        const customer = await customerRes.json();
+        if (!customerRes.ok) {
+          return json({ error: customer.errors?.[0]?.description || "Falha ao criar cliente Asaas" }, 400);
+        }
+        customerId = customer.id;
       }
-      customerId = customer.id;
     }
 
-    const paymentBody: Record<string, unknown> = {
-      customer: customerId,
-      billingType: method === "pix" ? "PIX" : "CREDIT_CARD",
-      value: price,
-      dueDate: new Date().toISOString().slice(0, 10),
-      description: `CodeCraft Gestão · ${plan}`,
-      externalReference: `${userData.user.id}:${plan}`,
+    // Cancela assinatura anterior no Asaas (troca de plano / reassinatura)
+    const oldSub = String(profile?.asaas_subscription_id || "");
+    if (oldSub) {
+      await fetch(`${ASAAS}/subscriptions/${oldSub}`, { method: "DELETE", headers }).catch(() => null);
+    }
+
+    const [mm, yy] = String(body.card?.exp || "").split("/");
+    const creditCard = {
+      holderName: holder,
+      number: String(body.card?.number || "").replace(/\D/g, ""),
+      expiryMonth: mm,
+      expiryYear: yy?.length === 2 ? `20${yy}` : yy,
+      ccv: String(body.card?.cvv || ""),
     };
-
-    if (method === "card") {
-      const [mm, yy] = String(body.card?.exp || "").split("/");
-      paymentBody.creditCard = {
-        holderName: holder,
-        number: String(body.card?.number || "").replace(/\D/g, ""),
-        expiryMonth: mm,
-        expiryYear: yy?.length === 2 ? `20${yy}` : yy,
-        ccv: String(body.card?.cvv || ""),
-      };
-      paymentBody.creditCardHolderInfo = {
-        name: holder,
-        email,
-        cpfCnpj: cpf,
-        postalCode: "30130100",
-        addressNumber: "100",
-        phone: "31999999999",
-      };
-    }
-
-    const payRes = await fetch(`${ASAAS}/payments`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(paymentBody),
-    });
-    const payment = await payRes.json();
-    if (!payRes.ok) {
-      return json({ error: payment.errors?.[0]?.description || "Falha na cobrança Asaas" }, 400);
-    }
-
-    const admin = createClient(supabaseUrl, serviceKey);
-    const last4 = String(body.card?.number || "").replace(/\D/g, "").slice(-4);
-    const next = new Date();
-    next.setMonth(next.getMonth() + 1);
+    const creditCardHolderInfo = {
+      name: holder,
+      email,
+      cpfCnpj: cpf,
+      postalCode,
+      addressNumber,
+      phone: phoneDigits,
+      mobilePhone: phoneDigits,
+    };
+    const remoteIp = String(body.remoteIp || clientIp(req));
+    const externalReference = `${userData.user.id}:${plan}`;
+    const last4 = creditCard.number.slice(-4);
+    const today = new Date();
 
     let pixPayload: string | null = null;
     let pixImage: string | null = null;
-    if (method === "pix" && payment.id) {
-      const pixRes = await fetch(`${ASAAS}/payments/${payment.id}/pixQrCode`, { headers });
-      const pix = await pixRes.json();
-      if (pixRes.ok) {
-        pixPayload = pix.payload || null;
-        pixImage = pix.encodedImage ? `data:image/png;base64,${pix.encodedImage}` : null;
+    let paymentId: string | null = null;
+    let paymentStatus: string | null = null;
+    let invoiceUrl: string | null = null;
+    let subscriptionId = "";
+    let activated = false;
+
+    if (method === "pix") {
+      // 1º mês no PIX; recorrência no cartão a partir do próximo ciclo
+      const payRes = await fetch(`${ASAAS}/payments`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          customer: customerId,
+          billingType: "PIX",
+          value: price,
+          dueDate: today.toISOString().slice(0, 10),
+          description: `CodeCraft Gestão · ${plan} · 1º mês`,
+          externalReference,
+        }),
+      });
+      const payment = await payRes.json();
+      if (!payRes.ok) {
+        return json({ error: payment.errors?.[0]?.description || "Falha no PIX Asaas" }, 400);
+      }
+      paymentId = payment.id;
+      paymentStatus = payment.status;
+      invoiceUrl = payment.invoiceUrl || null;
+
+      if (payment.id) {
+        const pixRes = await fetch(`${ASAAS}/payments/${payment.id}/pixQrCode`, { headers });
+        const pix = await pixRes.json();
+        if (pixRes.ok) {
+          pixPayload = pix.payload || null;
+          pixImage = pix.encodedImage ? `data:image/png;base64,${pix.encodedImage}` : null;
+        }
+      }
+
+      const subRes = await fetch(`${ASAAS}/subscriptions`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          customer: customerId,
+          billingType: "CREDIT_CARD",
+          value: price,
+          nextDueDate: addMonthsIso(today, 1),
+          cycle: "MONTHLY",
+          description: `CodeCraft Gestão · ${plan}`,
+          externalReference,
+          creditCard,
+          creditCardHolderInfo,
+          remoteIp,
+        }),
+      });
+      const sub = await subRes.json();
+      if (!subRes.ok) {
+        return json({
+          error: sub.errors?.[0]?.description || "Cartão recusado para renovação automática.",
+        }, 400);
+      }
+      subscriptionId = sub.id;
+    } else {
+      // Cartão: assinatura mensal; 1ª cobrança na data de hoje
+      const subRes = await fetch(`${ASAAS}/subscriptions`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          customer: customerId,
+          billingType: "CREDIT_CARD",
+          value: price,
+          nextDueDate: today.toISOString().slice(0, 10),
+          cycle: "MONTHLY",
+          description: `CodeCraft Gestão · ${plan}`,
+          externalReference,
+          creditCard,
+          creditCardHolderInfo,
+          remoteIp,
+        }),
+      });
+      const sub = await subRes.json();
+      if (!subRes.ok) {
+        return json({ error: sub.errors?.[0]?.description || "Falha na assinatura Asaas" }, 400);
+      }
+      subscriptionId = sub.id;
+
+      // Busca a 1ª cobrança gerada pela assinatura
+      const listRes = await fetch(
+        `${ASAAS}/payments?subscription=${encodeURIComponent(subscriptionId)}&limit=1`,
+        { headers },
+      );
+      const listBody = await listRes.json();
+      const payment = listBody?.data?.[0];
+      if (payment) {
+        paymentId = payment.id;
+        paymentStatus = payment.status;
+        invoiceUrl = payment.invoiceUrl || null;
+        activated = ["CONFIRMED", "RECEIVED", "RECEIVED_IN_CASH"].includes(String(payment.status));
       }
     }
 
-    const paid =
-      method === "card" &&
-      (payment.status === "CONFIRMED" || payment.status === "RECEIVED" || payment.status === "RECEIVED_IN_CASH");
+    const next = new Date();
+    next.setMonth(next.getMonth() + 1);
 
-    if (paid) {
+    if (activated) {
       await admin.from("cc_profiles").update({
         plan,
         billing_status: "active",
@@ -140,6 +270,8 @@ Deno.serve(async (req) => {
         card_cpf: cpf,
         billed_at: new Date().toISOString(),
         next_charge_at: next.toISOString(),
+        asaas_customer_id: customerId,
+        asaas_subscription_id: subscriptionId,
       }).eq("id", userData.user.id);
       await admin.from("cc_charges").insert({
         owner_id: userData.user.id,
@@ -150,22 +282,24 @@ Deno.serve(async (req) => {
         card_last4: last4,
       });
     } else {
-      // guarda cartão para renovação; plano ativa no webhook quando PIX/cartão confirmar
       await admin.from("cc_profiles").update({
         card_last4: last4 || "",
         card_holder: holder,
         card_cpf: cpf,
         card_exp: String(body.card?.exp || ""),
         billing_method: method === "pix" ? "pix" : "card",
+        asaas_customer_id: customerId,
+        asaas_subscription_id: subscriptionId,
       }).eq("id", userData.user.id);
     }
 
     return json({
       ok: true,
-      paymentId: payment.id,
-      status: payment.status,
-      activated: paid,
-      invoiceUrl: payment.invoiceUrl || null,
+      paymentId,
+      status: paymentStatus,
+      activated,
+      subscriptionId,
+      invoiceUrl,
       pixPayload,
       pixImage,
     });
@@ -173,10 +307,3 @@ Deno.serve(async (req) => {
     return json({ error: err instanceof Error ? err.message : "Erro Asaas" }, 500);
   }
 });
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...cors, "Content-Type": "application/json" },
-  });
-}
