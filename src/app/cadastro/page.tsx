@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
-import { claimInvite, registerAccount } from "@/lib/store";
+import { registerAccount } from "@/lib/store";
 import { go } from "@/lib/types";
 import { supabaseConfigured } from "@/lib/supabase";
 
@@ -42,26 +42,16 @@ export default function CadastroPage() {
               name: String(form.get("name")),
               email: String(form.get("email")),
               password: String(form.get("password")),
-              company: String(form.get("company")),
+              company: String(form.get("company") || "Empresa"),
               size: String(form.get("size")) as "mei" | "pequena" | "media" | "grande",
+              inviteToken: token || undefined,
             });
+            setPending(false);
             if (result.error) {
-              setPending(false);
               setError(result.error);
               return;
             }
-            if (token) {
-              const claim = await claimInvite(token);
-              setPending(false);
-              if (claim.error) {
-                setError(claim.error);
-                return;
-              }
-              go("/app");
-              return;
-            }
-            setPending(false);
-            go("/app/empresa");
+            go(token ? "/app" : "/app/empresa");
           }}
         >
           <label className="field sm:col-span-2">
@@ -76,11 +66,11 @@ export default function CadastroPage() {
             <span>Senha</span>
             <input name="password" type="password" required minLength={8} />
           </label>
-          <label className="field">
+          <label className={`field ${inviteToken() ? "hidden" : ""}`}>
             <span>Nome da empresa</span>
-            <input name="company" required minLength={2} />
+            <input name="company" required={!inviteToken()} minLength={2} defaultValue={inviteToken() ? "—" : ""} />
           </label>
-          <label className="field">
+          <label className={`field ${inviteToken() ? "hidden" : ""}`}>
             <span>Porte</span>
             <select name="size" defaultValue="pequena">
               <option value="mei">MEI</option>

@@ -141,6 +141,10 @@ returns trigger
 language plpgsql
 as $$
 begin
+  -- service_role (Edge Functions / webhooks) pode alterar billing
+  if coalesce(auth.role(), '') = 'service_role' then
+    return new;
+  end if;
   if tg_op = 'UPDATE' and coalesce(current_setting('cc.allow_billing', true), '') <> 'on' then
     new.plan := old.plan;
     new.billing_status := old.billing_status;

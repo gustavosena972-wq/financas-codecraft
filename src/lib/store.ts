@@ -458,6 +458,7 @@ export async function registerAccount(input: {
   password: string;
   company: string;
   size: Org["size"];
+  inviteToken?: string;
 }) {
   if (!supabaseConfigured()) return { error: "Ligue o CodeCraft Gestão ao próprio projeto Supabase." };
   const supabase = getSupabase();
@@ -472,7 +473,13 @@ export async function registerAccount(input: {
       const lower = error.message.toLowerCase();
       if (lower.includes("already") || lower.includes("registered") || lower.includes("exists")) {
         const login = await loginAccount(email, input.password);
-        if (!login.error) return { error: null };
+        if (!login.error) {
+          if (input.inviteToken) {
+            const claim = await claimInvite(input.inviteToken);
+            if (claim.error) return { error: claim.error };
+          }
+          return { error: null };
+        }
         return {
           error:
             "Este e-mail já tem conta. Use Entrar com a mesma senha ou Esqueci a senha no login.",
@@ -484,6 +491,18 @@ export async function registerAccount(input: {
     if (!data.session) {
       const signed = await supabase.auth.signInWithPassword({ email, password: input.password });
       if (signed.error || !signed.data.session) return { error: CONFIRM_HINT };
+    }
+    if (input.inviteToken) {
+      const { error: profileError } = await supabase.from("cc_profiles").upsert({
+        id: data.user.id,
+        name: input.name,
+        plan: "NONE",
+      });
+      if (profileError) return { error: profileError.message };
+      const claim = await claimInvite(input.inviteToken);
+      if (claim.error) return { error: claim.error };
+      bump();
+      return { error: null };
     }
     const boot = await bootstrapFromAuth(input.name, input.company, input.size);
     if (boot.error || !boot.session) return { error: boot.error || "Conta criada, mas a empresa não foi salva." };
@@ -593,6 +612,42 @@ export async function registerCardAndSubscribe(input: {
   const session = await need();
   const card = readCard(input);
   if ("error" in card) throw new Error(card.error);
+
+  const provider = (process.env.NEXT_PUBLIC_BILLING_PROVIDER || "local").toLowerCase();
+  if (provider === "asaas") {
+    const { data: sess } = await getSupabase().auth.getSession();
+    const token = sess.session?.access_token;
+    if (!token) throw new Error("Sessão expirada.");
+    const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+    const res = await fetch(`${base}/functions/v1/billing-subscribe`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        plan: input.plan,
+        method: input.firstPay,
+        card: {
+          number: input.number.replace(/\D/g, ""),
+          holder: card.holder,
+          exp: card.exp,
+          cvv: input.cvv,
+          cpf: card.cpf,
+        },
+      }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { error?: string; ok?: boolean };
+    if (!res.ok) {
+      throw new Error(body.error || "Asaas não respondeu. Confira a Edge Function ou use billing local.");
+    }
+    const refreshed = await refreshSession();
+    if (refreshed) Object.assign(session, refreshed);
+    bump();
+    return;
+  }
+
   const { error } = await getSupabase().rpc("cc_subscribe", {
     p_plan: input.plan,
     p_method: input.firstPay,
@@ -728,6 +783,33 @@ export async function removePerson(id: string) {
   bump();
 }
 
+export async function updatePerson(id: string, patch: Partial<Omit<Person, "id" | "orgId">>) {
+  const session = await need();
+  const person = session.people.find((p) => p.id === id);
+  if (!person) throw new Error("Colaborador não encontrado.");
+  const next = { ...person, ...patch };
+  const { error } = await getSupabase()
+    .from("cc_people")
+    .update({
+      name: next.name,
+      email: next.email,
+      document: next.document,
+      department: next.department,
+      role_title: next.roleTitle,
+      role: next.role,
+      status: next.status,
+      salary: next.salary,
+      benefits: next.benefits,
+      started_at: next.startedAt,
+    })
+    .eq("id", id)
+    .eq("org_id", session.org.id);
+  if (error) throw error;
+  Object.assign(person, next);
+  bump();
+  return person;
+}
+
 export async function punchClock(input: { personId: string; kind: TimePunch["kind"]; note?: string }) {
   const session = await need();
   if (!session.people.some((p) => p.id === input.personId)) throw new Error("Colaborador não encontrado.");
@@ -772,6 +854,39 @@ export async function addMove(input: Omit<Move, "id" | "orgId">) {
   session.moves.unshift(row);
   bump();
   return row;
+}
+
+export async function updateMove(id: string, patch: Partial<Omit<Move, "id" | "orgId" | "walletId">>) {
+  const session = await need();
+  if (!hasFinance(session.user)) throw new Error("Assine para editar o financeiro.");
+  const move = session.moves.find((m) => m.id === id);
+  if (!move) throw new Error("Lançamento não encontrado.");
+  const next = { ...move, ...patch };
+  const { error } = await getSupabase()
+    .from("cc_moves")
+    .update({
+      type: next.type,
+      amount: next.amount,
+      date: next.date,
+      description: next.description,
+      category: next.category,
+      cost_center: next.costCenter,
+    })
+    .eq("id", id)
+    .eq("org_id", session.org.id);
+  if (error) throw error;
+  Object.assign(move, next);
+  bump();
+  return move;
+}
+
+export async function removeMove(id: string) {
+  const session = await need();
+  if (!hasFinance(session.user)) throw new Error("Assine para editar o financeiro.");
+  const { error } = await getSupabase().from("cc_moves").delete().eq("id", id).eq("org_id", session.org.id);
+  if (error) throw error;
+  session.moves = session.moves.filter((m) => m.id !== id);
+  bump();
 }
 
 export async function addBill(input: Omit<Bill, "id" | "orgId">) {
@@ -824,7 +939,14 @@ export function cashBalance(data: Snapshot) {
 export function dreSummary(data: Snapshot) {
   const revenue = data.moves.filter((m) => m.type === "IN").reduce((s, m) => s + m.amount, 0);
   const expense = data.moves.filter((m) => m.type === "OUT").reduce((s, m) => s + m.amount, 0);
-  return { revenue, expense, result: revenue - expense };
+  const byCategory: Record<string, { in: number; out: number }> = {};
+  for (const move of data.moves) {
+    const key = move.category || "Geral";
+    if (!byCategory[key]) byCategory[key] = { in: 0, out: 0 };
+    if (move.type === "IN") byCategory[key].in += move.amount;
+    else byCategory[key].out += move.amount;
+  }
+  return { revenue, expense, result: revenue - expense, byCategory };
 }
 
 export function isActive(user: Profile) {
@@ -880,6 +1002,31 @@ export async function createInvite(email: string, role: "ADMIN" | "MEMBER" = "AD
   const invite = mapInvite(data as Record<string, unknown>);
   session.invites.unshift(invite);
   bump();
+
+  const link = inviteUrl(invite.token);
+  try {
+    const { data: sess } = await getSupabase().auth.getSession();
+    const token = sess.session?.access_token;
+    const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+    if (token && base) {
+      await fetch(`${base}/functions/v1/send-invite`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: clean,
+          link,
+          orgName: session.org.name,
+        }),
+      });
+    }
+  } catch {
+    /* e-mail opcional — link continua válido */
+  }
+
   return invite;
 }
 

@@ -201,9 +201,17 @@ function InvitesCard({ invites }: { invites: Snapshot["invites"] }) {
       {error ? <p className="text-sm text-negative">{error}</p> : null}
       {ok ? <p className="text-sm text-positive">{ok}</p> : null}
       {link ? (
-        <p className="text-xs break-all bg-bg-2 p-3 rounded-lg">
-          Link: <a href={link}>{link}</a>
-        </p>
+        <div className="space-y-2">
+          <p className="text-xs break-all bg-bg-2 p-3 rounded-lg">
+            Link: <a href={link}>{link}</a>
+          </p>
+          <a
+            className="btn btn-ink w-fit text-sm"
+            href={`mailto:?subject=${encodeURIComponent("Convite CodeCraft Gestão")}&body=${encodeURIComponent(`Olá!\n\nVocê foi convidado. Abra o link:\n${link}\n`)}`}
+          >
+            Abrir e-mail com o link
+          </a>
+        </div>
       ) : null}
       {invites.length ? (
         <div className="overflow-x-auto">

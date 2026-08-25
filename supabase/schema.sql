@@ -230,8 +230,6 @@ update auth.users
 set email_confirmed_at = coalesce(email_confirmed_at, now())
 where email_confirmed_at is null;
 
-
-
 -- BEGIN upgrade-product (mirrored)
 -- CodeCraft Gestão — upgrade produto (billing seguro, membros, folha, centros)
 -- SQL Editor no projeto deste app → RUN (idempotente)
@@ -273,7 +271,7 @@ language sql
 stable
 security definer
 set search_path = public
-as $
+as $$
   select exists (
     select 1 from public.cc_orgs o
     where o.id = oid and o.owner_id = auth.uid()
@@ -282,7 +280,7 @@ as $
     select 1 from public.cc_org_members m
     where m.org_id = oid and m.user_id = auth.uid()
   );
-$;
+$$;
 
 alter table public.cc_org_members enable row level security;
 alter table public.cc_invites enable row level security;
@@ -374,8 +372,12 @@ create policy "cc_payroll_lines_own" on public.cc_payroll_lines
 create or replace function public.cc_profiles_billing_guard()
 returns trigger
 language plpgsql
-as $
+as $$
 begin
+  -- service_role (Edge Functions / webhooks) pode alterar billing
+  if coalesce(auth.role(), '') = 'service_role' then
+    return new;
+  end if;
   if tg_op = 'UPDATE' and coalesce(current_setting('cc.allow_billing', true), '') <> 'on' then
     new.plan := old.plan;
     new.billing_status := old.billing_status;
@@ -386,7 +388,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 
 drop trigger if exists cc_profiles_billing_guard on public.cc_profiles;
 create trigger cc_profiles_billing_guard
@@ -406,7 +408,7 @@ returns void
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   v_uid uuid := auth.uid();
   v_price integer;
@@ -451,14 +453,14 @@ begin
   insert into public.cc_charges (id, owner_id, amount, method, status, plan, card_last4)
   values (gen_random_uuid(), v_uid, v_price, p_method, 'paid', p_plan, p_card_last4);
 end;
-$;
+$$;
 
 create or replace function public.cc_cancel_subscription()
 returns void
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 begin
   if auth.uid() is null then
     raise exception 'Não autenticado';
@@ -472,14 +474,14 @@ begin
     next_charge_at = null
   where id = auth.uid();
 end;
-$;
+$$;
 
 create or replace function public.cc_renew_if_due()
 returns jsonb
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   r record;
   v_price integer;
@@ -543,14 +545,14 @@ begin
     'next_charge_at', v_next
   );
 end;
-$;
+$$;
 
 create or replace function public.cc_peek_invite(p_token text)
 returns jsonb
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   v_email text;
   v_role text;
@@ -582,14 +584,14 @@ begin
     'expires_at', v_expires
   );
 end;
-$;
+$$;
 
 create or replace function public.cc_claim_invite(p_token text)
 returns uuid
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   inv record;
   v_uid uuid := auth.uid();
@@ -630,7 +632,7 @@ begin
   update public.cc_invites set claimed_at = now() where id = inv.id;
   return inv.org_id;
 end;
-$;
+$$;
 
 grant execute on function public.cc_subscribe(text, text, text, text, text, text, text) to authenticated;
 grant execute on function public.cc_cancel_subscription() to authenticated;
@@ -639,12 +641,12 @@ grant execute on function public.cc_peek_invite(text) to authenticated;
 grant execute on function public.cc_claim_invite(text) to authenticated;
 
 -- Realtime extras
-do $
+do $$
 begin
   begin execute 'alter publication supabase_realtime add table public.cc_cost_centers'; exception when duplicate_object then null; end;
   begin execute 'alter publication supabase_realtime add table public.cc_payroll_runs'; exception when duplicate_object then null; end;
   begin execute 'alter publication supabase_realtime add table public.cc_payroll_lines'; exception when duplicate_object then null; end;
   begin execute 'alter publication supabase_realtime add table public.cc_org_members'; exception when duplicate_object then null; end;
-end $;
+end $$;
 
 -- END upgrade-product

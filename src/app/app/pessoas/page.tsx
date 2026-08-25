@@ -9,13 +9,15 @@ import {
   punchClock,
   removePerson,
   requireSession,
+  updatePerson,
   type Snapshot,
 } from "@/lib/store";
 import { useLive } from "@/lib/live";
-import { PEOPLE_DEPARTMENTS, go, today, type Department, type TimePunch } from "@/lib/types";
+import { PEOPLE_DEPARTMENTS, go, today, type Department, type Person, type TimePunch } from "@/lib/types";
 import { hasHr, peopleLimit } from "@/lib/plans";
 import { brl, parseMoneyToCents } from "@/lib/money";
 import { competenceNow, formatHours, mirrorRows } from "@/lib/payroll";
+import { downloadCsv } from "@/lib/csv";
 
 const ROLE = { ADMIN: "Admin", LEAD: "Líder", MEMBER: "Colaborador" };
 const STATUS = { ACTIVE: "Ativo", ONBOARDING: "Admissão", LEAVE: "Afastado" };
@@ -33,6 +35,7 @@ export default function PessoasPage() {
   const [punchPerson, setPunchPerson] = useState("");
   const [competence, setCompetence] = useState(competenceNow());
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState<Person | null>(null);
 
   useEffect(() => {
     void requireSession().then((session) => {
@@ -180,7 +183,10 @@ export default function PessoasPage() {
                         <span className={`chip ${person.status === "ACTIVE" ? "ok" : "warn"}`}>{STATUS[person.status]}</span>
                       </td>
                       <td>{person.salary ? brl(person.salary) : "—"}</td>
-                      <td>
+                      <td className="space-x-2 whitespace-nowrap">
+                        <button className="text-xs text-muted" type="button" onClick={() => setEditing(person)}>
+                          Editar
+                        </button>
                         <button className="text-xs text-muted" type="button" onClick={() => void removePerson(person.id)}>
                           Remover
                         </button>
@@ -193,6 +199,94 @@ export default function PessoasPage() {
           ) : (
             <Empty title="Sem colaboradores" body="Cadastre o time para bater ponto e acompanhar a folha." />
           )}
+
+          {editing ? (
+            <form
+              className="card p-6 grid sm:grid-cols-2 gap-3"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                setError("");
+                const form = new FormData(event.currentTarget);
+                const salary = parseMoneyToCents(String(form.get("salary") ?? "0")) ?? 0;
+                try {
+                  await updatePerson(editing.id, {
+                    name: String(form.get("name")),
+                    email: String(form.get("email")),
+                    document: String(form.get("document") || ""),
+                    department: String(form.get("department")) as Department,
+                    roleTitle: String(form.get("roleTitle") || ""),
+                    role: String(form.get("role")) as Person["role"],
+                    status: String(form.get("status")) as Person["status"],
+                    salary: Math.max(0, salary),
+                    benefits: String(form.get("benefits") || ""),
+                  });
+                  setEditing(null);
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "Não deu para salvar.");
+                }
+              }}
+            >
+              <h2 className="font-bold sm:col-span-2">Editar {editing.name}</h2>
+              <label className="field">
+                <span>Nome</span>
+                <input name="name" defaultValue={editing.name} required />
+              </label>
+              <label className="field">
+                <span>E-mail</span>
+                <input name="email" type="email" defaultValue={editing.email} required />
+              </label>
+              <label className="field">
+                <span>Documento</span>
+                <input name="document" defaultValue={editing.document} />
+              </label>
+              <label className="field">
+                <span>Cargo</span>
+                <input name="roleTitle" defaultValue={editing.roleTitle} />
+              </label>
+              <label className="field">
+                <span>Setor</span>
+                <select name="department" defaultValue={editing.department}>
+                  {PEOPLE_DEPARTMENTS.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                <span>Papel</span>
+                <select name="role" defaultValue={editing.role}>
+                  <option value="MEMBER">Colaborador</option>
+                  <option value="LEAD">Líder</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </label>
+              <label className="field">
+                <span>Status</span>
+                <select name="status" defaultValue={editing.status}>
+                  <option value="ACTIVE">Ativo</option>
+                  <option value="ONBOARDING">Admissão</option>
+                  <option value="LEAVE">Afastado</option>
+                </select>
+              </label>
+              <label className="field">
+                <span>Salário</span>
+                <input name="salary" defaultValue={(editing.salary / 100).toFixed(2).replace(".", ",")} />
+              </label>
+              <label className="field sm:col-span-2">
+                <span>Benefícios</span>
+                <input name="benefits" defaultValue={editing.benefits} />
+              </label>
+              <div className="flex gap-2 sm:col-span-2">
+                <button className="btn btn-primary" type="submit">
+                  Salvar
+                </button>
+                <button className="btn btn-ghost" type="button" onClick={() => setEditing(null)}>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          ) : null}
 
           {data.people.length ? (
             <article className="card p-6 space-y-4">
@@ -275,6 +369,21 @@ export default function PessoasPage() {
                 ) : null}
                 {currentRun?.status === "PAID" ? (
                   <span className="chip ok">Paga em {currentRun.paidAt ? new Date(currentRun.paidAt).toLocaleDateString("pt-BR") : "—"}</span>
+                ) : null}
+                {currentRun?.lines.length ? (
+                  <button
+                    className="btn btn-ghost"
+                    type="button"
+                    onClick={() =>
+                      downloadCsv(
+                        `folha-${currentRun.competence}`,
+                        ["Colaborador", "Horas", "Salario_centavos"],
+                        currentRun.lines.map((l) => [l.personName, formatHours(l.hoursMinutes), l.salaryCents]),
+                      )
+                    }
+                  >
+                    Exportar CSV
+                  </button>
                 ) : null}
               </div>
               {currentRun?.lines.length ? (
