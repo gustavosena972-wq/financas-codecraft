@@ -1,4 +1,5 @@
-// Cobrança Asaas (produção). Secrets: ASAAS_API_KEY (+ SUPABASE_* automáticos)
+// Cobrança Asaas. Secrets: ASAAS_API_KEY (+ opcional ASAAS_ENV=sandbox|production)
+// Sandbox: chave $aact_hmlg_… → https://sandbox.asaas.com/api/v3 (sem dinheiro real)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const cors = {
@@ -6,8 +7,15 @@ const cors = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const ASAAS = "https://api.asaas.com/v3";
 const PRICES: Record<string, number> = { START: 280, BUSINESS: 390, CORP: 500 };
+
+function asaasBase(key: string) {
+  const env = (Deno.env.get("ASAAS_ENV") || "").toLowerCase();
+  if (env === "sandbox" || env === "homolog" || key.startsWith("$aact_hmlg_")) {
+    return "https://sandbox.asaas.com/api/v3";
+  }
+  return "https://api.asaas.com/v3";
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -17,6 +25,7 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
     if (!asaasKey) return json({ error: "ASAAS_API_KEY não configurada." }, 503);
+    const ASAAS = asaasBase(asaasKey);
 
     const auth = req.headers.get("Authorization") || "";
     const userClient = createClient(supabaseUrl, anonKey || serviceKey, {

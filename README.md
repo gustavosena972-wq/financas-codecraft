@@ -50,6 +50,10 @@ Para cobrar de verdade:
    - Eventos: `PAYMENT_CONFIRMED`, `PAYMENT_RECEIVED`
 5. Defina `NEXT_PUBLIC_BILLING_PROVIDER=asaas` no `.env.local` e no build Pages.
 
+**Sem dinheiro / testes:** use `NEXT_PUBLIC_BILLING_PROVIDER=local` (ativa plano sem cobrança)
+ou Asaas **sandbox** (chave `$aact_hmlg_…` + secret `ASAAS_ENV=sandbox`). A function escolhe
+`sandbox.asaas.com` automaticamente com chave de homologação.
+
 Enquanto o provider for `local`, o app usa RPC honor (`cc_subscribe`).
 
 ## Módulos
