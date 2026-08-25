@@ -41,12 +41,16 @@ Sem gateway, a assinatura usa RPC `cc_subscribe` (honor + cartão só last4).
 
 Para cobrar de verdade:
 
-1. Crie conta [Asaas](https://www.asaas.com/) e pegue a API key.
-2. Deploy das Edge Functions em `supabase/functions/` (`billing-subscribe`, `billing-webhook`, `send-invite`).
-3. Secrets: `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN`, `SUPABASE_SERVICE_ROLE_KEY`.
-4. Defina `NEXT_PUBLIC_BILLING_PROVIDER=asaas` no build.
+1. Crie conta [Asaas](https://www.asaas.com/) e pegue a API key de **produção**.
+2. Secrets no Supabase (Edge Functions → Secrets): `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN`.
+3. Deploy: `billing-subscribe` (JWT on) e `billing-webhook` (JWT **off**).
+4. No Asaas → Integrações → Webhook:
+   - URL: `https://eqaoanbanhryhbldlbhc.supabase.co/functions/v1/billing-webhook`
+   - Header `asaas-access-token` = valor de `ASAAS_WEBHOOK_TOKEN`
+   - Eventos: `PAYMENT_CONFIRMED`, `PAYMENT_RECEIVED`
+5. Defina `NEXT_PUBLIC_BILLING_PROVIDER=asaas` no `.env.local` e no build Pages.
 
-Enquanto Asaas não estiver ligado, o app continua no fluxo local seguro (RPC + trigger).
+Enquanto o provider for `local`, o app usa RPC honor (`cc_subscribe`).
 
 ## Módulos
 

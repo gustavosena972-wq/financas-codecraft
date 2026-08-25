@@ -608,7 +608,14 @@ export async function registerCardAndSubscribe(input: {
   cpf: string;
   plan: Exclude<PlanId, "NONE">;
   firstPay: "card" | "pix";
-}) {
+}): Promise<{
+  activated: boolean;
+  paymentId?: string;
+  pixPayload?: string | null;
+  pixImage?: string | null;
+  invoiceUrl?: string | null;
+  status?: string;
+}> {
   const session = await need();
   const card = readCard(input);
   if ("error" in card) throw new Error(card.error);
@@ -638,14 +645,30 @@ export async function registerCardAndSubscribe(input: {
         },
       }),
     });
-    const body = (await res.json().catch(() => ({}))) as { error?: string; ok?: boolean };
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      ok?: boolean;
+      activated?: boolean;
+      paymentId?: string;
+      pixPayload?: string | null;
+      pixImage?: string | null;
+      invoiceUrl?: string | null;
+      status?: string;
+    };
     if (!res.ok) {
-      throw new Error(body.error || "Asaas não respondeu. Confira a Edge Function ou use billing local.");
+      throw new Error(body.error || "Asaas não respondeu. Confira a Edge Function.");
     }
     const refreshed = await refreshSession();
     if (refreshed) Object.assign(session, refreshed);
     bump();
-    return;
+    return {
+      activated: Boolean(body.activated),
+      paymentId: body.paymentId,
+      pixPayload: body.pixPayload,
+      pixImage: body.pixImage,
+      invoiceUrl: body.invoiceUrl,
+      status: body.status,
+    };
   }
 
   const { error } = await getSupabase().rpc("cc_subscribe", {
@@ -661,6 +684,7 @@ export async function registerCardAndSubscribe(input: {
   const refreshed = await refreshSession();
   if (refreshed) Object.assign(session, refreshed);
   bump();
+  return { activated: true };
 }
 
 export async function cancelSubscription() {
