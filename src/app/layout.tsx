@@ -9,7 +9,7 @@ const mono = JetBrains_Mono({ variable: "--font-geist-mono", subsets: ["latin"] 
 export const metadata: Metadata = {
   title: "CodeCraft Gestão — sistema empresarial",
   description:
-    "Financeiro, RH e operações para empresas. Multi-tenant seguro. Planos de R$ 280 a R$ 500. Da CodeCraft Solutions.",
+    "Financeiro, RH e assinatura para empresas. Multi-tenant seguro. Planos de R$ 280 a R$ 500. Da CodeCraft Solutions.",
   appleWebApp: {
     capable: true,
     title: "CodeCraft Gestão",

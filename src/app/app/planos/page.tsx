@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import QRCode from "qrcode";
 import { PageHead } from "@/components/shell";
 import { cancelSubscription, registerCardAndSubscribe, requireSession, type Snapshot } from "@/lib/store";
@@ -269,11 +270,11 @@ export default function AssinaturaPage() {
             <p className="kicker">Renovação</p>
             <h3 className="font-bold text-lg">Tudo certo</h3>
             <p className="text-sm text-muted">
-              Todo mês a plataforma cobra {selected.price} neste cartão. Você cancela sozinho quando quiser.
+              Todo mês a plataforma renova {selected.price} com este cartão. Você cancela sozinho quando quiser.
             </p>
-            <a href="/app" className="btn btn-primary w-fit">
+            <Link href="/app" className="btn btn-primary w-fit">
               Abrir o painel
-            </a>
+            </Link>
           </article>
         )}
       </div>

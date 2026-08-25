@@ -14,9 +14,6 @@ const HREF: Record<string, string> = {
   DIRECAO: "/app",
   FINANCEIRO: "/app/financeiro",
   PESSOAS: "/app/pessoas",
-  OPERACOES: "/app",
-  COMERCIAL: "/app/financeiro",
-  SUPORTE: "/app/pessoas",
 };
 
 export default function PainelPage() {

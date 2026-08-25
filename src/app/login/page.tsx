@@ -55,6 +55,9 @@ export default function LoginPage() {
           </button>
         </form>
         <p className="text-sm text-muted">
+          <Link href="/esqueci-senha">Esqueci a senha</Link>
+        </p>
+        <p className="text-sm text-muted">
           Novo por aqui? <Link href="/cadastro">Criar empresa</Link>
         </p>
       </div>

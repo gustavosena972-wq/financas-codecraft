@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PageHead } from "@/components/shell";
-import { cancelSubscription, requireSession, type Snapshot } from "@/lib/store";
+import { cancelSubscription, requireSession, updatePassword, type Snapshot } from "@/lib/store";
 import { useLive } from "@/lib/live";
 import { go } from "@/lib/types";
 import { isSubscribed, planLabel } from "@/lib/plans";
@@ -12,6 +12,9 @@ import { displayCompany, formatCnpj, orgIsLinked } from "@/lib/company";
 export default function AjustesPage() {
   const live = useLive();
   const [data, setData] = useState<Snapshot | null>(null);
+  const [pwdError, setPwdError] = useState("");
+  const [pwdOk, setPwdOk] = useState("");
+  const [pwdBusy, setPwdBusy] = useState(false);
 
   useEffect(() => {
     void requireSession().then((session) => {
@@ -63,6 +66,54 @@ export default function AjustesPage() {
           </Link>
         )}
       </article>
+
+      <article className="card p-6 space-y-3">
+        <p className="kicker">Senha</p>
+        <h2 className="font-bold">Trocar senha</h2>
+        <form
+          className="grid sm:grid-cols-2 gap-3"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            setPwdBusy(true);
+            setPwdError("");
+            setPwdOk("");
+            const form = new FormData(event.currentTarget);
+            const password = String(form.get("password"));
+            const confirm = String(form.get("confirm"));
+            if (password !== confirm) {
+              setPwdBusy(false);
+              setPwdError("As senhas não são iguais.");
+              return;
+            }
+            const result = await updatePassword(password);
+            setPwdBusy(false);
+            if (result.error) {
+              setPwdError(result.error);
+              return;
+            }
+            setPwdOk("Senha atualizada.");
+            event.currentTarget.reset();
+          }}
+        >
+          <label className="field">
+            <span>Nova senha</span>
+            <input name="password" type="password" required minLength={8} autoComplete="new-password" />
+          </label>
+          <label className="field">
+            <span>Confirmar</span>
+            <input name="confirm" type="password" required minLength={8} autoComplete="new-password" />
+          </label>
+          {pwdError ? <p className="text-sm text-negative sm:col-span-2">{pwdError}</p> : null}
+          {pwdOk ? <p className="text-sm text-positive sm:col-span-2">{pwdOk}</p> : null}
+          <button className="btn btn-ink sm:col-span-2 w-fit" disabled={pwdBusy}>
+            {pwdBusy ? "Salvando…" : "Salvar senha"}
+          </button>
+        </form>
+        <p className="text-xs text-muted">
+          Sem acesso? Use <Link href="/esqueci-senha">Esqueci a senha</Link> no login.
+        </p>
+      </article>
+
       <article className="card p-6 space-y-2">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <p className="kicker">Empresa</p>

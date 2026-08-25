@@ -51,7 +51,7 @@ export default function HomePage() {
             <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-4">
               {[
                 ["Financeiro", "Caixa · títulos · DRE"],
-                ["RH", "Cadastro · ponto · folha"],
+                ["RH", "Cadastro · ponto · salários"],
                 ["Assinatura", "R$ 280 a R$ 500"],
                 ["Segurança", "RLS por empresa"],
               ].map(([k, v]) => (
@@ -93,7 +93,7 @@ export default function HomePage() {
             R$ 280 a R$ 500 por mês.
           </h2>
           <p className="text-muted mt-2 text-sm sm:text-base">
-            Cartão com renovação automática. Cancelamento autônomo no painel.
+            Cartão cadastrado para renovação mensal. Cancelamento no painel.
           </p>
           <div className="grid sm:grid-cols-3 gap-3 sm:gap-4 mt-6 sm:mt-10">
             {PLANS.map((plan) => (

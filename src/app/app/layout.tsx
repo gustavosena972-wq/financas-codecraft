@@ -34,7 +34,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         go("/app/empresa");
         return;
       }
-      const open = pathname === "/app/planos" || pathname === "/app/empresa";
+      const open =
+        pathname === "/app/planos" || pathname === "/app/empresa" || pathname === "/app/ajustes";
       if (orgIsLinked(data.org) && !isSubscribed(data.user) && !open) {
         go("/app/planos");
       }

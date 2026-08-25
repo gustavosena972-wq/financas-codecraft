@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Empty, Gate, PageHead } from "@/components/shell";
 import { addPerson, punchClock, removePerson, requireSession, type Snapshot } from "@/lib/store";
 import { useLive } from "@/lib/live";
-import { DEPARTMENTS, go, today, type Department, type TimePunch } from "@/lib/types";
+import { PEOPLE_DEPARTMENTS, go, today, type Department, type TimePunch } from "@/lib/types";
 import { hasHr, peopleLimit } from "@/lib/plans";
 import { brl, parseMoneyToCents } from "@/lib/money";
 
@@ -100,7 +100,7 @@ export default function PessoasPage() {
             <label className="field">
               <span>Setor</span>
               <select name="department" defaultValue="PESSOAS">
-                {DEPARTMENTS.map((item) => (
+                {PEOPLE_DEPARTMENTS.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
                   </option>
@@ -153,7 +153,7 @@ export default function PessoasPage() {
                         {person.roleTitle || ROLE[person.role]}
                         <div className="text-xs text-muted">{ROLE[person.role]}</div>
                       </td>
-                      <td>{DEPARTMENTS.find((item) => item.id === person.department)?.name ?? person.department}</td>
+                      <td>{PEOPLE_DEPARTMENTS.find((item) => item.id === person.department)?.name ?? person.department}</td>
                       <td>
                         <span className={`chip ${person.status === "ACTIVE" ? "ok" : "warn"}`}>{STATUS[person.status]}</span>
                       </td>

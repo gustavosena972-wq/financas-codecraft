@@ -416,7 +416,7 @@ export async function registerAccount(input: {
         if (!login.error) return { error: null };
         return {
           error:
-            "Este e-mail já tem conta. Use Entrar com a mesma senha. Se esqueceu a senha, troque no Supabase → Authentication → Users.",
+            "Este e-mail já tem conta. Use Entrar com a mesma senha ou Esqueci a senha no login.",
         };
       }
       return { error: authMessage(error.message) };
@@ -464,6 +464,49 @@ export async function logoutAccount() {
   await getSupabase().auth.signOut();
   snapshot = null;
   bump();
+}
+
+function appOrigin() {
+  if (typeof window === "undefined") return "";
+  const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
+  return `${window.location.origin}${base}`;
+}
+
+export async function requestPasswordReset(email: string) {
+  if (!supabaseConfigured()) return { error: "Ligue o CodeCraft Gestão ao próprio projeto Supabase." };
+  try {
+    const { error } = await getSupabase().auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+      redirectTo: `${appOrigin()}/redefinir-senha/`,
+    });
+    if (error) return { error: authMessage(error.message) };
+    return { error: null };
+  } catch (err) {
+    return { error: authMessage(err instanceof Error ? err.message : "Falha de rede.") };
+  }
+}
+
+export async function updatePassword(password: string) {
+  if (!supabaseConfigured()) return { error: "Ligue o CodeCraft Gestão ao próprio projeto Supabase." };
+  if (password.length < 8) return { error: "A senha precisa ter pelo menos 8 caracteres." };
+  try {
+    const { error } = await getSupabase().auth.updateUser({ password });
+    if (error) return { error: authMessage(error.message) };
+    return { error: null };
+  } catch (err) {
+    return { error: authMessage(err instanceof Error ? err.message : "Falha de rede.") };
+  }
+}
+
+export async function waitForRecoverySession(timeoutMs = 8000) {
+  const supabase = getSupabase();
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const { data } = await supabase.auth.getSession();
+    if (data.session) return true;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  const { data } = await supabase.auth.getSession();
+  return Boolean(data.session);
 }
 
 async function need() {

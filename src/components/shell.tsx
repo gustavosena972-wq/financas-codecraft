@@ -89,9 +89,9 @@ export function Gate({ allowed, title, body }: { allowed: boolean; title: string
     <div className="card p-5 sm:p-8 text-center space-y-3">
       <h2 className="text-lg font-bold">{title}</h2>
       <p className="text-sm text-muted max-w-lg mx-auto">{body}</p>
-      <a href="/app/planos" className="btn btn-primary">
+      <Link href="/app/planos" className="btn btn-primary">
         Ver assinatura
-      </a>
+      </Link>
     </div>
   );
 }

@@ -111,9 +111,14 @@ export const DEPARTMENTS: { id: Department; name: string; does: string }[] = [
   { id: "DIRECAO", name: "Direção", does: "Visão da empresa e decisões." },
   { id: "FINANCEIRO", name: "Financeiro", does: "Caixa, títulos e DRE." },
   { id: "PESSOAS", name: "Pessoas", does: "Colaboradores, ponto e folha." },
-  { id: "OPERACOES", name: "Operações", does: "Rotina e entrega do dia a dia." },
-  { id: "COMERCIAL", name: "Comercial", does: "Clientes e receita." },
-  { id: "SUPORTE", name: "Suporte", does: "Atendimento interno." },
+];
+
+/** Departamentos extras só no cadastro de colaborador (não são módulos do produto). */
+export const PEOPLE_DEPARTMENTS: { id: Department; name: string }[] = [
+  ...DEPARTMENTS.map(({ id, name }) => ({ id, name })),
+  { id: "OPERACOES", name: "Operações" },
+  { id: "COMERCIAL", name: "Comercial" },
+  { id: "SUPORTE", name: "Suporte" },
 ];
 
 export function newId() {
