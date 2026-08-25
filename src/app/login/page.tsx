@@ -66,6 +66,9 @@ export default function LoginPage() {
         <p className="text-sm text-muted">
           Novo por aqui? <Link href="/cadastro">Criar empresa</Link>
         </p>
+        <p className="text-xs text-muted">
+          <Link href="/termos">Termos</Link> · <Link href="/privacidade">Privacidade</Link>
+        </p>
       </div>
     </div>
   );

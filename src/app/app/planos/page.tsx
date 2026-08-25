@@ -71,7 +71,7 @@ export default function AssinaturaPage() {
       <PageHead
         kicker="Billing SaaS"
         title="Assinatura"
-        subtitle="R$ 280 a R$ 500 por mês. Cartão obrigatório para renovação automática. Cancele quando quiser."
+        subtitle="R$ 280 a R$ 500 por mês. Cartão cadastrado para renovação mensal. Cancele quando quiser."
       />
 
       <div className="grid md:grid-cols-3 gap-4">
