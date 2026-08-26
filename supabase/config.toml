@@ -14,5 +14,8 @@ verify_jwt = true
 [functions.billing-webhook]
 verify_jwt = false
 
+[functions.asaas-setup-webhook]
+verify_jwt = false
+
 [functions.send-invite]
 verify_jwt = true
