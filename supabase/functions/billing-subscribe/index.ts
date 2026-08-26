@@ -164,36 +164,7 @@ Deno.serve(async (req) => {
     let activated = false;
 
     if (method === "pix") {
-      // 1º mês no PIX; recorrência no cartão a partir do próximo ciclo
-      const payRes = await fetch(`${ASAAS}/payments`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          customer: customerId,
-          billingType: "PIX",
-          value: price,
-          dueDate: today.toISOString().slice(0, 10),
-          description: `CodeCraft Gestão · ${plan} · 1º mês`,
-          externalReference,
-        }),
-      });
-      const payment = await payRes.json();
-      if (!payRes.ok) {
-        return json({ error: payment.errors?.[0]?.description || "Falha no PIX Asaas" }, 400);
-      }
-      paymentId = payment.id;
-      paymentStatus = payment.status;
-      invoiceUrl = payment.invoiceUrl || null;
-
-      if (payment.id) {
-        const pixRes = await fetch(`${ASAAS}/payments/${payment.id}/pixQrCode`, { headers });
-        const pix = await pixRes.json();
-        if (pixRes.ok) {
-          pixPayload = pix.payload || null;
-          pixImage = pix.encodedImage ? `data:image/png;base64,${pix.encodedImage}` : null;
-        }
-      }
-
+      // 1) Valida cartão / cria recorrência ANTES do PIX (evita PIX órfão se cartão falhar)
       const subRes = await fetch(`${ASAAS}/subscriptions`, {
         method: "POST",
         headers,
@@ -217,6 +188,41 @@ Deno.serve(async (req) => {
         }, 400);
       }
       subscriptionId = sub.id;
+
+      // 2) PIX do 1º mês
+      const payRes = await fetch(`${ASAAS}/payments`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          customer: customerId,
+          billingType: "PIX",
+          value: price,
+          dueDate: today.toISOString().slice(0, 10),
+          description: `CodeCraft Gestão · ${plan} · 1º mês`,
+          externalReference,
+        }),
+      });
+      const payment = await payRes.json();
+      if (!payRes.ok) {
+        // Limpa assinatura criada para não cobrar renovação sem 1º mês
+        await fetch(`${ASAAS}/subscriptions/${subscriptionId}`, {
+          method: "DELETE",
+          headers,
+        }).catch(() => null);
+        return json({ error: payment.errors?.[0]?.description || "Falha no PIX Asaas" }, 400);
+      }
+      paymentId = payment.id;
+      paymentStatus = payment.status;
+      invoiceUrl = payment.invoiceUrl || null;
+
+      if (payment.id) {
+        const pixRes = await fetch(`${ASAAS}/payments/${payment.id}/pixQrCode`, { headers });
+        const pix = await pixRes.json();
+        if (pixRes.ok) {
+          pixPayload = pix.payload || null;
+          pixImage = pix.encodedImage ? `data:image/png;base64,${pix.encodedImage}` : null;
+        }
+      }
     } else {
       // Cartão: assinatura mensal; 1ª cobrança na data de hoje
       const subRes = await fetch(`${ASAAS}/subscriptions`, {

@@ -13,7 +13,8 @@ Deno.serve(async (req) => {
 
   const expected = Deno.env.get("ASAAS_WEBHOOK_TOKEN") || "";
   const got = req.headers.get("asaas-access-token") || "";
-  if (expected && got !== expected) {
+  // Sem token configurado = webhook fechado (evita ativação aberta na internet)
+  if (!expected || got !== expected) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
       headers: { ...cors, "Content-Type": "application/json" },
