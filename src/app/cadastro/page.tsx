@@ -51,7 +51,7 @@ export default function CadastroPage() {
               setError(result.error);
               return;
             }
-            go(token ? "/app" : "/app/empresa");
+            go(token ? "/app" : "/app/planos");
           }}
         >
           <label className="field sm:col-span-2">

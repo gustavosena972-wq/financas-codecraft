@@ -136,8 +136,19 @@ export default function EmpresaPage() {
       <PageHead
         kicker="Identidade"
         title={linked ? "Empresa ligada" : "Ligar a sua empresa"}
-        subtitle="O CodeCraft Gestão só abre de verdade com CNPJ, razão social e endereço. A conta fica da empresa, não de um nome solto."
-        extra={linked ? <span className="chip ok">ligada e gravada</span> : <span className="chip warn">falta ligar</span>}
+        subtitle="Cole o CNPJ para buscar os dados públicos. Você já pode assinar o plano antes — ligar o CNPJ libera Financeiro e Pessoas."
+        extra={
+          linked ? (
+            <span className="chip ok">ligada e gravada</span>
+          ) : (
+            <span className="flex flex-wrap gap-2 items-center">
+              <span className="chip warn">falta ligar</span>
+              <button type="button" className="btn btn-primary" onClick={() => go("/app/planos")}>
+                Assinar agora
+              </button>
+            </span>
+          )
+        }
       />
 
       <article className="card p-6 space-y-4">

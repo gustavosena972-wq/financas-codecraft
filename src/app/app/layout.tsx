@@ -30,13 +30,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       }
       setSession(data);
       setReady(true);
-      if (!orgIsLinked(data.org) && pathname !== "/app/empresa") {
-        go("/app/empresa");
+      // Assinatura e ajustes liberados antes do CNPJ — fluxo mais simples.
+      const openWithoutCnpj =
+        pathname === "/app/planos" || pathname === "/app/empresa" || pathname === "/app/ajustes";
+      if (!orgIsLinked(data.org) && !openWithoutCnpj) {
+        go("/app/planos");
         return;
       }
-      const open =
-        pathname === "/app/planos" || pathname === "/app/empresa" || pathname === "/app/ajustes";
-      if (orgIsLinked(data.org) && !isSubscribed(data.user) && !open) {
+      if (orgIsLinked(data.org) && !isSubscribed(data.user) && !openWithoutCnpj) {
         go("/app/planos");
       }
     })();
