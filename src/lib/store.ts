@@ -406,10 +406,10 @@ async function bootstrapFromAuth(nameHint: string, companyHint: string, sizeHint
   const orgId = newId();
   const walletId = newId();
   const personId = newId();
+  // Profile first without last_org_id — FK cc_profiles_last_org_fk requires the org to exist.
   const { error: profileError } = await supabase.from("cc_profiles").upsert({
     id: auth.id,
     name,
-    last_org_id: orgId,
     plan: "NONE",
   });
   if (profileError) {
@@ -427,6 +427,11 @@ async function bootstrapFromAuth(nameHint: string, companyHint: string, sizeHint
     size,
   });
   if (orgError) return { session: null, error: orgError.message };
+  const { error: linkError } = await supabase
+    .from("cc_profiles")
+    .update({ last_org_id: orgId })
+    .eq("id", auth.id);
+  if (linkError) return { session: null, error: linkError.message };
   await supabase.from("cc_org_members").upsert({ org_id: orgId, user_id: auth.id, role: "OWNER" });
   await supabase.from("cc_cost_centers").upsert({ id: newId(), org_id: orgId, name: "Geral" }, { onConflict: "org_id,name" });
   await supabase.from("cc_people").insert({
