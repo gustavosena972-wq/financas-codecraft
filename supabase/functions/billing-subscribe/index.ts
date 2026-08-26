@@ -25,12 +25,6 @@ function json(body: unknown, status = 200) {
   });
 }
 
-function addMonthsIso(date: Date, months: number) {
-  const d = new Date(date);
-  d.setMonth(d.getMonth() + months);
-  return d.toISOString().slice(0, 10);
-}
-
 function clientIp(req: Request) {
   const fwd = req.headers.get("x-forwarded-for") || "";
   const first = fwd.split(",")[0]?.trim();
@@ -61,10 +55,20 @@ Deno.serve(async (req) => {
     if (!price) return json({ error: "Plano inválido" }, 400);
 
     const email = userData.user.email || "";
-    const cpf = String(body.card?.cpf || "").replace(/\D/g, "");
-    const holder = String(body.card?.holder || userData.user.user_metadata?.name || "Cliente");
+    const cpf = String(body.card?.cpf || body.cpf || body.payer?.cpf || "").replace(/\D/g, "");
+    const holder = String(
+      body.card?.holder || body.name || body.payer?.name || userData.user.user_metadata?.name || "Cliente",
+    );
     if (cpf.length !== 11 && cpf.length !== 14) {
       return json({ error: "Informe um CPF válido do pagador." }, 400);
+    }
+    if (method === "card") {
+      const num = String(body.card?.number || "").replace(/\D/g, "");
+      const exp = String(body.card?.exp || "");
+      const cvv = String(body.card?.cvv || "");
+      if (num.length < 13 || !exp.includes("/") || cvv.length < 3) {
+        return json({ error: "Dados do cartão incompletos." }, 400);
+      }
     }
 
     const admin = createClient(supabaseUrl, serviceKey);
@@ -164,63 +168,52 @@ Deno.serve(async (req) => {
     let activated = false;
 
     if (method === "pix") {
-      // 1) Valida cartão / cria recorrência ANTES do PIX (evita PIX órfão se cartão falhar)
+      // Assinatura PIX mensal: Asaas gera cobrança todo mês (renovação automática da fatura)
       const subRes = await fetch(`${ASAAS}/subscriptions`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          customer: customerId,
-          billingType: "CREDIT_CARD",
-          value: price,
-          nextDueDate: addMonthsIso(today, 1),
-          cycle: "MONTHLY",
-          description: `CodeCraft Gestão · ${plan}`,
-          externalReference,
-          creditCard,
-          creditCardHolderInfo,
-          remoteIp,
-        }),
-      });
-      const sub = await subRes.json();
-      if (!subRes.ok) {
-        return json({
-          error: sub.errors?.[0]?.description || "Cartão recusado para renovação automática.",
-        }, 400);
-      }
-      subscriptionId = sub.id;
-
-      // 2) PIX do 1º mês
-      const payRes = await fetch(`${ASAAS}/payments`, {
         method: "POST",
         headers,
         body: JSON.stringify({
           customer: customerId,
           billingType: "PIX",
           value: price,
-          dueDate: today.toISOString().slice(0, 10),
-          description: `CodeCraft Gestão · ${plan} · 1º mês`,
+          nextDueDate: today.toISOString().slice(0, 10),
+          cycle: "MONTHLY",
+          description: `CodeCraft Gestão · ${plan}`,
           externalReference,
         }),
       });
-      const payment = await payRes.json();
-      if (!payRes.ok) {
-        // Limpa assinatura criada para não cobrar renovação sem 1º mês
-        await fetch(`${ASAAS}/subscriptions/${subscriptionId}`, {
-          method: "DELETE",
-          headers,
-        }).catch(() => null);
-        return json({ error: payment.errors?.[0]?.description || "Falha no PIX Asaas" }, 400);
+      const sub = await subRes.json();
+      if (!subRes.ok) {
+        return json({
+          error: sub.errors?.[0]?.description || "Falha ao criar assinatura PIX mensal.",
+        }, 400);
       }
-      paymentId = payment.id;
-      paymentStatus = payment.status;
-      invoiceUrl = payment.invoiceUrl || null;
+      subscriptionId = sub.id;
 
-      if (payment.id) {
-        const pixRes = await fetch(`${ASAAS}/payments/${payment.id}/pixQrCode`, { headers });
-        const pix = await pixRes.json();
-        if (pixRes.ok) {
-          pixPayload = pix.payload || null;
-          pixImage = pix.encodedImage ? `data:image/png;base64,${pix.encodedImage}` : null;
+      // A 1ª cobrança às vezes demora um instante a aparecer
+      let payment: Record<string, unknown> | undefined;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 700));
+        const listRes = await fetch(
+          `${ASAAS}/payments?subscription=${encodeURIComponent(subscriptionId)}&limit=1`,
+          { headers },
+        );
+        const listBody = await listRes.json();
+        payment = listBody?.data?.[0];
+        if (payment?.id) break;
+      }
+      if (payment) {
+        paymentId = String(payment.id || "");
+        paymentStatus = String(payment.status || "");
+        invoiceUrl = (payment.invoiceUrl as string) || null;
+        activated = ["CONFIRMED", "RECEIVED", "RECEIVED_IN_CASH"].includes(String(payment.status));
+        if (payment.id) {
+          const pixRes = await fetch(`${ASAAS}/payments/${payment.id}/pixQrCode`, { headers });
+          const pix = await pixRes.json();
+          if (pixRes.ok) {
+            pixPayload = pix.payload || null;
+            pixImage = pix.encodedImage ? `data:image/png;base64,${pix.encodedImage}` : null;
+          }
         }
       }
     } else {
@@ -269,10 +262,10 @@ Deno.serve(async (req) => {
       await admin.from("cc_profiles").update({
         plan,
         billing_status: "active",
-        billing_method: "card",
-        card_last4: last4,
-        card_holder: holder,
-        card_exp: String(body.card?.exp || ""),
+        billing_method: method === "pix" ? "pix" : "card",
+        card_last4: method === "card" ? last4 : "",
+        card_holder: method === "card" ? holder : holder,
+        card_exp: method === "card" ? String(body.card?.exp || "") : "",
         card_cpf: cpf,
         billed_at: new Date().toISOString(),
         next_charge_at: next.toISOString(),
@@ -282,17 +275,17 @@ Deno.serve(async (req) => {
       await admin.from("cc_charges").insert({
         owner_id: userData.user.id,
         amount: price * 100,
-        method: "card",
+        method: method === "pix" ? "pix" : "card",
         status: "paid",
         plan,
-        card_last4: last4,
+        card_last4: method === "card" ? last4 : "",
       });
     } else {
       await admin.from("cc_profiles").update({
-        card_last4: last4 || "",
+        card_last4: method === "card" ? last4 || "" : "",
         card_holder: holder,
         card_cpf: cpf,
-        card_exp: String(body.card?.exp || ""),
+        card_exp: method === "card" ? String(body.card?.exp || "") : "",
         billing_method: method === "pix" ? "pix" : "card",
         asaas_customer_id: customerId,
         asaas_subscription_id: subscriptionId,

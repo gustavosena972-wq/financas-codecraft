@@ -606,10 +606,10 @@ function billingColumnError(error: { message: string; code?: string }) {
 }
 
 export async function registerCardAndSubscribe(input: {
-  number: string;
+  number?: string;
   name: string;
-  exp: string;
-  cvv: string;
+  exp?: string;
+  cvv?: string;
   cpf: string;
   plan: Exclude<PlanId, "NONE">;
   firstPay: "card" | "pix";
@@ -622,8 +622,24 @@ export async function registerCardAndSubscribe(input: {
   status?: string;
 }> {
   const session = await need();
-  const card = readCard(input);
-  if ("error" in card) throw new Error(card.error);
+  let card: { last4: string; brand: string; holder: string; exp: string; cpf: string } | null = null;
+  if (input.firstPay === "card") {
+    const parsed = readCard({
+      number: String(input.number || ""),
+      name: input.name,
+      exp: String(input.exp || ""),
+      cvv: String(input.cvv || ""),
+      cpf: input.cpf,
+    });
+    if ("error" in parsed) throw new Error(parsed.error);
+    card = parsed;
+  } else {
+    const digits = String(input.cpf || "").replace(/\D/g, "");
+    if (digits.length !== 11 && digits.length !== 14) {
+      throw new Error("Informe um CPF válido.");
+    }
+    if (!String(input.name || "").trim()) throw new Error("Informe o nome do pagador.");
+  }
 
   const provider = (process.env.NEXT_PUBLIC_BILLING_PROVIDER || "local").toLowerCase();
   if (provider === "asaas") {
@@ -641,13 +657,17 @@ export async function registerCardAndSubscribe(input: {
       body: JSON.stringify({
         plan: input.plan,
         method: input.firstPay,
-        card: {
-          number: input.number.replace(/\D/g, ""),
-          holder: card.holder,
-          exp: card.exp,
-          cvv: input.cvv,
-          cpf: card.cpf,
-        },
+        name: input.name,
+        cpf: String(input.cpf || "").replace(/\D/g, ""),
+        card: input.firstPay === "card" && card
+          ? {
+              number: String(input.number || "").replace(/\D/g, ""),
+              holder: card.holder,
+              exp: card.exp,
+              cvv: input.cvv,
+              cpf: card.cpf,
+            }
+          : undefined,
         holderInfo: {
           postalCode: session.org.cep,
           addressNumber: session.org.number || "100",
@@ -681,6 +701,9 @@ export async function registerCardAndSubscribe(input: {
     };
   }
 
+  if (!card) {
+    throw new Error("No modo local use cartão, ou configure Asaas para PIX mensal.");
+  }
   const { error } = await getSupabase().rpc("cc_subscribe", {
     p_plan: input.plan,
     p_method: input.firstPay,

@@ -21,7 +21,7 @@ export default function AssinaturaPage() {
   const live = useLive();
   const [data, setData] = useState<Snapshot | null>(null);
   const [plan, setPlan] = useState<PaidPlan>("BUSINESS");
-  const [firstPay, setFirstPay] = useState<"card" | "pix">("card");
+  const [firstPay, setFirstPay] = useState<"card" | "pix">("pix");
   const [number, setNumber] = useState("");
   const [name, setName] = useState("");
   const [exp, setExp] = useState("");
@@ -58,13 +58,14 @@ export default function AssinaturaPage() {
       else {
         setData(session);
         if (session.user.plan !== "NONE") setPlan(session.user.plan);
+        if (!name && session.user.name) setName(session.user.name);
         if (session.user.billingStatus === "active" && isSubscribed(session.user)) {
           setAwaitingPix(false);
           setAsaasPix(null);
         }
       }
     });
-  }, [live]);
+  }, [live, name]);
 
   useEffect(() => {
     if (asaasPix?.image) {
@@ -94,6 +95,7 @@ export default function AssinaturaPage() {
   if (!data) return null;
   const active = isSubscribed(data.user);
   const cardSaved = hasCardOnFile(data.user);
+  const pixSub = data.user.billingMethod === "pix";
   const next = data.user.nextChargeAt
     ? new Date(data.user.nextChargeAt).toLocaleDateString("pt-BR")
     : "";
@@ -103,7 +105,7 @@ export default function AssinaturaPage() {
       <PageHead
         kicker="Billing SaaS"
         title="Assinatura"
-        subtitle="R$ 280 a R$ 500 por mês via Asaas. 1º mês no PIX ou cartão; renovação automática no cartão. Cancele quando quiser."
+        subtitle="R$ 280 a R$ 500/mês. PIX com renovação automática mensal (sem cartão) ou cartão. Cancele quando quiser."
       />
 
       <div className="grid md:grid-cols-3 gap-4">
@@ -111,7 +113,7 @@ export default function AssinaturaPage() {
           <button
             key={item.id}
             type="button"
-            className={`card p-5 text-left ${plan === item.id ? "ring-2 ring-[color:var(--gold)]" : ""} ${item.highlight ? "" : ""}`}
+            className={`card p-5 text-left ${plan === item.id ? "ring-2 ring-[color:var(--gold)]" : ""}`}
             onClick={() => setPlan(item.id)}
             disabled={active}
           >
@@ -138,11 +140,23 @@ export default function AssinaturaPage() {
           {active ? (
             <div className="rounded-2xl border border-line p-4 space-y-1">
               <p className="chip ok w-fit">Assinatura ativa · renovação ligada</p>
-              <p className="text-sm font-bold">
-                {brandLabel(data.user.cardBrand)} •••• {data.user.cardLast4}
-              </p>
-              <p className="text-sm text-muted">{data.user.cardHolder}</p>
-              <p className="text-sm text-muted">Validade {data.user.cardExp} · próxima cobrança {next}</p>
+              {pixSub ? (
+                <>
+                  <p className="text-sm font-bold">PIX mensal automático</p>
+                  <p className="text-sm text-muted">
+                    Todo mês o Asaas gera um novo PIX. Pague e o plano renova sozinho.
+                    {next ? ` Próxima cobrança: ${next}.` : ""}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-bold">
+                    {brandLabel(data.user.cardBrand)} •••• {data.user.cardLast4}
+                  </p>
+                  <p className="text-sm text-muted">{data.user.cardHolder}</p>
+                  <p className="text-sm text-muted">Validade {data.user.cardExp} · próxima cobrança {next}</p>
+                </>
+              )}
               <button
                 className="btn btn-ghost mt-2"
                 type="button"
@@ -155,7 +169,7 @@ export default function AssinaturaPage() {
               </button>
             </div>
           ) : data.user.billingStatus === "past_due" ? (
-            <p className="chip warn w-fit">Renovação falhou. Cadastre um cartão válido de novo.</p>
+            <p className="chip warn w-fit">Renovação pendente. Pague o PIX do mês ou atualize o cartão.</p>
           ) : cardSaved ? (
             <p className="chip warn w-fit">Cartão salvo, mas a assinatura ainda não está ativa.</p>
           ) : null}
@@ -164,10 +178,10 @@ export default function AssinaturaPage() {
         {!active ? (
           <article className="card p-6 space-y-4">
             <div>
-              <p className="kicker">Cartão obrigatório</p>
-              <h3 className="font-bold text-lg mt-1">Cadastrar e assinar</h3>
+              <p className="kicker">Assinar sem cartão</p>
+              <h3 className="font-bold text-lg mt-1">PIX mensal ou cartão</h3>
               <p className="text-sm text-muted mt-1">
-                O cartão fica na assinatura mensal do Asaas. Sem cartão a renovação não roda; o 1º mês pode ser PIX ou cartão.
+                No PIX, a renovação é automática: todo mês nasce uma cobrança PIX. No cartão, a cobrança debita sozinha.
               </p>
             </div>
 
@@ -175,7 +189,7 @@ export default function AssinaturaPage() {
               <div className="rounded-2xl border border-line p-4 space-y-3">
                 <p className="chip warn w-fit">Aguardando pagamento PIX</p>
                 <p className="text-sm">
-                  Pague {brl(priceCents)} no PIX. A assinatura ativa sozinha quando o Asaas confirmar.
+                  Pague {brl(priceCents)} no PIX. A assinatura ativa sozinha quando o Asaas confirmar — e renova todo mês.
                 </p>
                 {displayQr ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -222,52 +236,38 @@ export default function AssinaturaPage() {
                       setError("Pagamento em análise. Se não ativar em instantes, atualize a página.");
                     }
                   } catch (err) {
-                    setError(err instanceof Error ? err.message : "Não deu para cadastrar o cartão.");
+                    setError(err instanceof Error ? err.message : "Não deu para assinar.");
                   } finally {
                     setBusy(false);
                   }
                 }}
               >
-                <label className="field">
-                  <span>Nome no cartão</span>
-                  <input value={name} onChange={(event) => setName(event.target.value)} autoComplete="cc-name" required />
-                </label>
-                <label className="field">
-                  <span>Número do cartão</span>
-                  <input
-                    value={number}
-                    onChange={(event) => setNumber(formatCardNumber(event.target.value))}
-                    inputMode="numeric"
-                    autoComplete="cc-number"
-                    placeholder="ACCT-000003"
-                    required
-                  />
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="field">
-                    <span>Validade</span>
-                    <input
-                      value={exp}
-                      onChange={(event) => setExp(formatCardExp(event.target.value))}
-                      inputMode="numeric"
-                      autoComplete="cc-exp"
-                      placeholder="MM/AA"
-                      required
-                    />
-                  </label>
-                  <label className="field">
-                    <span>CVV</span>
-                    <input
-                      value={cvv}
-                      onChange={(event) => setCvv(event.target.value.replace(/\D/g, "").slice(0, 4))}
-                      inputMode="numeric"
-                      autoComplete="cc-csc"
-                      required
-                    />
-                  </label>
+                <div className="rounded-2xl border border-line p-4 space-y-3">
+                  <p className="kicker">Forma de pagamento · {brl(priceCents)}/mês</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      className={`btn ${firstPay === "pix" ? "btn-primary" : "btn-ghost"}`}
+                      type="button"
+                      onClick={() => setFirstPay("pix")}
+                    >
+                      PIX mensal (sem cartão)
+                    </button>
+                    <button
+                      className={`btn ${firstPay === "card" ? "btn-primary" : "btn-ghost"}`}
+                      type="button"
+                      onClick={() => setFirstPay("card")}
+                    >
+                      Cartão de crédito
+                    </button>
+                  </div>
                 </div>
+
                 <label className="field">
-                  <span>CPF do dono do cartão</span>
+                  <span>{firstPay === "card" ? "Nome no cartão" : "Nome do pagador"}</span>
+                  <input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" required />
+                </label>
+                <label className="field">
+                  <span>CPF do pagador</span>
                   <input
                     value={cpf}
                     onChange={(event) => setCpf(formatCpf(event.target.value))}
@@ -277,52 +277,70 @@ export default function AssinaturaPage() {
                   />
                 </label>
 
-                <div className="rounded-2xl border border-line p-4 space-y-3">
-                  <p className="kicker">Primeiro mês · {brl(priceCents)}</p>
-                  <div className="flex flex-wrap gap-2">
+                {firstPay === "card" ? (
+                  <>
+                    <label className="field">
+                      <span>Número do cartão</span>
+                      <input
+                        value={number}
+                        onChange={(event) => setNumber(formatCardNumber(event.target.value))}
+                        inputMode="numeric"
+                        autoComplete="cc-number"
+                        placeholder="ACCT-000003"
+                        required
+                      />
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="field">
+                        <span>Validade</span>
+                        <input
+                          value={exp}
+                          onChange={(event) => setExp(formatCardExp(event.target.value))}
+                          inputMode="numeric"
+                          autoComplete="cc-exp"
+                          placeholder="MM/AA"
+                          required
+                        />
+                      </label>
+                      <label className="field">
+                        <span>CVV</span>
+                        <input
+                          value={cvv}
+                          onChange={(event) => setCvv(event.target.value.replace(/\D/g, "").slice(0, 4))}
+                          inputMode="numeric"
+                          autoComplete="cc-csc"
+                          required
+                        />
+                      </label>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted">
+                    {USE_ASAAS
+                      ? "Geramos a assinatura PIX mensal no Asaas. Todo mês chega um novo PIX automaticamente."
+                      : `Pague ${brl(priceCents)} no PIX (${PIX_KEY}) e confirme.`}
+                  </p>
+                )}
+
+                {firstPay === "pix" && !USE_ASAAS ? (
+                  <div className="space-y-3 pt-1">
+                    {qr ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={qr} alt="QR Code PIX da assinatura" className="w-44 h-44 rounded-2xl bg-white p-2" />
+                    ) : null}
                     <button
-                      className={`btn ${firstPay === "card" ? "btn-primary" : "btn-ghost"}`}
+                      className="btn btn-ink"
                       type="button"
-                      onClick={() => setFirstPay("card")}
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(localPayload);
+                        setCopied(true);
+                        window.setTimeout(() => setCopied(false), 2000);
+                      }}
                     >
-                      Cobrar no cartão
-                    </button>
-                    <button
-                      className={`btn ${firstPay === "pix" ? "btn-primary" : "btn-ghost"}`}
-                      type="button"
-                      onClick={() => setFirstPay("pix")}
-                    >
-                      {USE_ASAAS ? "Pagar com PIX" : "Paguei no PIX"}
+                      {copied ? "PIX copiado" : "Copiar PIX"}
                     </button>
                   </div>
-                  {firstPay === "pix" && !USE_ASAAS ? (
-                    <div className="space-y-3 pt-1">
-                      <p className="text-sm">
-                        Pague {brl(priceCents)} no PIX ({PIX_KEY}), depois confirme com o cartão preenchido.
-                      </p>
-                      {qr ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={qr} alt="QR Code PIX da assinatura" className="w-44 h-44 rounded-2xl bg-white p-2" />
-                      ) : null}
-                      <button
-                        className="btn btn-ink"
-                        type="button"
-                        onClick={async () => {
-                          await navigator.clipboard.writeText(localPayload);
-                          setCopied(true);
-                          window.setTimeout(() => setCopied(false), 2000);
-                        }}
-                      >
-                        {copied ? "PIX copiado" : "Copiar PIX"}
-                      </button>
-                    </div>
-                  ) : null}
-                  {firstPay === "pix" && USE_ASAAS ? (
-                    <p className="text-sm text-muted">
-                      Ao continuar, geramos um PIX Asaas. O plano ativa automaticamente após a confirmação.
-                    </p>
-                  ) : null}
-                </div>
+                ) : null}
 
                 {error ? <p className="text-sm text-negative">{error}</p> : null}
                 <button className="btn btn-primary" disabled={busy}>
@@ -330,15 +348,10 @@ export default function AssinaturaPage() {
                     ? "Salvando…"
                     : firstPay === "pix"
                       ? USE_ASAAS
-                        ? `Gerar PIX · ${selected.price}`
+                        ? `Gerar PIX mensal · ${selected.price}`
                         : "Confirmei o PIX · ativar plano"
                       : `Assinar ${selected.name} · ${selected.price}`}
                 </button>
-                {firstPay === "pix" && !USE_ASAAS ? (
-                  <p className="text-xs text-muted">
-                    A confirmação do PIX é sua responsabilidade neste momento (sem gateway externo no Pages).
-                  </p>
-                ) : null}
               </form>
             )}
           </article>
@@ -347,7 +360,9 @@ export default function AssinaturaPage() {
             <p className="kicker">Renovação</p>
             <h3 className="font-bold text-lg">Tudo certo</h3>
             <p className="text-sm text-muted">
-              Todo mês a plataforma renova {selected.price} com este cartão. Você cancela sozinho quando quiser.
+              {pixSub
+                ? `Todo mês o Asaas gera um PIX de ${selected.price}. Pague e a renovação confirma sozinha.`
+                : `Todo mês a plataforma renova ${selected.price} no cartão. Você cancela sozinho quando quiser.`}
             </p>
             <Link href="/app" className="btn btn-primary w-fit">
               Abrir o painel

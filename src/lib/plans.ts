@@ -30,7 +30,7 @@ export const PLANS: Plan[] = [
       "RH: cadastro e ponto",
       "DRE gerencial",
       "Até 8 colaboradores",
-      "Renovação mensal no cartão",
+      "Renovação mensal automática (PIX ou cartão)",
       "Cancele quando quiser no painel",
     ],
   },
@@ -49,7 +49,7 @@ export const PLANS: Plan[] = [
       "Centros de custo nos lançamentos",
       "RH: salários, benefícios e ponto",
       "Até 40 colaboradores",
-      "Renovação mensal",
+      "Renovação mensal automática",
       "Cancelamento autônomo",
     ],
   },
@@ -67,7 +67,7 @@ export const PLANS: Plan[] = [
       "Colaboradores sem limite",
       "DRE e títulos",
       "Multi-tenant com RLS",
-      "Renovação mensal",
+      "Renovação mensal automática",
       "Cancelamento autônomo",
     ],
   },
@@ -90,11 +90,13 @@ export function hasCardOnFile(
 
 export function isSubscribed(user: Profile | null | undefined) {
   if (!user) return false;
-  return (
+  const paid =
     (user.plan === "START" || user.plan === "BUSINESS" || user.plan === "CORP") &&
-    user.billingStatus === "active" &&
-    hasCardOnFile(user)
-  );
+    user.billingStatus === "active";
+  if (!paid) return false;
+  // PIX recorrente Asaas (sem cartão) ou cartão em arquivo
+  if (user.billingMethod === "pix") return true;
+  return hasCardOnFile(user);
 }
 
 export function peopleLimit(user: Profile | null | undefined) {

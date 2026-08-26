@@ -35,7 +35,7 @@ export default function FinanceiroPage() {
         subtitle="Caixa, contas a pagar e a receber, e DRE gerencial da empresa."
         extra={<div className={`text-2xl font-extrabold ${cash < 0 ? "text-negative" : ""}`}>{brl(cash)}</div>}
       />
-      <Gate allowed={ok} title="Assine para abrir o financeiro" body="Planos de R$ 280 a R$ 500. Cadastre o cartão para renovação mensal no painel." />
+      <Gate allowed={ok} title="Assine para abrir o financeiro" body="Planos de R$ 280 a R$ 500. PIX mensal automático ou cartão." />
       {ok ? (
         <>
           <div className="grid sm:grid-cols-3 gap-4">

@@ -7,9 +7,23 @@ const sans = Inter({ variable: "--font-geist-sans", subsets: ["latin"] });
 const mono = JetBrains_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "CodeCraft Gestão — sistema empresarial",
+  title: "CodeCraft Gestão — financeiro e RH para empresas",
   description:
-    "Financeiro, RH e assinatura para empresas. Multi-tenant seguro. Planos de R$ 280 a R$ 500. Da CodeCraft Solutions.",
+    "Caixa, títulos, DRE, ponto e folha para empresas em BH e Brasil. A partir de R$ 280/mês. PIX mensal ou cartão. CodeCraft Solutions.",
+  keywords: [
+    "ERP pequena empresa",
+    "gestão financeira MEI",
+    "ponto eletrônico empresa",
+    "sistema RH PME",
+    "Belo Horizonte",
+  ],
+  openGraph: {
+    title: "CodeCraft Gestão — financeiro + RH",
+    description: "Plataforma B2B a partir de R$ 280/mês. Cadastro com CNPJ. PIX mensal.",
+    type: "website",
+    locale: "pt_BR",
+    url: "https://gustavosena972-wq.github.io/financas-codecraft/",
+  },
   appleWebApp: {
     capable: true,
     title: "CodeCraft Gestão",

@@ -93,7 +93,7 @@ export default function HomePage() {
             R$ 280 a R$ 500 por mês.
           </h2>
           <p className="text-muted mt-2 text-sm sm:text-base">
-            Cartão cadastrado para renovação mensal. Cancelamento no painel.
+            PIX ou cartão com renovação mensal automática. Cancelamento no painel.
           </p>
           <div className="grid sm:grid-cols-3 gap-3 sm:gap-4 mt-6 sm:mt-10">
             {PLANS.map((plan) => (

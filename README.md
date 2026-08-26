@@ -39,7 +39,7 @@ Commit + push em `main` (Pages aponta para `/docs`).
 
 Sem gateway, a assinatura usa RPC `cc_subscribe` (honor + cartão só last4).
 
-Para cobrar de verdade (1º mês + renovação mensal no cartão):
+Para cobrar de verdade (assinatura mensal PIX ou cartão):
 
 1. Crie conta [Asaas](https://www.asaas.com/) e pegue a API key de **produção**.
 2. Secrets no Supabase (Edge Functions → Secrets): `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN`.
@@ -51,8 +51,9 @@ Para cobrar de verdade (1º mês + renovação mensal no cartão):
    - Eventos: `PAYMENT_CONFIRMED`, `PAYMENT_RECEIVED`
 6. Defina `NEXT_PUBLIC_BILLING_PROVIDER=asaas` no `.env.local` e no build Pages.
 
-Com Asaas, o app cria **subscription MONTHLY** no cartão. PIX cobre só o 1º mês;
-os meses seguintes o Asaas cobra sozinho e o webhook renova `next_charge_at`.
+Com Asaas, o app cria **subscription MONTHLY**:
+- **PIX (sem cartão):** todo mês o Asaas gera um novo PIX; ao pagar, o webhook renova o plano.
+- **Cartão:** o Asaas debita sozinho todo mês e o webhook confirma a renovação.
 
 **Sem dinheiro / testes:** use `NEXT_PUBLIC_BILLING_PROVIDER=local` (ativa plano sem cobrança)
 ou Asaas **sandbox** (chave `$aact_hmlg_…` + secret `ASAAS_ENV=sandbox`). A function escolhe

@@ -43,7 +43,7 @@ export default function AjustesPage() {
           <>
             <p className="text-sm text-muted">
               {data.user.billingMethod === "pix"
-                ? `Primeiro mês no PIX · renovação no cartão •••• ${data.user.cardLast4}`
+                ? "Assinatura PIX mensal · renovação automática todo mês"
                 : `Cartão •••• ${data.user.cardLast4} · renovação mensal`}
             </p>
             <Link href="/app/planos" className="btn btn-ink w-fit mt-2">
